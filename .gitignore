@@ -22,6 +22,11 @@ backend/openapi.json
 .vscode
 .DS_Store
 
+# Cursor: keep shared agent rules in git; ignore local IDE state
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+
 # Logs
 *.log
 
@@ -116,3 +121,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Local bug fix notes (not committed)
+.bugs-knowledge-base/

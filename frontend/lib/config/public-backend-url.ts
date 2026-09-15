@@ -20,3 +20,19 @@ export function getPricingJsonUrl(id: string): string | null {
   if (!base) return null;
   return `${base}/public/pricing/${id}`;
 }
+
+export function getFormEmbedCode(publicKey: string): string | null {
+  const base = getPublicBackendUrl();
+  if (!base) return null;
+  const encodedKey = encodeURIComponent(publicKey);
+  return `<script type="text/javascript" src="${base}/widgets/form.js"></script>
+<iframe class="form-embed-widget" src="${base}/widgets/form/${encodedKey}" data-form-key="${publicKey}" frameborder="0" scrolling="no" style="min-width:100%;width:100%;border:0;" loading="lazy" title="Form"></iframe>`;
+}
+
+export function getTrialEmbedCode(frontendOrigin: string): string | null {
+  const base = getPublicBackendUrl();
+  if (!base) return null;
+  const origin = frontendOrigin.replace(/\/$/, "");
+  return `<script type="text/javascript" src="${base}/embed/trial-widget.js"></script>
+<iframe class="trial-signup-widget" src="${origin}/widget/trial" frameborder="0" scrolling="no" style="min-width:100%;width:100%;border:0;" loading="lazy" title="Start trial"></iframe>`;
+}

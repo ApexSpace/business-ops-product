@@ -82,6 +82,7 @@ export function CreateLeadDialog(props: CreateLeadDialogProps) {
             </Button>
             <Button
               type="submit"
+              variant="brand"
               form="create-lead-form"
               disabled={dialog.mutation.isPending}
             >

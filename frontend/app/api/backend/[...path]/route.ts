@@ -7,6 +7,8 @@ import { getAccessToken, getRefreshToken } from "@/lib/api/server";
 
 /** Fail fast when backend/DB hangs (Prisma timeouts can exceed 60s). */
 const BACKEND_FETCH_TIMEOUT_MS = 30_000;
+/** Report PDF/Excel generation can exceed the default window. */
+const BACKEND_EXPORT_TIMEOUT_MS = 120_000;
 
 function serviceErrorResponse(
   status: number,
@@ -22,6 +24,21 @@ function serviceErrorResponse(
       code,
     },
     { status },
+  );
+}
+
+function resolveForwardTimeoutMs(path: string): number {
+  if (path.includes("/export") || /(^|\/)export$/.test(path)) {
+    return BACKEND_EXPORT_TIMEOUT_MS;
+  }
+  return BACKEND_FETCH_TIMEOUT_MS;
+}
+
+function isJsonContentType(contentType: string | null): boolean {
+  if (!contentType) return true;
+  const normalized = contentType.toLowerCase();
+  return (
+    normalized.includes("application/json") || normalized.includes("+json")
   );
 }
 
@@ -44,7 +61,10 @@ async function forward(
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), BACKEND_FETCH_TIMEOUT_MS);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    resolveForwardTimeoutMs(path),
+  );
 
   try {
     return await fetch(target, {
@@ -57,6 +77,29 @@ async function forward(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function buildProxiedResponse(
+  res: Response,
+  body: BodyInit | null,
+  refreshedTokens: Awaited<ReturnType<typeof fetchRefreshTokens>>,
+): NextResponse {
+  const headers = new Headers();
+  const contentType = res.headers.get("content-type");
+  if (contentType) headers.set("Content-Type", contentType);
+  const contentDisposition = res.headers.get("content-disposition");
+  if (contentDisposition) {
+    headers.set("Content-Disposition", contentDisposition);
+  }
+
+  const response = new NextResponse(body, {
+    status: res.status,
+    headers,
+  });
+  if (refreshedTokens) {
+    setAuthCookies(response, refreshedTokens);
+  }
+  return response;
 }
 
 async function proxy(
@@ -110,6 +153,26 @@ async function proxy(
         }
       }
     }
+  }
+
+  if (res.status === 204 || res.status === 205) {
+    const response = new NextResponse(null, { status: res.status });
+    if (refreshedTokens) {
+      setAuthCookies(response, refreshedTokens);
+    }
+    return response;
+  }
+
+  if (!isJsonContentType(res.headers.get("content-type"))) {
+    if (res.status === 401) {
+      const response = NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 },
+      );
+      return clearAuthCookies(response);
+    }
+    const buffer = await res.arrayBuffer();
+    return buildProxiedResponse(res, buffer, refreshedTokens);
   }
 
   const json = await res.json().catch(() => ({}));

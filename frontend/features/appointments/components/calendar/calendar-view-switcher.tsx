@@ -1,64 +1,56 @@
 "use client";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { FILTER_SELECT_TRIGGER_CLASS } from "@/lib/ui/control-styles";
 import { cn } from "@/lib/utils";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
+import {
+  CALENDAR_TOOLBAR_SEGMENT_ACTIVE_CLASS,
+  CALENDAR_TOOLBAR_SEGMENT_BUTTON_CLASS,
+  CALENDAR_TOOLBAR_SEGMENT_GROUP_CLASS,
+  CALENDAR_TOOLBAR_SEGMENT_INACTIVE_CLASS,
+} from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 
 const VIEWS: { value: CalendarViewMode; label: string }[] = [
-  { value: "day", label: "Day view" },
-  { value: "week", label: "Week view" },
-  { value: "month", label: "Month view" },
-  { value: "list", label: "List view" },
+  { value: "day", label: "Day" },
+  { value: "week", label: "Week" },
 ];
 
 interface CalendarViewSwitcherProps {
   value: CalendarViewMode;
   onChange: (view: CalendarViewMode) => void;
   className?: string;
-  triggerClassName?: string;
 }
 
 export function CalendarViewSwitcher({
   value,
   onChange,
   className,
-  triggerClassName,
 }: CalendarViewSwitcherProps) {
-  const items = VIEWS.map((v) => ({ value: v.value, label: v.label }));
-
   return (
-    <Select
-      items={items}
-      value={value}
-      onValueChange={(next) => {
-        if (next) onChange(next as CalendarViewMode);
-      }}
+    <div
+      className={cn(CALENDAR_TOOLBAR_SEGMENT_GROUP_CLASS, className)}
+      role="group"
+      aria-label="Calendar view"
     >
-      <SelectTrigger
-        className={cn(
-          FILTER_SELECT_TRIGGER_CLASS,
-          "w-[130px]",
-          className,
-          triggerClassName,
-        )}
-        aria-label="Calendar view"
-      >
-        <SelectValue placeholder="View" />
-      </SelectTrigger>
-      <SelectContent>
-        {VIEWS.map((v) => (
-          <SelectItem key={v.value} value={v.value}>
-            {v.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      {VIEWS.map((view) => {
+        const active = value === view.value;
+        return (
+          <button
+            key={view.value}
+            type="button"
+            aria-current={active ? "page" : undefined}
+            aria-label={`${view.label} view`}
+            onClick={() => onChange(view.value)}
+            className={cn(
+              CALENDAR_TOOLBAR_SEGMENT_BUTTON_CLASS,
+              active
+                ? CALENDAR_TOOLBAR_SEGMENT_ACTIVE_CLASS
+                : CALENDAR_TOOLBAR_SEGMENT_INACTIVE_CLASS,
+            )}
+          >
+            {view.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }

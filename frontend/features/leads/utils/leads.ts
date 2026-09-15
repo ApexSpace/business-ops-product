@@ -13,7 +13,7 @@ export function getLeadDisplayTitle(lead: Lead): string {
 }
 
 export function getLeadServiceLabel(lead: Lead): string {
-  if (!lead.service) return "—";
+  if (!lead.service) return "";
   const parts = [lead.service.name];
   if (lead.service.category?.trim()) {
     parts.push(`(${lead.service.category.trim()})`);
@@ -22,7 +22,7 @@ export function getLeadServiceLabel(lead: Lead): string {
 }
 
 export function formatLeadValue(value: string | null | undefined): string {
-  if (value == null || value === "") return "—";
+  if (value == null || value === "") return "";
   const n = Number(value);
   if (Number.isNaN(n)) return value;
   return new Intl.NumberFormat(undefined, {
@@ -34,13 +34,13 @@ export function formatLeadValue(value: string | null | undefined): string {
 
 export function getLeadContactName(lead: Lead): string {
   const c = lead.contact;
-  if (!c) return "—";
+  if (!c) return "";
   if (c.displayName?.trim()) return c.displayName.trim();
   const name = [c.firstName, c.lastName].filter(Boolean).join(" ");
   if (name) return name;
   if (c.email) return c.email;
   if (c.phone) return c.phone;
-  return "—";
+  return "";
 }
 
 export function getLeadAssigneeName(lead: Lead): string | null {

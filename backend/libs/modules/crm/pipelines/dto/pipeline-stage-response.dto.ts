@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PipelineStageType } from '@prisma/client';
+import { BusinessLifecycleStage, PipelineStageType } from '@prisma/client';
 
 export class PipelineStageResponseDto {
   @ApiProperty()
@@ -16,6 +16,9 @@ export class PipelineStageResponseDto {
 
   @ApiPropertyOptional({ enum: PipelineStageType })
   type?: PipelineStageType | null;
+
+  @ApiPropertyOptional({ enum: BusinessLifecycleStage, nullable: true })
+  mapsToLifecycleStage?: BusinessLifecycleStage | null;
 
   @ApiProperty()
   createdAt!: Date;

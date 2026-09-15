@@ -1,6 +1,8 @@
 import { api } from "@/lib/api/client";
 import type { PaginatedResult, Service } from "@/features/settings/types";
 
+export const DEFAULT_SERVICES_API_BASE = "services";
+
 export type ServicesListFilters = {
   page?: number;
   limit?: number;
@@ -10,8 +12,9 @@ export type ServicesListFilters = {
 
 export async function listServices(
   filters: ServicesListFilters = {},
+  apiBase: string = DEFAULT_SERVICES_API_BASE,
 ): Promise<PaginatedResult<Service>> {
-  const { items, meta } = await api.getPaginated<Service>("services", {
+  const { items, meta } = await api.getPaginated<Service>(apiBase, {
     searchParams: {
       page: filters.page,
       limit: filters.limit,
@@ -19,7 +22,8 @@ export async function listServices(
       status: filters.status,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getService(id: string) {
@@ -36,4 +40,11 @@ export function updateService(id: string, body: Record<string, unknown>) {
 
 export function deleteService(id: string) {
   return api.delete<void>(`services/${id}?confirm=true`);
+}
+
+export function reorderServices(categoryId: string, orderedIds: string[]) {
+  return api.post<Service[]>("services/reorder", {
+    categoryId,
+    orderedIds,
+  });
 }

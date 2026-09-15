@@ -38,9 +38,7 @@ function startOfUtcDay(date: Date): Date {
   );
 }
 
-export function resolveNextBillingLabel(
-  status: SubscriptionStatus,
-): string {
+export function resolveNextBillingLabel(status: SubscriptionStatus): string {
   switch (status) {
     case SubscriptionStatus.TRIALING:
       return 'Trial ends';

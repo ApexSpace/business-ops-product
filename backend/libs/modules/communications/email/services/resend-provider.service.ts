@@ -100,7 +100,11 @@ export class ResendProviderService {
 
     return {
       from: email.from,
-      to: Array.isArray(email.to) ? email.to : email.to ? [email.to] : undefined,
+      to: Array.isArray(email.to)
+        ? email.to
+        : email.to
+          ? [email.to]
+          : undefined,
       subject: email.subject,
       text: email.text,
       html: email.html,

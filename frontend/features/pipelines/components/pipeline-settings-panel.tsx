@@ -124,7 +124,7 @@ export function PipelineSettingsPanel({
           />
 
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button type="submit" disabled={saveMutation.isPending}>
+            <Button type="submit" variant="brand" disabled={saveMutation.isPending}>
               {saveMutation.isPending ? "Saving…" : "Save changes"}
             </Button>
           </div>

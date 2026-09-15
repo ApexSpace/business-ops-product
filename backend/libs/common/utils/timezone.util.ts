@@ -13,6 +13,13 @@ export function normalizeTimezone(timezone?: string | null): string {
   }
 }
 
+/** Single source of truth for appointment and booking scheduling. */
+export function resolveBusinessTimezone(
+  businessTimezone: string | null | undefined,
+): string {
+  return normalizeTimezone(businessTimezone?.trim() || undefined);
+}
+
 export function getUtcRangeForLocalDay(
   date: Date,
   timezone: string,
@@ -55,4 +62,9 @@ export function getBusinessDayBoundariesUtc(timezone?: string | null): {
     endOfToday,
     now: now.toUTC().toJSDate(),
   };
+}
+
+/** Calendar dates from PostgreSQL `@db.Date` — always read as UTC midnight. */
+export function parseCalendarDateKey(date: Date): string {
+  return DateTime.fromJSDate(date, { zone: 'utc' }).toISODate()!;
 }

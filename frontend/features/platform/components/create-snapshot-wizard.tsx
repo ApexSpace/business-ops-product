@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -186,8 +186,7 @@ export function CreateSnapshotWizard() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
-        <Plus className="mr-2 size-4" />
+      <Button type="button" variant="brand" onClick={() => setOpen(true)}>
         New snapshot
       </Button>
       <Dialog
@@ -293,7 +292,7 @@ export function CreateSnapshotWizard() {
                     <SummaryRow label="Name" value={form.watch("name")} />
                     <SummaryRow
                       label="Description"
-                      value={form.watch("description") || "—"}
+                      value={form.watch("description") || ""}
                     />
                     <SummaryRow
                       label="Starting point"
@@ -345,7 +344,7 @@ export function CreateSnapshotWizard() {
                 disabled={step === 1 || mutation.isPending}
                 onClick={() => setStep((s) => Math.max(1, s - 1))}
               >
-                <ChevronLeft className="mr-1 size-4" />
+                <NavArrowIcon direction="left" size="lg" className="mr-1" />
                 Back
               </Button>
               <div className="flex gap-2">
@@ -360,15 +359,17 @@ export function CreateSnapshotWizard() {
                 {step < 4 ? (
                   <Button
                     type="button"
+                    variant="brand"
                     disabled={!canGoNext() || mutation.isPending}
                     onClick={() => void handleNext()}
                   >
                     Next
-                    <ChevronRight className="ml-1 size-4" />
+                    <NavArrowIcon direction="right" size="lg" className="ml-1" />
                   </Button>
                 ) : (
                   <Button
                     type="button"
+                    variant="brand"
                     disabled={mutation.isPending}
                     onClick={() => void handleCreate()}
                   >

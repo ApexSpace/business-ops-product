@@ -2,9 +2,8 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { buildInvoicePublicPath } from '@app/modules/finance/invoices/utils/invoice-public-token.util';
-import { BusinessIntegrationRepository } from '../../repositories/business-integration.repository';
-import { assertStripeReadyForPayments } from '../utils/stripe-readiness.util';
-import { StripeApiService } from './stripe-api.service';
+import { STRIPE_PAYMENT_PURPOSE } from '@app/modules/finance/payments/constants/stripe-payment-purpose.constants';
+import { StripeConnectContextService } from './stripe-connect-context.service';
 
 export interface CreateInvoiceCheckoutSessionResult {
   sessionId: string;
@@ -19,8 +18,7 @@ export class StripeCheckoutService {
   private readonly logger = new Logger(StripeCheckoutService.name);
 
   constructor(
-    private readonly stripeApiService: StripeApiService,
-    private readonly businessIntegrationRepository: BusinessIntegrationRepository,
+    private readonly stripeConnectContext: StripeConnectContextService,
   ) {}
 
   async createInvoiceCheckoutSession(
@@ -32,14 +30,15 @@ export class StripeCheckoutService {
       contactId?: string | null;
       description?: string;
       publicToken: string;
+      paymentId?: string;
+      successUrl?: string;
+      cancelUrl?: string;
     },
   ): Promise<CreateInvoiceCheckoutSessionResult> {
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
         businessId,
-        'stripe',
       );
-    const config = assertStripeReadyForPayments(integration);
 
     const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '');
     if (!frontendUrl) {
@@ -51,19 +50,21 @@ export class StripeCheckoutService {
     }
 
     const publicPath = buildInvoicePublicPath(options.publicToken);
-    const successUrl = `${frontendUrl}${publicPath}?payment=success`;
-    const cancelUrl = `${frontendUrl}${publicPath}?payment=cancelled`;
+    const successUrl =
+      options.successUrl ?? `${frontendUrl}${publicPath}?payment=success`;
+    const cancelUrl =
+      options.cancelUrl ?? `${frontendUrl}${publicPath}?payment=cancelled`;
 
     const metadata = {
       businessId,
       invoiceId,
       contactId: options.contactId ?? '',
       provider: 'stripe',
+      purpose: STRIPE_PAYMENT_PURPOSE.INVOICE,
+      ...(options.paymentId ? { paymentId: options.paymentId } : {}),
     };
 
-    const stripe = this.stripeApiService.getClient();
-
-    const session = await stripe.checkout.sessions.create(
+    const session = await chargeCtx.stripe.checkout.sessions.create(
       {
         mode: 'payment',
         line_items: [
@@ -83,7 +84,7 @@ export class StripeCheckoutService {
         metadata,
       },
       {
-        stripeAccount: config.stripeAccountId,
+        stripeAccount: chargeCtx.stripeAccountId,
       },
     );
 
@@ -98,7 +99,7 @@ export class StripeCheckoutService {
           : null;
 
     if (paymentIntentId) {
-      await stripe.paymentIntents.update(
+      await chargeCtx.stripe.paymentIntents.update(
         paymentIntentId,
         {
           metadata: {
@@ -106,7 +107,7 @@ export class StripeCheckoutService {
             checkoutSessionId: session.id,
           },
         },
-        { stripeAccount: config.stripeAccountId },
+        { stripeAccount: chargeCtx.stripeAccountId },
       );
     }
 

@@ -134,7 +134,7 @@ export function PlanTierCapabilityField({
         onValueChange={handleAssign}
         placeholder={placeholder}
         disabled={disabled || isLoading || isError || catalogCount === 0}
-        searchPlaceholder="Search capabilities"
+        searchPlaceholder="Search Capabilities"
         emptyMessage={
           isError
             ? "Could not load capabilities"

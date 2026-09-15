@@ -74,10 +74,11 @@ export function PlatformBusinessProfileTab({
 
           {canUpdate ? (
             <div className="sticky bottom-0 z-10 -mx-1 flex items-center justify-end gap-2 border-t bg-background/95 px-1 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-              <Button
-                type="submit"
-                disabled={!isDirty || mutation.isPending}
-              >
+            <Button
+              type="submit"
+              variant="brand"
+              disabled={!isDirty || mutation.isPending}
+            >
                 {mutation.isPending ? "Saving…" : "Save changes"}
               </Button>
             </div>

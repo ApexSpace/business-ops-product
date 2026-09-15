@@ -7,6 +7,7 @@ import { SearchableSelect } from "@/components/forms/searchable-select";
 import { FormOptionalSection } from "@/components/forms/form-optional-section";
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -15,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { PUBLIC_ESTIMATE_SENT_STATUS_HINT } from "@/features/estimates/public-estimate-launch";
 import {
   ESTIMATE_MANUAL_STATUS_OPTIONS,
   type EstimateFormValues,
@@ -29,7 +31,8 @@ interface EstimateBasicFieldsProps {
   estimateNumberPreview?: string;
   estimateStatus?: EstimateStatus;
   lockContact?: boolean;
-  lockedContact?: { id: string; label: string };
+  lockedContact?: { id: string; label: string,
+};
   workItemItems: { value: string; label: string }[];
   contactId?: string;
 }
@@ -117,6 +120,7 @@ export function EstimateBasicFields({
                   onValueChange={field.onChange}
                 />
               </FormControl>
+              <FormDescription>{PUBLIC_ESTIMATE_SENT_STATUS_HINT}</FormDescription>
               <FormMessage />
             </FormItem>
           )}

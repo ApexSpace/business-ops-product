@@ -34,6 +34,12 @@ import type {
 } from "@/features/platform/types/plan-group";
 import { queryKeys } from "@/lib/query/keys";
 import { PlanTierCapabilityField } from "./plan-tier-meta-fields";
+import {
+  parseTierStripeFormValues,
+  PlanTierStripeFields,
+  stripeFormValuesToMetadata,
+  type PlanTierStripeFormValues,
+} from "./plan-tier-stripe-fields";
 import { PlanTierFormFields } from "./plan-tier-form-fields";
 import {
   buildPreviewTier,
@@ -66,6 +72,7 @@ export type ExistingTierEditorHandle = {
     originalCapabilities: TierCapability[];
     features: TierFeatureInput[];
     designSettings: PlanTierDesignSettings;
+    stripeMetadata: Record<string, unknown>;
   };
 };
 
@@ -76,6 +83,7 @@ export type DraftTierEditorHandle = {
     capabilityIds: string[];
     features: TierFeatureInput[];
     designSettings: PlanTierDesignSettings;
+    stripeMetadata: Record<string, unknown>;
   };
 };
 
@@ -108,6 +116,9 @@ export const PlanTierAccordionItem = forwardRef<
   );
   const [designSettings, setDesignSettings] = useState<PlanTierDesignSettings>(
     tier.designSettings ?? {},
+  );
+  const [stripeValues, setStripeValues] = useState<PlanTierStripeFormValues>(
+    () => parseTierStripeFormValues(tier.metadata),
   );
 
   const invalidate = () =>
@@ -171,6 +182,7 @@ export const PlanTierAccordionItem = forwardRef<
       originalCapabilities: tier.capabilities,
       features,
       designSettings,
+      stripeMetadata: stripeFormValuesToMetadata(stripeValues),
     }),
   }));
 
@@ -224,7 +236,8 @@ export const PlanTierAccordionItem = forwardRef<
                     cardBackgroundColor={designSettings.cardBackgroundColor}
                     onCardBackgroundColorChange={(cardBackgroundColor) =>
                       setDesignSettings((prev) => {
-                        const next = { ...prev };
+                        const next = { ...prev,
+};
                         if (cardBackgroundColor.trim()) {
                           next.cardBackgroundColor = cardBackgroundColor;
                         } else {
@@ -242,6 +255,14 @@ export const PlanTierAccordionItem = forwardRef<
               features={features}
               onChange={setFeatures}
               disabled={fieldsDisabled}
+            />
+
+            <PlanTierStripeFields
+              values={stripeValues}
+              disabled={fieldsDisabled}
+              onChange={(field, value) =>
+                setStripeValues((prev) => ({ ...prev, [field]: value }))
+              }
             />
 
             <PlanTierCapabilityField
@@ -330,6 +351,11 @@ export const PlanTierDraftAccordionItem = forwardRef<
   >([]);
   const [features, setFeatures] = useState<TierFeatureInput[]>([]);
   const [designSettings, setDesignSettings] = useState<PlanTierDesignSettings>({});
+  const [stripeValues, setStripeValues] = useState<PlanTierStripeFormValues>({
+    stripeProductId: "",
+    stripeMonthlyPriceId: "",
+    stripeYearlyPriceId: "",
+  });
 
   const form = useForm<CreatePlanTierValues>({
     resolver: zodResolver(createPlanTierSchema),
@@ -376,6 +402,7 @@ export const PlanTierDraftAccordionItem = forwardRef<
       capabilityIds: pendingCapabilities.map((cap) => cap.id),
       features,
       designSettings,
+      stripeMetadata: stripeFormValuesToMetadata(stripeValues),
     }),
   }));
 
@@ -419,7 +446,8 @@ export const PlanTierDraftAccordionItem = forwardRef<
                     cardBackgroundColor={designSettings.cardBackgroundColor}
                     onCardBackgroundColorChange={(cardBackgroundColor) =>
                       setDesignSettings((prev) => {
-                        const next = { ...prev };
+                        const next = { ...prev,
+};
                         if (cardBackgroundColor.trim()) {
                           next.cardBackgroundColor = cardBackgroundColor;
                         } else {
@@ -437,6 +465,14 @@ export const PlanTierDraftAccordionItem = forwardRef<
               features={features}
               onChange={setFeatures}
               disabled={fieldsDisabled}
+            />
+
+            <PlanTierStripeFields
+              values={stripeValues}
+              disabled={fieldsDisabled}
+              onChange={(field, value) =>
+                setStripeValues((prev) => ({ ...prev, [field]: value }))
+              }
             />
 
             <PlanTierCapabilityField

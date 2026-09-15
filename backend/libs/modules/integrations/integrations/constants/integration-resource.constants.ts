@@ -49,7 +49,27 @@ export const PROVIDER_RESOURCE_CONFIG: Record<string, ProviderResourceConfig> =
       label: 'Organisations',
     },
     linkedin: {
-      resourceTypes: [IntegrationResourceType.OTHER],
+      resourceTypes: [IntegrationResourceType.LINKEDIN_ORGANIZATION],
+      syncEnabled: true,
+      label: 'Company pages',
+    },
+    youtube: {
+      resourceTypes: [IntegrationResourceType.YOUTUBE_CHANNEL],
+      syncEnabled: true,
+      label: 'Channels',
+    },
+    x: {
+      resourceTypes: [IntegrationResourceType.X_USER],
+      syncEnabled: false,
+      label: 'Accounts',
+    },
+    pinterest: {
+      resourceTypes: [IntegrationResourceType.PINTEREST_BOARD],
+      syncEnabled: true,
+      label: 'Boards',
+    },
+    tiktok: {
+      resourceTypes: [IntegrationResourceType.TIKTOK_USER],
       syncEnabled: false,
       label: 'Accounts',
     },

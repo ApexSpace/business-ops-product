@@ -5,7 +5,11 @@ import { MetaWebhookProcessorModule } from './meta-webhook-processor.module';
 import { StripeWebhookProcessor } from './workers/processors/stripe-webhook.processor';
 
 @Module({
-  imports: [ConversationsModule, IntegrationsCategoryModule, MetaWebhookProcessorModule],
+  imports: [
+    ConversationsModule,
+    IntegrationsCategoryModule,
+    MetaWebhookProcessorModule,
+  ],
   providers: [StripeWebhookProcessor],
   exports: [MetaWebhookProcessorModule, StripeWebhookProcessor],
 })

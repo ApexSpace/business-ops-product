@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext } from "react";
+import { canAccessBusinessRoute } from "@/lib/capabilities/route-capability-map";
 import {
   BusinessAccessCtx,
   useBusinessAccessContext,
@@ -31,9 +32,12 @@ export function useBusinessAccess() {
     blockedReasonCode: ctx.blockedReasonCode,
     supportContact: ctx.supportContact,
     refetch: ctx.refetch,
+    capabilityKeys: ctx.capabilityKeys,
     hasModule: (moduleKey: string) => hasModuleKey(ctx.capabilityKeys, moduleKey),
     hasCapability: (capabilityKey: string) =>
       ctx.capabilityKeys.has(capabilityKey),
+    canAccessRoute: (route: string) =>
+      canAccessBusinessRoute(route, ctx.capabilityKeys),
   };
 }
 
@@ -54,5 +58,7 @@ export function useOptionalBusinessAccess() {
     hasModule: (moduleKey: string) => hasModuleKey(ctx.capabilityKeys, moduleKey),
     hasCapability: (capabilityKey: string) =>
       ctx.capabilityKeys.has(capabilityKey),
+    canAccessRoute: (route: string) =>
+      canAccessBusinessRoute(route, ctx.capabilityKeys),
   };
 }

@@ -94,6 +94,11 @@ export const NAV_LABEL_KEYS = [
   "nav.invoices",
   "nav.estimates",
   "nav.payments",
+  "nav.sales",
+  "nav.giftCards",
+  "nav.packages",
+  "nav.memberships",
+  "nav.products",
 ] as const;
 
 const ENTITY_NAV_KEY_SET = new Set<string>(Object.values(ENTITY_NAV_KEYS));
@@ -136,14 +141,14 @@ export const ENTITY_FIELD_LABELS: Record<EntityLabelField, string> = {
   name: "Plural name",
   singular_name: "Singular name",
   menu_name: "Sidebar label",
-  all_items: "All items",
+  all_items: "All Items",
   add_new: "Add new",
   add_new_item: "Add new item",
   edit_item: "Edit item",
   new_item: "New item",
   view_item: "View item",
   view_items: "View items",
-  search_items: "Search items",
+  search_items: "Search Items",
   not_found: "Not found",
   not_found_in_trash: "Not found in trash",
   item_published: "Item published",

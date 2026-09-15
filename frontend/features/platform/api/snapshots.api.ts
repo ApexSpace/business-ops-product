@@ -24,7 +24,8 @@ export async function listPlatformSnapshots(
       },
     },
   );
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getPlatformSnapshot(id: string) {

@@ -6,7 +6,8 @@ import { captureApiError } from "@/lib/observability/sentry";
 import { getUserErrorMessage } from "@/lib/api/user-error-message";
 
 type SegmentErrorProps = {
-  error: Error & { digest?: string };
+  error: Error & { digest?: string,
+};
   reset: () => void;
   title?: string;
 };
@@ -37,7 +38,7 @@ export function SegmentError({ error, reset, title = "Something went wrong" }: S
       {message.requestId ? (
         <p className="text-xs text-muted-foreground">Reference: {message.requestId}</p>
       ) : null}
-      <Button type="button" onClick={reset}>
+      <Button type="button" variant="brand" onClick={reset}>
         Try again
       </Button>
     </div>

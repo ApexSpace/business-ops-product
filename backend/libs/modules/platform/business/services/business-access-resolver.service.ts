@@ -15,6 +15,7 @@ import {
   NeedsAttentionFlag,
 } from '../types/business-access-resolution.types';
 import { BusinessEffectiveCapabilitiesService } from './business-effective-capabilities.service';
+import { resolveSubscriptionAccessReason } from '@app/modules/platform/billing/stripe/policies/subscription-status.policy';
 
 export interface BusinessAccessResolverInput {
   businessId: string;
@@ -35,6 +36,7 @@ export interface BusinessAccessResolverInput {
 const REASON_LABELS: Record<BusinessAccessReasonCode, string> = {
   ACCESS_GRANTED: 'Workspace access is granted.',
   BUSINESS_SUSPENDED: 'Workspace is suspended.',
+  BUSINESS_BLOCKED: 'Workspace is blocked by platform admin.',
   BUSINESS_NOT_ACTIVE: 'Workspace is not active yet.',
   NO_SUBSCRIPTION: 'No subscription is configured.',
   SUBSCRIPTION_ACTIVE: 'Active subscription.',
@@ -44,7 +46,9 @@ const REASON_LABELS: Record<BusinessAccessReasonCode, string> = {
   SUBSCRIPTION_PENDING_PAYMENT: 'Payment is pending.',
   SUBSCRIPTION_EXPIRED: 'Subscription has expired.',
   SUBSCRIPTION_CANCELED: 'Subscription is canceled.',
-  SUBSCRIPTION_PAST_DUE: 'Subscription payment is past due.',
+  SUBSCRIPTION_PAST_DUE: 'Subscription payment is past due (grace period).',
+  SUBSCRIPTION_UNPAID: 'Subscription is unpaid.',
+  SUBSCRIPTION_INCOMPLETE: 'Subscription setup is incomplete.',
   SUBSCRIPTION_UNKNOWN: 'Subscription does not allow access.',
 };
 
@@ -52,7 +56,8 @@ const NEEDS_ATTENTION_LABELS: Record<NeedsAttentionFlag, string> = {
   TRIAL_EXPIRED: 'Trial expired',
   PENDING_PAYMENT: 'Pending payment',
   ACTIVE_WITH_EXPIRED_SUBSCRIPTION: 'Active business with expired subscription',
-  ACTIVE_WITH_CANCELED_SUBSCRIPTION: 'Active business with canceled subscription',
+  ACTIVE_WITH_CANCELED_SUBSCRIPTION:
+    'Active business with canceled subscription',
   NO_PLAN_TIER: 'No plan tier assigned',
   NO_CAPABILITIES: 'No capabilities assigned',
   SNAPSHOT_NOT_APPLIED: 'Snapshot not applied',
@@ -91,6 +96,17 @@ export class BusinessAccessResolverService {
     if (
       sub?.status === SubscriptionStatus.PENDING_PAYMENT ||
       sub?.paymentStatus === SubscriptionPaymentStatus.PENDING
+    ) {
+      needsAttention.push('PENDING_PAYMENT');
+    }
+
+    if (sub?.status === SubscriptionStatus.PAST_DUE) {
+      needsAttention.push('PENDING_PAYMENT');
+    }
+
+    if (
+      sub?.status === SubscriptionStatus.UNPAID ||
+      sub?.status === SubscriptionStatus.INCOMPLETE
     ) {
       needsAttention.push('PENDING_PAYMENT');
     }
@@ -148,7 +164,9 @@ export class BusinessAccessResolverService {
     };
   }
 
-  async resolveForBusiness(businessId: string): Promise<BusinessAccessResolution> {
+  async resolveForBusiness(
+    businessId: string,
+  ): Promise<BusinessAccessResolution> {
     const business = await this.prisma.business.findFirst({
       where: { id: businessId, deletedAt: null },
       include: {
@@ -171,7 +189,9 @@ export class BusinessAccessResolverService {
 
     const [hasPendingOwnerInvite, effectiveCapabilities] = await Promise.all([
       this.hasPendingOwnerInvite(businessId),
-      this.effectiveCapabilitiesService.resolveEffectiveCapabilities(businessId),
+      this.effectiveCapabilitiesService.resolveEffectiveCapabilities(
+        businessId,
+      ),
     ]);
 
     return this.resolve({
@@ -229,7 +249,14 @@ export class BusinessAccessResolverService {
       return { canAccessWorkspace: false, reasonCode: 'BUSINESS_SUSPENDED' };
     }
 
-    if (businessStatus === BusinessStatus.NOT_ACTIVE) {
+    if (businessStatus === BusinessStatus.BLOCKED) {
+      return { canAccessWorkspace: false, reasonCode: 'BUSINESS_BLOCKED' };
+    }
+
+    if (
+      businessStatus === BusinessStatus.NOT_ACTIVE ||
+      businessStatus === BusinessStatus.ARCHIVED
+    ) {
       return { canAccessWorkspace: false, reasonCode: 'BUSINESS_NOT_ACTIVE' };
     }
 
@@ -241,33 +268,13 @@ export class BusinessAccessResolverService {
       return { canAccessWorkspace: false, reasonCode: 'NO_SUBSCRIPTION' };
     }
 
-    switch (sub.status) {
-      case SubscriptionStatus.ACTIVE:
-        return { canAccessWorkspace: true, reasonCode: 'SUBSCRIPTION_ACTIVE' };
-      case SubscriptionStatus.TRIALING: {
-        if (sub.currentPeriodEnd && sub.currentPeriodEnd >= now) {
-          return {
-            canAccessWorkspace: true,
-            reasonCode: 'SUBSCRIPTION_TRIALING',
-          };
-        }
-        return { canAccessWorkspace: false, reasonCode: 'TRIAL_EXPIRED' };
-      }
-      case SubscriptionStatus.INTERNAL:
-        return { canAccessWorkspace: true, reasonCode: 'SUBSCRIPTION_INTERNAL' };
-      case SubscriptionStatus.PENDING_PAYMENT:
-        return {
-          canAccessWorkspace: false,
-          reasonCode: 'SUBSCRIPTION_PENDING_PAYMENT',
-        };
-      case SubscriptionStatus.EXPIRED:
-        return { canAccessWorkspace: false, reasonCode: 'SUBSCRIPTION_EXPIRED' };
-      case SubscriptionStatus.CANCELED:
-        return { canAccessWorkspace: false, reasonCode: 'SUBSCRIPTION_CANCELED' };
-      case SubscriptionStatus.PAST_DUE:
-        return { canAccessWorkspace: false, reasonCode: 'SUBSCRIPTION_PAST_DUE' };
-      default:
-        return { canAccessWorkspace: false, reasonCode: 'SUBSCRIPTION_UNKNOWN' };
-    }
+    const { canAccess, reasonCode } = resolveSubscriptionAccessReason(
+      sub.status,
+      { currentPeriodEnd: sub.currentPeriodEnd ?? null, now },
+    );
+    return {
+      canAccessWorkspace: canAccess,
+      reasonCode: reasonCode as BusinessAccessReasonCode,
+    };
   }
 }

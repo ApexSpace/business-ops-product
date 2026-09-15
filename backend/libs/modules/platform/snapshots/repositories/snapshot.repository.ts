@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Snapshot, SnapshotStatus } from '@prisma/client';
+import { BusinessType, Prisma, Snapshot, SnapshotStatus } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { DEFAULT_SNAPSHOT_ID } from '../seeds/snapshot-seed-definitions';
 
@@ -81,7 +81,12 @@ export class SnapshotRepository {
 
   countBusinesses(snapshotId: string): Promise<number> {
     return this.prisma.business.count({
-      where: { snapshotId, deletedAt: null },
+      where: {
+        snapshotId,
+        deletedAt: null,
+        type: BusinessType.TENANT,
+        lifecycleStage: 'ACTIVE',
+      },
     });
   }
 }

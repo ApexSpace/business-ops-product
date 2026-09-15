@@ -2,9 +2,12 @@ import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { META_OAUTH_STATE_TTL_MS } from '../constants/meta-oauth.constants';
 import {
   getMetaProviderConfig,
+  isMetaInstagramAuthFlow,
   isMetaProviderKey,
+  parseMetaInstagramAuthFlow,
   resolveFlowType,
   type MetaFlowType,
+  type MetaInstagramAuthFlow,
   type MetaProviderKey,
 } from '../constants/meta-provider.config';
 
@@ -13,6 +16,11 @@ export interface MetaOAuthStatePayload {
   userId: string;
   providerKey: MetaProviderKey;
   flowType: MetaFlowType;
+  /**
+   * Instagram path discriminator. Absent/legacy states imply FACEBOOK_LOGIN.
+   * Only meaningful when providerKey is instagram.
+   */
+  authFlow?: MetaInstagramAuthFlow;
   /** @deprecated Use flowType — kept for backward compatibility with in-flight states */
   flow?: 'oauth' | 'embedded_signup';
   nonce: string;
@@ -39,15 +47,26 @@ export function createMetaOAuthState(
     userId: string;
     providerKey: MetaProviderKey;
     flowType?: MetaFlowType;
+    authFlow?: MetaInstagramAuthFlow | string | null;
   },
   secret: string,
 ): string {
   const flowType = resolveFlowType(payload.providerKey, payload.flowType);
+  const authFlow =
+    payload.providerKey === 'instagram'
+      ? parseMetaInstagramAuthFlow(
+          typeof payload.authFlow === 'string'
+            ? payload.authFlow
+            : (payload.authFlow ?? 'FACEBOOK_LOGIN'),
+        )
+      : undefined;
+
   const fullPayload: MetaOAuthStatePayload = {
     businessId: payload.businessId,
     userId: payload.userId,
     providerKey: payload.providerKey,
     flowType,
+    ...(authFlow ? { authFlow } : {}),
     flow: flowType === 'WHATSAPP_EMBEDDED_SIGNUP' ? 'embedded_signup' : 'oauth',
     nonce: randomBytes(16).toString('hex'),
     timestamp: Date.now(),
@@ -77,11 +96,23 @@ function normalizeLegacyPayload(
     flowType = META_PROVIDER_CONFIG_FALLBACK_FLOW(providerKey);
   }
 
+  let authFlow: MetaInstagramAuthFlow | undefined;
+  if (providerKey === 'instagram') {
+    if (isMetaInstagramAuthFlow(raw.authFlow)) {
+      authFlow = raw.authFlow;
+    } else if (typeof raw.authFlow === 'string') {
+      authFlow = parseMetaInstagramAuthFlow(raw.authFlow);
+    } else {
+      authFlow = 'FACEBOOK_LOGIN';
+    }
+  }
+
   return {
     businessId: String(raw.businessId),
     userId: String(raw.userId),
     providerKey,
     flowType,
+    ...(authFlow ? { authFlow } : {}),
     flow:
       raw.flow === 'embedded_signup' || raw.flow === 'oauth'
         ? raw.flow

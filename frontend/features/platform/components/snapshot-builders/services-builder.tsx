@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +23,8 @@ function withoutDurationMinutes(service: SnapshotServiceAsset): SnapshotServiceA
 
 export function ServicesBuilder() {
   const { assets, updateAssets, canManage } = useSnapshotEditor();
-  const crm = assets?.crm ?? { pipelines: [], services: [], tags: [] };
+  const crm = assets?.crm ?? { pipelines: [], services: [], tags: [],
+};
   const services = (crm.services ?? []).map(withoutDurationMinutes);
   const tags = crm.tags ?? [];
 
@@ -101,7 +102,6 @@ export function ServicesBuilder() {
           </div>
           {canManage ? (
             <Button type="button" size="sm" onClick={addService}>
-              <Plus className="mr-2 size-4" />
               Add service
             </Button>
           ) : null}
@@ -174,7 +174,6 @@ export function ServicesBuilder() {
           </div>
           {canManage ? (
             <Button type="button" size="sm" onClick={addTag}>
-              <Plus className="mr-2 size-4" />
               Add tag
             </Button>
           ) : null}

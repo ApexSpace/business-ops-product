@@ -28,6 +28,7 @@ import {
 import { queryKeys } from "@/lib/query/keys";
 import { PERMISSIONS, useCan } from "@/features/auth/permissions";
 import type { PlatformSettings } from "@/features/platform/types";
+import { TrialEmbedCodeCard } from "@/features/trial-signup/components/trial-embed-code-card";
 
 const schema = z.object({
   platformName: z.string().min(2),
@@ -76,7 +77,7 @@ export default function PlatformSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader />
+      <PageHeader showTitle />
 
       <Form {...form}>
         <FormSchemaProvider schema={schema}>
@@ -157,7 +158,7 @@ export default function PlatformSettingsPage() {
           />
           {canManage ? (
             <FormActions>
-              <Button type="submit" disabled={mutation.isPending}>
+              <Button type="submit" variant="brand" disabled={mutation.isPending}>
                 {mutation.isPending ? "Saving…" : "Save settings"}
               </Button>
             </FormActions>
@@ -165,6 +166,8 @@ export default function PlatformSettingsPage() {
           </form>
         </FormSchemaProvider>
       </Form>
+
+      <TrialEmbedCodeCard />
     </div>
   );
 }

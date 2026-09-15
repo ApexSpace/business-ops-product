@@ -1,16 +1,11 @@
 "use client";
 
 import { formatRelativeTime } from "@/lib/ui/relative-time";
-import { IntegrationProviderIcon } from "@/features/integrations/components/integration-provider-icon";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/features/conversations/api/conversations.api";
-import {
-  channelProviderKey,
-  contactDisplayName,
-  initials,
-} from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import { contactDisplayName } from "@/features/conversations/components/inbox/conversation-inbox-utils";
 import { displayInboundEmailBody } from "@/features/conversations/utils/email-reply-body";
 
 export function ConversationThreadRow({
@@ -40,10 +35,11 @@ export function ConversationThreadRow({
           active && "bg-muted/60",
         )}
       >
-        <Avatar className="size-10 shrink-0">
-          <AvatarImage src={conversation.contact?.avatarUrl ?? undefined} />
-          <AvatarFallback>{initials(name)}</AvatarFallback>
-        </Avatar>
+        <ProfileAvatar
+          name={name}
+          avatarUrl={conversation.contact?.avatarUrl}
+          className="size-10"
+        />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-sm font-medium">{name}</span>
@@ -53,16 +49,9 @@ export function ConversationThreadRow({
               </span>
             ) : null}
           </div>
-          <div className="mt-0.5 flex items-center gap-1.5">
-            <IntegrationProviderIcon
-              providerKey={channelProviderKey(conversation.channel)}
-              size="sm"
-              className="!size-4 shrink-0"
-            />
-            <span className="truncate text-xs text-muted-foreground">
-              {previewText ?? "No messages"}
-            </span>
-          </div>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {previewText ?? "No messages"}
+          </p>
         </div>
         {conversation.unreadCount > 0 ? (
           <Badge className="h-5 min-w-5 justify-center px-1.5 text-[10px]">

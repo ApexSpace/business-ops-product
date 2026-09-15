@@ -329,8 +329,7 @@ export function parsePlanGroupDesignSettings(
         ? value.featureListBold
         : undefined,
     featureListGap: parseFeatureListGapEm(value.featureListGap),
-    ctaBold:
-      typeof value.ctaBold === 'boolean' ? value.ctaBold : undefined,
+    ctaBold: typeof value.ctaBold === 'boolean' ? value.ctaBold : undefined,
   };
 }
 
@@ -424,8 +423,7 @@ export function resolvePlanGroupDesignSettings(
       parsed.showMonthlyYearlyToggle ??
       embed?.showMonthlyYearlyToggle ??
       base.showMonthlyYearlyToggle,
-    showPlanGroupTitle:
-      parsed.showPlanGroupTitle ?? base.showPlanGroupTitle,
+    showPlanGroupTitle: parsed.showPlanGroupTitle ?? base.showPlanGroupTitle,
     showPlanGroupDescription:
       parsed.showPlanGroupDescription ?? base.showPlanGroupDescription,
     showSetupFee:
@@ -458,8 +456,7 @@ export function resolvePlanGroupDesignSettings(
     priceBold: parsed.priceBold ?? base.priceBold,
     priceItalic: parsed.priceItalic ?? base.priceItalic,
     featureListBold: parsed.featureListBold ?? base.featureListBold,
-    featureListGap:
-      parsed.featureListGap ?? base.featureListGap,
+    featureListGap: parsed.featureListGap ?? base.featureListGap,
     ctaBold: parsed.ctaBold ?? base.ctaBold,
   };
 }
@@ -550,7 +547,9 @@ export function designSettingsToCssVariables(
     '--plan-btn-radius': settings.buttonBorderRadius,
     '--plan-feature-icon': settings.featureIconColor,
     '--plan-feature-icon-bg': settings.featureIconBackgroundColor,
-    '--plan-feature-icon-size': featureIconSizeToPixels(settings.featureIconSize),
+    '--plan-feature-icon-size': featureIconSizeToPixels(
+      settings.featureIconSize,
+    ),
     '--plan-tier-name-align': alignmentToCssTextAlign(
       settings.tierNameAlignment,
     ),

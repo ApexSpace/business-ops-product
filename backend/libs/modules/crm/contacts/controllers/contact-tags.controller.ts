@@ -4,6 +4,9 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateTagDto } from '../dto/create-tag.dto';
 import { ContactTagsService } from '@app/modules/crm/contacts/services/contact-tags.service';
@@ -11,7 +14,9 @@ import { ContactTagsService } from '@app/modules/crm/contacts/services/contact-t
 @ApiTags('contact-tags')
 @ApiBearerAuth()
 @Controller('contact-tags')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('contacts')
+@StaffPermission('contacts.access', 'contacts.view_last_names')
 export class ContactTagsController {
   constructor(private readonly contactTagsService: ContactTagsService) {}
 
@@ -31,6 +36,7 @@ export class ContactTagsController {
     BusinessMemberRole.ADMIN,
     BusinessMemberRole.MEMBER,
   )
+  @StaffPermission('contacts.manage')
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateTagDto) {
     return this.contactTagsService.create(user.businessId!, dto, user);
   }

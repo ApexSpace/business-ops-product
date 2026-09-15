@@ -1,5 +1,8 @@
 import { ConversationChannel } from '@prisma/client';
-import { normalizeMetaWebhookPayload } from './meta-inbound-normalizer';
+import {
+  extractWhatsAppDeliveryStatuses,
+  normalizeMetaWebhookPayload,
+} from './meta-inbound-normalizer';
 
 describe('normalizeMetaWebhookPayload', () => {
   it('normalizes Facebook page messaging', () => {
@@ -160,6 +163,39 @@ describe('normalizeMetaWebhookPayload', () => {
     expect(messages[0].attachments).toEqual([
       { type: 'image', url: null, title: 'media_123' },
     ]);
+  });
+
+  it('extracts WhatsApp delivery status updates', () => {
+    const statuses = extractWhatsAppDeliveryStatuses({
+      object: 'whatsapp_business_account',
+      entry: [
+        {
+          id: 'WABA_789',
+          changes: [
+            {
+              field: 'messages',
+              value: {
+                statuses: [
+                  {
+                    id: 'wamid.out.1',
+                    status: 'delivered',
+                    timestamp: '1700000300',
+                    recipient_id: '923001234567',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(statuses).toHaveLength(1);
+    expect(statuses[0]).toMatchObject({
+      externalMessageId: 'wamid.out.1',
+      status: 'delivered',
+      recipientId: '923001234567',
+    });
   });
 
   it('ignores echo messages from page', () => {

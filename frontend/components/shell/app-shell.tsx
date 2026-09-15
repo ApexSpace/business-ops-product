@@ -1,12 +1,26 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import { isContactWorkspacePath } from "@/features/contacts/workspace/contact-workspace";
+import {
+  isAppointmentsCalendarPath,
+  isAppsMasterDetailWorkspacePath,
+  isBusinessSettingsWorkspacePath,
+  isContactWorkspacePath,
+  isContactsListPath,
+  isBusinessDashboardPath,
+  isConversationsInboxPath,
+  isDataTableListPath,
+  isMobileEntityListPath,
+  isPaymentsMobileListPath,
+  isReportsWorkspacePath,
+  isSalesWorkspacePath,
+} from "@/components/shell/shell-full-bleed-paths";
 import { PageMetadataProvider } from "@/lib/runtime/page-metadata-context";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import type { PageMetadataContext } from "@/lib/config/page-metadata";
 import type {
@@ -15,18 +29,32 @@ import type {
   ShellNavSection,
   SidebarNavMode,
 } from "@/lib/types/shell-nav";
-import { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
 import { AppSidebar } from "./app-sidebar";
+import { CommandPaletteProvider } from "./command-palette-provider";
+import { DashboardNavbar } from "./dashboard-navbar";
+import { MobileAppBottomNav } from "./mobile-app-bottom-nav";
 import { MobileSidebarCloseOnNavigate } from "./mobile-sidebar-close";
+import { ShellAppsProvider } from "./shell-apps-context";
 import { Topbar } from "./topbar";
+import { APPS_MANAGE_HREF } from "@/lib/config/navigation/business-nav-catalog";
+import { PLATFORM_APPS_MANAGE_HREF, PLATFORM_HOME_HREF } from "@/lib/config/navigation/platform-nav-catalog";
+import {
+  APP_SHELL_SCROLLABLE_MAIN_CLASS,
+  APP_SHELL_WORKSPACE_MAIN_CLASS,
+} from "@/lib/design/workspace-tokens";
 
 interface AppShellProps {
   brand: ShellBrand;
   sections: ShellNavSection[];
+  appsItems?: ShellNavItem[];
   navMode?: SidebarNavMode;
   footerItems?: ShellNavItem[];
   pageMetadataContext: PageMetadataContext;
-  showAccountSwitcher?: boolean;
+  workspaceName?: string;
+  productName?: string;
+  logoUrl?: string | null;
+  shellMode?: "platform" | "business";
+  searchPlaceholder?: string;
   topbarActions?: React.ReactNode;
   topbarNotice?: React.ReactNode;
   children: React.ReactNode;
@@ -35,61 +63,154 @@ interface AppShellProps {
 export function AppShell({
   brand,
   sections,
+  appsItems,
   navMode = "main",
   footerItems,
   pageMetadataContext,
-  showAccountSwitcher = false,
+  workspaceName,
+  productName,
+  logoUrl,
+  shellMode = "business",
+  searchPlaceholder,
   topbarActions,
   topbarNotice,
   children,
 }: AppShellProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
   const contactWorkspace = isContactWorkspacePath(pathname);
+  const conversationsInbox = isConversationsInboxPath(pathname);
+  const appointmentsCalendar = isAppointmentsCalendarPath(pathname);
+  const salesWorkspace = isSalesWorkspacePath(pathname);
+  const paymentsMobileList = isPaymentsMobileListPath(
+    pathname,
+    searchParams.toString(),
+  );
+  const contactsList = isContactsListPath(pathname);
+  const businessDashboard = isBusinessDashboardPath(pathname);
+  const entityList = isMobileEntityListPath(pathname);
+  const dataTableList = isDataTableListPath(pathname);
+  const settingsWorkspace = isBusinessSettingsWorkspacePath(pathname);
+  const reportsWorkspace = isReportsWorkspacePath(pathname);
+  const appsMasterDetail = isAppsMasterDetailWorkspacePath(pathname);
+  const fullBleedContent =
+    contactWorkspace ||
+    conversationsInbox ||
+    appointmentsCalendar ||
+    settingsWorkspace ||
+    reportsWorkspace ||
+    appsMasterDetail ||
+    dataTableList ||
+    (salesWorkspace && isMobile) ||
+    (paymentsMobileList && isMobile) ||
+    (contactsList && isMobile) ||
+    (businessDashboard && isMobile) ||
+    (entityList && isMobile);
+
+  const showSearch = shellMode === "business";
+  const useTopNavbar = navMode === "main";
+  const homeHref =
+    shellMode === "platform" ? PLATFORM_HOME_HREF : "/business/dashboard";
+
+  if (useTopNavbar) {
+    const showMobileChrome = isMobile;
+    return (
+      <div className="app-shell-canvas flex h-svh min-h-0 flex-col overflow-hidden bg-white">
+        <CommandPaletteProvider
+          enabled={showSearch}
+          searchPlaceholder={searchPlaceholder}
+        >
+          <PageMetadataProvider context={pageMetadataContext}>
+            <ShellAppsProvider
+              appsItems={appsItems ?? []}
+              manageHref={
+                shellMode === "platform"
+                  ? PLATFORM_APPS_MANAGE_HREF
+                  : APPS_MANAGE_HREF
+              }
+            >
+              {!showMobileChrome ? (
+                <DashboardNavbar
+                  sections={sections}
+                  appsItems={appsItems}
+                  productName={productName}
+                  logoUrl={logoUrl}
+                  businessName={workspaceName}
+                  homeHref={homeHref}
+                  shellMode={shellMode}
+                  notice={topbarNotice}
+                />
+              ) : (
+                topbarNotice
+              )}
+              <div
+                className={cn(
+                  fullBleedContent
+                    ? APP_SHELL_WORKSPACE_MAIN_CLASS
+                    : APP_SHELL_SCROLLABLE_MAIN_CLASS,
+                  "bg-white",
+                  fullBleedContent
+                    ? "p-0"
+                    : "px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)]",
+                )}
+              >
+                {children}
+              </div>
+              {showMobileChrome ? (
+                <MobileAppBottomNav shellMode={shellMode} />
+              ) : null}
+            </ShellAppsProvider>
+          </PageMetadataProvider>
+        </CommandPaletteProvider>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider
-      className="h-svh min-h-0 overflow-hidden bg-background"
+      className="app-shell-canvas h-svh min-h-0 overflow-hidden bg-transparent"
       style={
         {
-          "--sidebar-width": "14.5rem",
+          "--sidebar-width": "11.25rem",
         } as React.CSSProperties
       }
     >
-      <PageMetadataProvider context={pageMetadataContext}>
-        <MobileSidebarCloseOnNavigate />
-        <AppSidebar
-          brand={brand}
-          sections={sections}
-          navMode={navMode}
-          footerItems={footerItems}
-        />
-        <SidebarInset className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-          <Topbar
-            showAccountSwitcher={showAccountSwitcher}
-            actions={topbarActions}
-            notice={topbarNotice}
-            flushWithContent={contactWorkspace}
+      <CommandPaletteProvider enabled={showSearch} searchPlaceholder={searchPlaceholder}>
+        <PageMetadataProvider context={pageMetadataContext}>
+          <MobileSidebarCloseOnNavigate />
+          <AppSidebar
+            brand={brand}
+            sections={sections}
+            appsItems={appsItems}
+            navMode={navMode}
+            footerItems={footerItems}
+            workspaceName={workspaceName}
+            productName={productName}
+            logoUrl={logoUrl}
           />
-          <div
-            className={cn(
-              "min-h-0 flex-1",
-              contactWorkspace
-                ? "flex flex-col overflow-hidden p-0"
-                : "overflow-y-auto overflow-x-hidden px-[var(--page-padding-x)] py-[var(--page-padding-y)]",
-            )}
-          >
-            <PageBreadcrumbs
-              className={cn(
-                "shrink-0 md:hidden",
-                contactWorkspace
-                  ? "border-b border-border/80 bg-background px-3 py-2.5"
-                  : "mb-[var(--page-stack-gap)]",
-              )}
+          <SidebarInset className="flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">
+            <Topbar
+              actions={topbarActions}
+              notice={topbarNotice}
+              showSearch={showSearch}
+              businessName={workspaceName}
             />
-            {children}
-          </div>
-        </SidebarInset>
-      </PageMetadataProvider>
+            <div
+              className={cn(
+                fullBleedContent
+                  ? APP_SHELL_WORKSPACE_MAIN_CLASS
+                  : APP_SHELL_SCROLLABLE_MAIN_CLASS,
+                fullBleedContent
+                  ? "p-0"
+                  : "px-[var(--page-padding-x)] pb-[var(--page-padding-y)] pt-[var(--page-content-top-gap)]",
+              )}
+            >
+              {children}
+            </div>
+          </SidebarInset>
+        </PageMetadataProvider>
+      </CommandPaletteProvider>
     </SidebarProvider>
   );
 }

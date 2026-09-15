@@ -10,6 +10,9 @@ export function slugifyBusinessName(businessName: string): string {
   return base || 'business';
 }
 
-export function buildPlatformFromAddress(slug: string, sendingDomain: string): string {
+export function buildPlatformFromAddress(
+  slug: string,
+  sendingDomain: string,
+): string {
   return `${slug}@${sendingDomain}`;
 }

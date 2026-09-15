@@ -6,6 +6,7 @@ import {
   BusinessSubscriptionBillingCycle,
   SubscriptionPaymentMethod,
   SubscriptionPaymentStatus,
+  SubscriptionBillingSource,
   SubscriptionStatus,
 } from '@prisma/client';
 import type {
@@ -38,7 +39,8 @@ export class BusinessAccessSubscriptionDto {
   planGroupId?: string | null;
 
   @ApiPropertyOptional({
-    description: 'Joined projection from plan group — not stored on subscription.',
+    description:
+      'Joined projection from plan group — not stored on subscription.',
   })
   planGroupName?: string | null;
 
@@ -46,7 +48,8 @@ export class BusinessAccessSubscriptionDto {
   planTierId?: string | null;
 
   @ApiPropertyOptional({
-    description: 'Joined projection from plan tier — not stored on subscription.',
+    description:
+      'Joined projection from plan tier — not stored on subscription.',
   })
   planTierName?: string | null;
 
@@ -55,6 +58,9 @@ export class BusinessAccessSubscriptionDto {
 
   @ApiProperty({ enum: SubscriptionPaymentStatus })
   paymentStatus!: SubscriptionPaymentStatus;
+
+  @ApiProperty({ enum: SubscriptionBillingSource })
+  billingSource!: SubscriptionBillingSource;
 
   @ApiPropertyOptional({ enum: BusinessSubscriptionBillingCycle })
   billingCycle?: BusinessSubscriptionBillingCycle | null;
@@ -78,8 +84,7 @@ export class BusinessAccessSubscriptionDto {
   suggestedAmount?: string | null;
 
   @ApiPropertyOptional({
-    description:
-      'Computed currency hint when amount is unset — not persisted.',
+    description: 'Computed currency hint when amount is unset — not persisted.',
   })
   suggestedCurrency?: string | null;
 
@@ -98,6 +103,11 @@ export class BusinessAccessSubscriptionDto {
 
   @ApiPropertyOptional()
   canceledAt?: Date | null;
+
+  @ApiPropertyOptional({
+    description: 'Mirrored from Stripe cancel_at_period_end',
+  })
+  cancelAtPeriodEnd?: boolean;
 
   @ApiProperty()
   createdAt!: Date;
@@ -182,7 +192,8 @@ export class BusinessAccessDto {
 
   @ApiProperty({
     type: BusinessAccessResolutionDto,
-    description: 'Computed access projection — not stored on business or subscription.',
+    description:
+      'Computed access projection — not stored on business or subscription.',
   })
   resolution!: BusinessAccessResolutionDto;
 }
@@ -258,13 +269,15 @@ export class UpdateBusinessAccessDto {
   notes?: string | null;
 
   @ApiPropertyOptional({
-    description: 'When true, syncs capabilities from the selected plan tier after save.',
+    description:
+      'When true, syncs capabilities from the selected plan tier after save.',
   })
   @IsOptional()
   syncCapabilitiesFromTier?: boolean;
 
   @ApiPropertyOptional({
-    description: 'When true, applies the selected snapshot after updating the reference.',
+    description:
+      'When true, applies the selected snapshot after updating the reference.',
   })
   @IsOptional()
   @IsBoolean()
@@ -286,6 +299,15 @@ export class BusinessAccessCreateFieldsDto {
   @IsOptional()
   @IsUUID()
   planTierId?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Independent add-on IDs to purchase at create time',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  purchaseAddonIds?: string[];
 
   @ApiPropertyOptional({ enum: SubscriptionStatus })
   @IsOptional()
@@ -337,7 +359,8 @@ export class BusinessAccessCreateFieldsDto {
   notes?: string;
 
   @ApiPropertyOptional({
-    description: 'When true, copies plan tier capabilities into business assignments.',
+    description:
+      'When true, copies plan tier capabilities into business assignments.',
   })
   @IsOptional()
   syncCapabilitiesFromTier?: boolean;
@@ -388,14 +411,16 @@ export class BusinessAccessCreateFieldsDto {
 
 export class ExtendTrialDto {
   @ApiPropertyOptional({
-    description: 'Explicit period end date (ISO date). Overrides days when set.',
+    description:
+      'Explicit period end date (ISO date). Overrides days when set.',
   })
   @IsOptional()
   @IsDateString()
   currentPeriodEnd?: string;
 
   @ApiPropertyOptional({
-    description: 'Extend trial by this many days from today or current period end.',
+    description:
+      'Extend trial by this many days from today or current period end.',
   })
   @IsOptional()
   @Type(() => Number)

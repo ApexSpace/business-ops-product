@@ -22,17 +22,24 @@ export function resolveIntegrationIconKey(
 ): string {
   const key = providerKey.toLowerCase();
 
-  if (key.startsWith("google-") || key === "google-oauth" || key === "gmail") {
+  if (
+    key.startsWith("google-") ||
+    key === "google-oauth" ||
+    key === "gmail" ||
+    key === "youtube"
+  ) {
     if (key.includes("calendar")) return "google-calendar";
     if (key.includes("business") || key.includes("profile")) {
       return "google-business-profile";
     }
     if (key.includes("lead")) return "google-lead-ads";
+    if (key === "youtube") return "youtube";
     if (key === "gmail") return "gmail";
     return "google";
   }
 
   if (key.startsWith("tiktok")) return "tiktok";
+  if (key === "twitter" || key === "x") return "x";
   if (key === "s3-r2" || key.includes("cloudflare")) return "cloudflare-r2";
   if (key === "s3" || key.includes("aws-s3")) return "s3";
 
@@ -193,6 +200,27 @@ export function ProviderBrandIcon({
       return (
         <IconBadge className={cn(sizeClass, "bg-[#0A66C2]")}>
           <span className="font-bold leading-none text-white">in</span>
+        </IconBadge>
+      );
+
+    case "youtube":
+      return (
+        <IconBadge className={cn(sizeClass, "bg-[#FF0000]")}>
+          <span className="font-bold leading-none text-white">YT</span>
+        </IconBadge>
+      );
+
+    case "x":
+      return (
+        <IconBadge className={cn(sizeClass, "bg-black dark:bg-zinc-950")}>
+          <span className="font-bold leading-none text-white">𝕏</span>
+        </IconBadge>
+      );
+
+    case "pinterest":
+      return (
+        <IconBadge className={cn(sizeClass, "bg-[#E60023]")}>
+          <span className="font-bold leading-none text-white">P</span>
         </IconBadge>
       );
 

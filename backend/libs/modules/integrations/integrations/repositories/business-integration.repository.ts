@@ -58,6 +58,22 @@ export class BusinessIntegrationRepository {
     });
   }
 
+  findFirstByProviderConfigAccountSid(
+    providerKey: string,
+    accountSid: string,
+  ): Promise<BusinessIntegrationWithProvider | null> {
+    return this.prisma.businessIntegration.findFirst({
+      where: {
+        providerKey,
+        config: {
+          path: ['accountSid'],
+          equals: accountSid,
+        },
+      },
+      include: { provider: true },
+    });
+  }
+
   findManyByBusinessIds(
     businessId: string,
     providerKeys: string[],

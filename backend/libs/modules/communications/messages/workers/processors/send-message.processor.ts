@@ -1,10 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import {
   ConversationChannel,
   IntegrationStatus,
   MessageStatus,
   Prisma,
 } from '@prisma/client';
+import { AppException } from '@app/common/exceptions/app.exception';
+import { ErrorCode } from '@app/common/exceptions/error-code.enum';
 import { AsyncJobRepository } from '@app/core/jobs/async-job.repository';
 import { IdempotencyService } from '@app/core/idempotency/idempotency.service';
 import type { SendOutboundMessagePayload } from '@app/core/queue/queue.types';
@@ -17,6 +19,12 @@ import { BusinessIntegrationRepository } from '@app/modules/integrations/integra
 import type { ChannelMessageAttachment } from '@app/modules/communications/conversations/adapters/conversation-channel-adapter.interface';
 import { previewFromMessageContent } from '@app/modules/communications/conversations/adapters/meta/meta-attachment.util';
 import { ConversationRealtimeService } from '@app/modules/communications/conversations/services/conversation-realtime.service';
+import { ConversationWebhookIngestionService } from '@app/modules/communications/conversations/services/conversation-webhook-ingestion.service';
+import { WhatsAppParticipantSyncService } from '@app/modules/communications/conversations/services/whatsapp-participant-sync.service';
+import { WhatsAppBusinessContextService } from '@app/modules/integrations/whatsapp/services/whatsapp-business-context.service';
+import { WhatsAppTemplateRepository } from '@app/modules/integrations/whatsapp/repositories/whatsapp-template.repository';
+import { getTemplatePolicy } from '@app/modules/integrations/whatsapp/utils/template-policy.util';
+import type { WhatsAppTemplateSendParams } from '@app/modules/communications/conversations/adapters/conversation-channel-adapter.interface';
 
 @Injectable()
 export class SendMessageProcessor {
@@ -30,6 +38,10 @@ export class SendMessageProcessor {
     private readonly asyncJobRepository: AsyncJobRepository,
     private readonly idempotencyService: IdempotencyService,
     private readonly realtime: ConversationRealtimeService,
+    private readonly conversationWebhookIngestion: ConversationWebhookIngestionService,
+    private readonly whatsAppTemplateRepository: WhatsAppTemplateRepository,
+    private readonly whatsAppBusinessContextService: WhatsAppBusinessContextService,
+    private readonly whatsAppParticipantSyncService: WhatsAppParticipantSyncService,
   ) {}
 
   async process(payload: SendOutboundMessagePayload): Promise<void> {
@@ -98,29 +110,45 @@ export class SendMessageProcessor {
 
     const adapter = this.adapterRegistry.getAdapter(conversation.channel);
     const attachments = this.readAttachments(message.attachments);
-    const preview = previewFromMessageContent(message.text, attachments);
+    const template = await this.resolveWhatsAppTemplate(
+      payload.businessId,
+      conversation.channel,
+      message.metadata,
+    );
+    const externalRecipientId =
+      await this.whatsAppParticipantSyncService.resolveSendRecipient(
+        payload.businessId,
+        conversation,
+      );
+    const preview = previewFromMessageContent(
+      message.text ?? (template ? `Template: ${template.name}` : ''),
+      attachments,
+    );
     const now = new Date();
 
     try {
       const result = await adapter.sendMessage({
         businessId: payload.businessId,
         resourceId: conversation.resourceId,
-        externalRecipientId: conversation.externalParticipantId,
+        externalRecipientId,
         text: message.text ?? '',
         attachments,
+        template,
         metadata: {
           conversationId: conversation.id,
           messageId: message.id,
           subject:
-            typeof (message.metadata as Record<string, unknown> | null)?.subject ===
-            'string'
-              ? ((message.metadata as Record<string, unknown>).subject as string)
-              : conversation.title ?? undefined,
+            typeof (message.metadata as Record<string, unknown> | null)
+              ?.subject === 'string'
+              ? (message.metadata as Record<string, unknown>).subject
+              : (conversation.title ?? undefined),
         },
       });
 
+      const externalMessageId = result.externalMessageId?.trim() || undefined;
+
       await this.messagesRepository.update(message.id, {
-        externalMessageId: result.externalMessageId ?? undefined,
+        externalMessageId,
         status: MessageStatus.SENT,
         sentAt: now,
         metadata: (result.metadata ?? undefined) as
@@ -128,16 +156,31 @@ export class SendMessageProcessor {
           | undefined,
       });
 
+      if (
+        externalMessageId &&
+        conversation.channel === ConversationChannel.WHATSAPP
+      ) {
+        await this.conversationWebhookIngestion.replayBufferedWhatsAppDeliveryStatuses(
+          externalMessageId,
+        );
+      }
+
       await this.conversationsRepository.update(conversation.id, {
         lastMessageAt: now,
         lastMessagePreview: preview,
         unreadCount: 0,
       });
 
+      const freshMessage = await this.messagesRepository.findById(
+        payload.businessId,
+        message.id,
+      );
+      const finalStatus = freshMessage?.status ?? MessageStatus.SENT;
+
       await this.realtime.publishMessageUpdated(payload.businessId, {
         conversationId: conversation.id,
         messageId: message.id,
-        status: MessageStatus.SENT,
+        status: finalStatus,
         channel: conversation.channel,
       });
 
@@ -148,11 +191,20 @@ export class SendMessageProcessor {
 
       await this.asyncJobRepository.markCompleted(payload.asyncJobId, {
         messageId: message.id,
-        status: MessageStatus.SENT,
+        status: finalStatus,
       });
+
+      await this.idempotencyService.release(
+        `send-message:${payload.messageId}`,
+        payload.messageId,
+      );
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Failed to send message';
+        error instanceof AppException
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : 'Failed to send message';
       await this.failMessage(payload, message.id, errorMessage);
 
       await this.realtime.publishMessageUpdated(payload.businessId, {
@@ -166,7 +218,9 @@ export class SendMessageProcessor {
     }
   }
 
-  private readAttachments(value: unknown): ChannelMessageAttachment[] | undefined {
+  private readAttachments(
+    value: unknown,
+  ): ChannelMessageAttachment[] | undefined {
     if (!Array.isArray(value) || value.length === 0) {
       return undefined;
     }
@@ -195,5 +249,98 @@ export class SendMessageProcessor {
       errorMessage,
     });
     await this.asyncJobRepository.markFailed(payload.asyncJobId, errorMessage);
+    await this.idempotencyService.release(
+      `send-message:${payload.messageId}`,
+      payload.messageId,
+    );
+  }
+
+  private readWhatsAppTemplateMetadata(
+    metadata: unknown,
+  ): WhatsAppTemplateSendParams | null {
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      return null;
+    }
+
+    const record = metadata as Record<string, unknown>;
+    const raw = record.whatsappTemplate;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      return null;
+    }
+
+    const template = raw as Record<string, unknown>;
+    const name = typeof template.name === 'string' ? template.name.trim() : '';
+    const language =
+      typeof template.language === 'string' ? template.language.trim() : '';
+    if (!name || !language) {
+      return null;
+    }
+
+    const headerMediaRaw = template.headerMedia;
+    let headerMedia: WhatsAppTemplateSendParams['headerMedia'];
+    if (
+      headerMediaRaw &&
+      typeof headerMediaRaw === 'object' &&
+      !Array.isArray(headerMediaRaw)
+    ) {
+      const media = headerMediaRaw as Record<string, unknown>;
+      const type = typeof media.type === 'string' ? media.type.trim() : '';
+      const url = typeof media.url === 'string' ? media.url.trim() : '';
+      if (type && url) {
+        headerMedia = { type, url };
+      }
+    }
+
+    return {
+      name,
+      language,
+      components: Array.isArray(template.components) ? template.components : [],
+      headerMedia,
+    };
+  }
+
+  private async resolveWhatsAppTemplate(
+    businessId: string,
+    channel: ConversationChannel,
+    metadata: unknown,
+  ): Promise<WhatsAppTemplateSendParams | undefined> {
+    if (channel !== ConversationChannel.WHATSAPP) {
+      return undefined;
+    }
+
+    const template = this.readWhatsAppTemplateMetadata(metadata);
+    if (!template) {
+      return undefined;
+    }
+
+    const context =
+      await this.whatsAppBusinessContextService.requireConnectedContext(
+        businessId,
+      );
+
+    const stored = await this.whatsAppTemplateRepository.findByNameLanguage(
+      businessId,
+      context.wabaId,
+      template.name,
+      template.language,
+    );
+    if (!stored) {
+      throw new AppException(
+        ErrorCode.WHATSAPP_TEMPLATE_NOT_FOUND,
+        `WhatsApp template "${template.name}" (${template.language}) was not found for the connected WhatsApp Business Account.`,
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const policy = getTemplatePolicy(stored.status);
+    if (!policy.canSend) {
+      throw new AppException(
+        ErrorCode.WHATSAPP_TEMPLATE_NOT_SENDABLE,
+        `WhatsApp template "${template.name}" is ${stored.status.toLowerCase()} and cannot be sent. Only approved templates are allowed.`,
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    return template;
   }
 }

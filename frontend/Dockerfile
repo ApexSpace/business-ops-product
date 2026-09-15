@@ -1,31 +1,30 @@
-### Build stage
+### Prefer repo-root Dockerfile.frontend in Dokploy to avoid path doubling.
+### Kept in sync for local builds from the frontend folder (not used by Dokploy).
+### Dokploy: Docker File = Dockerfile.frontend , Context = . (empty)
 FROM node:22.13-bookworm-slim AS build
-
 WORKDIR /app
 
-# Install all deps (dev deps needed for `next build`)
 COPY package.json package-lock.json ./
+COPY frontend/package.json ./frontend/
+COPY packages/api-contract/package.json ./packages/api-contract/
 RUN npm ci
 
-COPY . .
-RUN npm run build \
-  && npm prune --omit=dev
+COPY frontend ./frontend
+COPY packages/api-contract ./packages/api-contract
 
-### Runtime stage
+WORKDIR /app/frontend
+RUN npm run build
+
 FROM node:22.13-bookworm-slim AS runtime
-
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
-# Reuse production node_modules from build (avoids second npm ci + lockfile drift)
-COPY package.json package-lock.json ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/.next ./.next
-COPY --from=build /app/public ./public
-COPY --from=build /app/next.config.ts ./next.config.ts
+COPY --from=build /app/frontend/.next/standalone ./
+COPY --from=build /app/frontend/.next/static ./frontend/.next/static
+COPY --from=build /app/frontend/public ./frontend/public
 
 EXPOSE 3000
-
-CMD ["npm", "run", "start"]
+CMD ["node", "frontend/server.js"]

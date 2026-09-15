@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Trash2  } from "lucide-react";
 import { RichTextPreview } from "@/components/forms/rich-text-editor";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
@@ -26,7 +26,6 @@ export function ContactRecordsNotesSection({
         description="Capture context and details for this contact."
         action={
           <ActionButton onClick={onCreateNote}>
-            <Plus className="mr-1.5 size-4" />
             Add note
           </ActionButton>
         }

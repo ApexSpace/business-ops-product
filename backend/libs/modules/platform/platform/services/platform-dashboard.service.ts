@@ -1,14 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { BusinessStatus, SubscriptionStatus } from '@prisma/client';
+import {
+  BusinessStatus,
+  SubscriptionStatus,
+} from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 import { PlatformDashboardStatsDto } from '../dto/platform-dashboard-stats.dto';
+import {
+  customerBusinessRelationWhere,
+  customerBusinessWhere,
+} from '@app/modules/platform/business/utils/tenant-business-scope.util';
 
 @Injectable()
 export class PlatformDashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getStats(): Promise<PlatformDashboardStatsDto> {
-    const businessWhere = { deletedAt: null };
+    const businessWhere = customerBusinessWhere({ deletedAt: null });
+    const tenantSubscriptionWhere = {
+      business: customerBusinessRelationWhere(),
+    };
 
     const [
       businessCounts,
@@ -29,10 +39,16 @@ export class PlatformDashboardService {
       this.prisma.contact.count({ where: { deletedAt: null } }),
       this.prisma.lead.count({ where: { deletedAt: null } }),
       this.prisma.businessSubscription.count({
-        where: { status: SubscriptionStatus.ACTIVE },
+        where: {
+          status: SubscriptionStatus.ACTIVE,
+          ...tenantSubscriptionWhere,
+        },
       }),
       this.prisma.businessSubscription.findMany({
-        where: { status: SubscriptionStatus.ACTIVE },
+        where: {
+          status: SubscriptionStatus.ACTIVE,
+          ...tenantSubscriptionWhere,
+        },
         include: { planTier: { select: { priceMonthly: true } } },
       }),
     ]);
@@ -41,6 +57,7 @@ export class PlatformDashboardService {
       ACTIVE: 0,
       NOT_ACTIVE: 0,
       SUSPENDED: 0,
+      BLOCKED: 0,
       ARCHIVED: 0,
     };
 
@@ -52,6 +69,7 @@ export class PlatformDashboardService {
       statusCounts.ACTIVE +
       statusCounts.NOT_ACTIVE +
       statusCounts.SUSPENDED +
+      statusCounts.BLOCKED +
       statusCounts.ARCHIVED;
 
     const mrr = subscriptionRows.reduce((sum, sub) => {

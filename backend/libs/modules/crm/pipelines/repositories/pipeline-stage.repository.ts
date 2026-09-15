@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PipelineStage, PipelineStageType, Prisma } from '@prisma/client';
+import {
+  BusinessLifecycleStage,
+  PipelineStage,
+  PipelineStageType,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 
 @Injectable()
@@ -54,7 +59,12 @@ export class PipelineStageRepository {
   create(
     businessId: string,
     pipelineId: string,
-    data: { name: string; position: number; type?: PipelineStageType | null },
+    data: {
+      name: string;
+      position: number;
+      type?: PipelineStageType | null;
+      mapsToLifecycleStage?: BusinessLifecycleStage | null;
+    },
   ): Promise<PipelineStage> {
     return this.prisma.pipelineStage.create({
       data: {
@@ -63,6 +73,7 @@ export class PipelineStageRepository {
         name: data.name,
         position: data.position,
         type: data.type ?? null,
+        mapsToLifecycleStage: data.mapsToLifecycleStage ?? null,
       },
     });
   }

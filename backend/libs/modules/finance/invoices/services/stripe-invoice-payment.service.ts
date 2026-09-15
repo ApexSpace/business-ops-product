@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import {
   InvoicePaymentStatus,
   InvoiceStatus,
   PaymentMethod,
   PaymentProvider,
+  PaymentStatus,
+  FormPaymentAttemptStatus,
   Prisma,
 } from '@prisma/client';
 import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
@@ -13,13 +15,23 @@ import type {
   StripeWebhookEvent,
   StripeWebhookMetadata,
 } from '@app/modules/integrations/integrations/stripe/stripe.types';
+import { PaymentOrchestratorService } from '@app/modules/finance/payments/orchestration/payment-orchestrator.service';
+import { STRIPE_PAYMENT_PURPOSE } from '@app/modules/finance/payments/constants/stripe-payment-purpose.constants';
+import { StripeContactPaymentMethodService } from '@app/modules/finance/payments/services/stripe-contact-payment-method.service';
 import { computeInvoicePaymentSyncFields } from '@app/modules/finance/payments/utils/invoice-payment-sync.util';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
+import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import {
   formatContactName,
   formatMoney,
 } from '@app/modules/communications/email/utils/email-variables.util';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
+import { GiftCardOnlineCheckoutService } from '@app/modules/finance/gift-cards/services/gift-card-online-checkout.service';
+import { PackageOnlineCheckoutService } from '@app/modules/finance/packages/services/package-online-checkout.service';
+import { MembershipOnlineCheckoutService } from '@app/modules/finance/memberships/services/membership-online-checkout.service';
+import { MembershipWebhookService } from '@app/modules/finance/memberships/services/membership-webhook.service';
+import { CheckoutAdvancedSettingsService } from '@app/modules/finance/checkout-advanced-settings/services/checkout-advanced-settings.service';
+import { buildPaidReceiptEmailExtras } from '@app/modules/finance/checkout-advanced-settings/utils/paid-receipt-email.util';
 import { DateTime } from 'luxon';
 
 type CheckoutSessionObject = {
@@ -57,14 +69,92 @@ export class StripeInvoicePaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly notificationDispatch: NotificationDispatchService,
     private readonly businessRepository: BusinessRepository,
+    @Inject(forwardRef(() => PaymentOrchestratorService))
+    private readonly paymentOrchestrator: PaymentOrchestratorService,
+    private readonly stripeContactPaymentMethod: StripeContactPaymentMethodService,
+    @Inject(forwardRef(() => GiftCardOnlineCheckoutService))
+    private readonly giftCardOnlineCheckoutService: GiftCardOnlineCheckoutService,
+    @Inject(forwardRef(() => PackageOnlineCheckoutService))
+    private readonly packageOnlineCheckoutService: PackageOnlineCheckoutService,
+    @Inject(forwardRef(() => MembershipOnlineCheckoutService))
+    private readonly membershipOnlineCheckoutService: MembershipOnlineCheckoutService,
+    @Inject(forwardRef(() => MembershipWebhookService))
+    private readonly membershipWebhookService: MembershipWebhookService,
+    private readonly checkoutAdvancedSettings: CheckoutAdvancedSettingsService,
   ) {}
+
+  async handleSetupIntentSucceeded(event: StripeWebhookEvent): Promise<void> {
+    const setupIntent = event.data.object as {
+      id?: string;
+      customer?: string | { id?: string } | null;
+      payment_method?: string | { id?: string } | null;
+      metadata?: Record<string, string>;
+    };
+    await this.stripeContactPaymentMethod.syncFromSetupIntent(setupIntent);
+  }
 
   async handleCheckoutSessionCompleted(
     event: StripeWebhookEvent,
   ): Promise<void> {
     const session = event.data.object as CheckoutSessionObject;
+    const metadata = session.metadata ?? {};
+
+    if (
+      metadata.type === 'gift_card' ||
+      metadata.purpose === STRIPE_PAYMENT_PURPOSE.GIFT_CARD
+    ) {
+      const handled =
+        await this.giftCardOnlineCheckoutService.handleCheckoutSessionCompleted(
+          {
+            ...metadata,
+            stripeSessionId: session.id ?? '',
+          },
+        );
+      if (handled) return;
+    }
+
+    if (
+      metadata.type === 'package' ||
+      metadata.purpose === STRIPE_PAYMENT_PURPOSE.PACKAGE
+    ) {
+      const handled =
+        await this.packageOnlineCheckoutService.handleCheckoutSessionCompleted({
+          ...metadata,
+          stripeSessionId: session.id ?? '',
+        });
+      if (handled) return;
+    }
+
+    if (
+      metadata.type === 'membership' ||
+      metadata.purpose === STRIPE_PAYMENT_PURPOSE.MEMBERSHIP
+    ) {
+      const handled =
+        await this.membershipWebhookService.handleCheckoutSessionCompleted(
+          event,
+        );
+      if (handled) return;
+    }
+
+    const paymentId =
+      typeof session.metadata?.paymentId === 'string'
+        ? session.metadata.paymentId
+        : null;
+
+    if (paymentId) {
+      const paymentIntentId = this.resolveId(session.payment_intent);
+      if (paymentIntentId) {
+        await this.paymentOrchestrator.finalizeStripePaymentIntent(
+          paymentIntentId,
+          null,
+          paymentId,
+        );
+        return;
+      }
+    }
+
     await this.recordStripePaymentFromSession(
       session,
       event.id,
@@ -75,6 +165,75 @@ export class StripeInvoicePaymentService {
   async handlePaymentIntentSucceeded(event: StripeWebhookEvent): Promise<void> {
     const intent = event.data.object as PaymentIntentObject;
     const metadata = intent.metadata ?? null;
+    const embeddedPaymentId =
+      typeof metadata?.paymentId === 'string' ? metadata.paymentId : null;
+    const purpose =
+      typeof metadata?.purpose === 'string' ? metadata.purpose : null;
+
+    if (purpose === STRIPE_PAYMENT_PURPOSE.SAVE_CARD) {
+      return;
+    }
+
+    if (purpose === STRIPE_PAYMENT_PURPOSE.FORM) {
+      if (!intent.id) return;
+      const chargeId = this.resolveId(intent.latest_charge);
+      const attempt = await this.prisma.formPaymentAttempt.findUnique({
+        where: { stripePaymentIntentId: intent.id },
+      });
+      if (!attempt) return;
+      if (attempt.formSubmissionId) {
+        if (
+          attempt.status !== FormPaymentAttemptStatus.SUCCEEDED &&
+          chargeId
+        ) {
+          await this.prisma.formPaymentAttempt.update({
+            where: { id: attempt.id },
+            data: {
+              status: FormPaymentAttemptStatus.SUCCEEDED,
+              stripeChargeId: chargeId,
+            },
+          });
+        }
+        return;
+      }
+      await this.prisma.formPaymentAttempt.update({
+        where: { id: attempt.id },
+        data: {
+          status: FormPaymentAttemptStatus.SUCCEEDED_PENDING_SUBMISSION,
+          ...(chargeId ? { stripeChargeId: chargeId } : {}),
+        },
+      });
+      return;
+    }
+
+    if (purpose === STRIPE_PAYMENT_PURPOSE.GIFT_CARD) {
+      const handled =
+        await this.giftCardOnlineCheckoutService.handlePaymentIntentCompleted({
+          ...(metadata ?? {}),
+          stripePaymentIntentId: intent.id ?? '',
+        });
+      if (handled) return;
+    }
+
+    if (purpose === STRIPE_PAYMENT_PURPOSE.PACKAGE) {
+      const handled =
+        await this.packageOnlineCheckoutService.handlePaymentIntentCompleted({
+          ...(metadata ?? {}),
+          stripePaymentIntentId: intent.id ?? '',
+        });
+      if (handled) return;
+    }
+
+    if (embeddedPaymentId && intent.id) {
+      const chargeId = this.resolveId(intent.latest_charge);
+      await this.paymentOrchestrator.finalizeStripePaymentIntent(
+        intent.id,
+        chargeId,
+        embeddedPaymentId,
+      );
+      return;
+    }
+
     const sessionId =
       typeof metadata?.checkoutSessionId === 'string'
         ? metadata.checkoutSessionId
@@ -93,6 +252,19 @@ export class StripeInvoicePaymentService {
   async handlePaymentIntentFailed(event: StripeWebhookEvent): Promise<void> {
     const intent = event.data.object as PaymentIntentObject;
     const metadata = intent.metadata ?? null;
+    const purpose =
+      typeof metadata?.purpose === 'string' ? metadata.purpose : null;
+
+    if (purpose === STRIPE_PAYMENT_PURPOSE.FORM && intent.id) {
+      await this.prisma.formPaymentAttempt.updateMany({
+        where: {
+          stripePaymentIntentId: intent.id,
+          formSubmissionId: null,
+        },
+        data: { status: FormPaymentAttemptStatus.FAILED },
+      });
+    }
+
     const businessId = metadata?.businessId;
     const invoiceId = metadata?.invoiceId;
     if (!businessId) return;
@@ -144,19 +316,23 @@ export class StripeInvoicePaymentService {
           ? (Number(refundedCents) / 100).toFixed(2)
           : payment.amount.toFixed(2);
 
-      await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          stripeRefundId: charge.id ?? payment.stripeRefundId,
-          providerMetadata: {
-            ...(typeof payment.providerMetadata === 'object' &&
-            payment.providerMetadata !== null
-              ? (payment.providerMetadata as Record<string, unknown>)
-              : {}),
-            refundedAt: new Date().toISOString(),
-            amountRefunded,
+      await this.prisma.$transaction(async (tx) => {
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.REFUNDED,
+            stripeRefundId: charge.id ?? payment.stripeRefundId,
+            providerMetadata: {
+              ...(typeof payment.providerMetadata === 'object' &&
+              payment.providerMetadata !== null
+                ? (payment.providerMetadata as Record<string, unknown>)
+                : {}),
+              refundedAt: new Date().toISOString(),
+              amountRefunded,
+            },
           },
-        },
+        });
+        await this.syncInvoicePayments(tx, businessId, invoiceId);
       });
     }
 
@@ -311,8 +487,11 @@ export class StripeInvoicePaymentService {
           business: { connect: { id: params.businessId } },
           invoice: { connect: { id: params.invoiceId } },
           contact: { connect: { id: contactId } },
+          payableType: 'INVOICE',
+          payableId: params.invoiceId,
           amount: params.amount,
           method: PaymentMethod.STRIPE,
+          status: PaymentStatus.SUCCEEDED,
           provider: PaymentProvider.STRIPE,
           reference: params.paymentIntentId,
           paidAt,
@@ -390,26 +569,65 @@ export class StripeInvoicePaymentService {
             lastName: true,
             companyName: true,
             email: true,
+            phoneCountryCode: true,
+            phoneNumber: true,
+          },
+        },
+        items: {
+          include: {
+            staffUser: {
+              select: { firstName: true, lastName: true, email: true },
+            },
           },
         },
       },
     });
 
     const contactEmail = invoice?.contact?.email?.trim();
-    if (!invoice || !contactEmail) {
+    const contactPhone = formatPhone(
+      invoice?.contact?.phoneCountryCode,
+      invoice?.contact?.phoneNumber,
+    );
+    if (!invoice || (!contactEmail && !contactPhone)) {
       return;
     }
 
     const business = await this.businessRepository.findById(params.businessId);
+    const advancedSettings = await this.checkoutAdvancedSettings.ensureRow(
+      params.businessId,
+    );
+    const receiptExtras = buildPaidReceiptEmailExtras(
+      advancedSettings,
+      (invoice.items ?? []).map((item) => ({
+        title: item.title,
+        staff: item.staffUser
+          ? {
+              label:
+                [item.staffUser.firstName, item.staffUser.lastName]
+                  .filter(Boolean)
+                  .join(' ')
+                  .trim() ||
+                item.staffUser.email ||
+                'Staff',
+            }
+          : null,
+      })),
+      (invoice.metadata as Record<string, unknown> | null) ?? null,
+    );
+    const tipLine = receiptExtras['payment.tip']
+      ? `<p><strong>Tip:</strong> ${receiptExtras['payment.tip']}</p>`
+      : '';
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    await this.notificationDispatch.dispatch({
       businessId: params.businessId,
-      emailType: 'invoice.paid_receipt',
+      notificationKey: 'invoice.paid_receipt',
       toEmail: contactEmail,
+      toPhone: contactPhone,
       contactId: invoice.contactId,
       entityType: 'Invoice',
       entityId: invoice.id,
       idempotencyKey: params.idempotencyKey,
+      missingRecipient: 'skip',
       variables: {
         'business.name': business?.name ?? 'Business',
         'contact.name': formatContactName(invoice.contact),
@@ -418,6 +636,8 @@ export class StripeInvoicePaymentService {
         'payment.date': DateTime.fromJSDate(params.paidAt).toFormat(
           'LLL d, yyyy',
         ),
+        'payment.tip': tipLine,
+        ...receiptExtras,
       },
     });
   }
@@ -433,11 +653,20 @@ export class StripeInvoicePaymentService {
     if (!invoice) return;
 
     const payments = await tx.payment.findMany({
-      where: { businessId, invoiceId, deletedAt: null },
+      where: {
+        businessId,
+        invoiceId,
+        deletedAt: null,
+        status: PaymentStatus.SUCCEEDED,
+        paidAt: { not: null },
+      },
       select: { amount: true, paidAt: true },
     });
 
-    const sync = computeInvoicePaymentSyncFields(invoice, payments);
+    const sync = computeInvoicePaymentSyncFields(
+      invoice,
+      payments.map((p) => ({ amount: p.amount, paidAt: p.paidAt! })),
+    );
 
     await tx.invoice.update({
       where: { id: invoiceId },

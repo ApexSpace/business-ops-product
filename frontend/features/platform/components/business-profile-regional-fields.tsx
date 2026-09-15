@@ -3,6 +3,7 @@
 import { useId } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { SelectField } from "@/components/forms/select-field";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { TextField } from "@/components/forms/text-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -81,14 +82,9 @@ export function BusinessProfileRegionalFields({
 
   return (
     <>
-      <section className="space-y-4">
+      <section className="space-y-5">
         {showSectionTitles ? (
           <BusinessProfileSectionTitle>Online &amp; timezone</BusinessProfileSectionTitle>
-        ) : activeTab ? (
-          <p className="text-sm text-muted-foreground">
-            Website, timezone, and default tax settings for estimates and
-            invoices.
-          </p>
         ) : null}
         <TextField
           control={form.control}
@@ -99,7 +95,7 @@ export function BusinessProfileRegionalFields({
           disabled={disabled}
         />
         {twoColumnLayout ? (
-          <div className="grid items-start gap-4 sm:grid-cols-2">
+          <SettingsFormGrid>
             <SelectField
               control={form.control}
               name="timezone"
@@ -116,7 +112,7 @@ export function BusinessProfileRegionalFields({
               searchable={false}
               disabled={disabled}
             />
-          </div>
+          </SettingsFormGrid>
         ) : (
           <SelectField
             control={form.control}
@@ -128,17 +124,23 @@ export function BusinessProfileRegionalFields({
         )}
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-5">
         {showSectionTitles ? (
           <BusinessProfileSectionTitle>Taxes &amp; currency</BusinessProfileSectionTitle>
+        ) : activeTab && !showSectionTitles ? (
+          <div className="border-t border-border/60 pt-5">
+            <p className="text-[13px] font-semibold tracking-tight">
+              Taxes &amp; currency
+            </p>
+          </div>
         ) : null}
         {twoColumnLayout ? (
-          <div className="grid items-start gap-4 sm:grid-cols-2">
+          <SettingsFormGrid>
             {currencySymbolField}
             {defaultTaxRateField}
-          </div>
+          </SettingsFormGrid>
         ) : (
-          <div className="grid items-start gap-4 sm:grid-cols-2">
+          <SettingsFormGrid>
             <SelectField
               control={form.control}
               name="taxesAndCurrency.currencyCode"
@@ -150,7 +152,7 @@ export function BusinessProfileRegionalFields({
             />
             {currencySymbolField}
             {defaultTaxRateField}
-          </div>
+          </SettingsFormGrid>
         )}
         <FormField
           control={form.control}

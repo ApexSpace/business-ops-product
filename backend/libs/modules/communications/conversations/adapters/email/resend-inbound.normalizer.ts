@@ -30,29 +30,79 @@ function extractDisplayName(value: string): string | null {
   return match?.[1]?.trim() || null;
 }
 
+function headerValues(
+  headers: Record<string, string | string[]> | undefined,
+  ...keys: string[]
+): string[] {
+  if (!headers) {
+    return [];
+  }
+
+  const values: string[] = [];
+  for (const key of keys) {
+    const direct = headers[key];
+    const lower = headers[key.toLowerCase()];
+    for (const candidate of [direct, lower]) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        values.push(candidate);
+      } else if (Array.isArray(candidate)) {
+        values.push(...candidate.filter((entry) => entry.trim()));
+      }
+    }
+  }
+
+  return values;
+}
+
+function collectRecipientCandidates(
+  payload: ResendInboundEmailPayload,
+): string[] {
+  const candidates: string[] = [];
+  if (Array.isArray(payload.to)) {
+    candidates.push(...payload.to);
+  }
+
+  candidates.push(
+    ...headerValues(
+      payload.headers,
+      'to',
+      'delivered-to',
+      'x-original-to',
+      'envelope-to',
+    ),
+  );
+
+  return candidates;
+}
+
 function pickRoutingAddress(
-  to: string[] | undefined,
+  candidates: string[],
   inboundDomain: string,
 ): string | null {
-  if (!Array.isArray(to) || to.length === 0) {
+  if (candidates.length === 0) {
     return null;
   }
 
-  for (const entry of to) {
+  for (const entry of candidates) {
     const normalized = normalizeRoutableEmailAddress(entry, inboundDomain);
     if (parseConversationReplyToAddress(normalized)) {
       return normalized;
     }
   }
 
-  return normalizeRoutableEmailAddress(to[0] ?? '', inboundDomain) || null;
+  return (
+    normalizeRoutableEmailAddress(candidates[0] ?? '', inboundDomain) || null
+  );
 }
 
 export function normalizeResendInboundEmail(
   payload: ResendInboundEmailPayload,
   inboundDomain: string,
 ): NormalizedInboundMessage | null {
-  const routingAddress = pickRoutingAddress(payload.to, inboundDomain);
+  const routingAddress = pickRoutingAddress(
+    collectRecipientCandidates(payload),
+    inboundDomain,
+  );
   if (!routingAddress) {
     return null;
   }

@@ -101,9 +101,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     if (!resolved || !this.available) {
       return null;
     }
+    // BullMQ creates its own ioredis clients. lazyConnect + enableOfflineQueue:false
+    // throws "Stream isn't writeable" before the socket is ready. Force IPv4 so
+    // Windows clients don't hit ENETUNREACH when IPv6 routes are broken.
     return {
       url: resolved.url,
       ...resolved.options,
+      lazyConnect: false,
+      family: 4,
+      connectTimeout: 15_000,
     };
   }
 

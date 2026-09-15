@@ -2,6 +2,7 @@
 
 import type { UseFormReturn } from "react-hook-form";
 import { SearchableSelect } from "@/components/forms/searchable-select";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   FormControl,
@@ -63,7 +64,7 @@ export function CalendarEditRulesSection(props: CalendarEditSectionProps) {
               </FormItem>
             )}
           />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <SettingsFormGrid>
             <FormField
               control={form.control}
               name="bufferBeforeMinutes"
@@ -129,7 +130,7 @@ export function CalendarEditRulesSection(props: CalendarEditSectionProps) {
                 </FormItem>
               )}
             />
-          </div>
+          </SettingsFormGrid>
         </div>
       
   );

@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, MoreVertical } from "lucide-react";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { IntegrationProviderIcon } from "@/features/integrations/components/integration-provider-icon";
 import { IntegrationStatusBadge } from "@/features/integrations/components/integration-status-badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   formatIntegrationDate,
   getIntegrationConnectLabel,
@@ -51,6 +52,11 @@ export function IntegrationCard({
   onRefreshStatus,
 }: IntegrationCardProps) {
   const isConnected = provider.status !== "NOT_CONNECTED";
+  const needsSetup =
+    provider.status === "CONNECTED" &&
+    (provider.key === "facebook" || provider.key === "instagram") &&
+    (provider.resourceCount ?? 0) === 0;
+  const isWhatsApp = provider.key === "whatsapp";
   const accountLabel =
     provider.integration?.connectedAccountName ??
     provider.integration?.connectedAccountEmail;
@@ -76,19 +82,19 @@ export function IntegrationCard({
             <CardTitle className="truncate" title={provider.name}>
               {provider.name}
             </CardTitle>
-            <IntegrationStatusBadge status={provider.status} />
+            <IntegrationStatusBadge
+              status={provider.status}
+              needsSetup={needsSetup}
+            />
           </div>
         </div>
         <CardAction>
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <IconButton
+                <MoreActionsButton
                   aria-label={`Actions for ${provider.name}`}
-                  className="size-8"
-                >
-                  <MoreVertical className="size-4" />
-                </IconButton>
+                />
               }
             />
             <DropdownMenuContent align="end" className="w-44">
@@ -171,6 +177,14 @@ export function IntegrationCard({
             getIntegrationConnectLabel(provider, provider.status)
           )}
         </Button>
+        {isWhatsApp && isConnected ? (
+          <Link
+            href="/business/settings/whatsapp?tab=numbers"
+            className="text-center text-xs font-medium text-primary hover:underline"
+          >
+            View in WhatsApp Settings
+          </Link>
+        ) : null}
       </CardFooter>
     </Card>
   );

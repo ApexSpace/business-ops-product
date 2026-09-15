@@ -2,9 +2,14 @@
 
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { SearchInput } from "@/components/forms/search-input";
-import { APPOINTMENT_STATUS_OPTIONS } from "@/features/appointments/schemas/appointment-profile";
+import { APPOINTMENT_FILTER_STATUS_OPTIONS } from "@/features/appointments/schemas/appointment-profile";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
 import type { BusinessMember } from "@/features/appointments/types";
+import {
+  ALL_CALENDARS_EMPTY_OPTION,
+  ALL_STAFF_EMPTY_OPTION,
+  ALL_STATUSES_EMPTY_OPTION,
+} from "@/lib/ui/filter-labels";
 import {
   FILTER_SEARCH_CLASS,
   FILTER_SELECT_TRIGGER_CLASS,
@@ -41,12 +46,12 @@ export function CalendarFilters({
   className,
 }: CalendarFiltersProps) {
   const calendarItems = [
-    { value: "", label: "All calendars" },
+    ALL_CALENDARS_EMPTY_OPTION,
     ...calendars.map((c) => ({ value: c.id, label: c.name })),
   ];
 
   const staffItems = [
-    { value: "", label: "All staff" },
+    ALL_STAFF_EMPTY_OPTION,
     ...members.map((m) => ({
       value: m.userId,
       label:
@@ -56,8 +61,8 @@ export function CalendarFilters({
   ];
 
   const statusItems = [
-    { value: "", label: "All statuses" },
-    ...APPOINTMENT_STATUS_OPTIONS.map((o) => ({
+    ALL_STATUSES_EMPTY_OPTION,
+    ...APPOINTMENT_FILTER_STATUS_OPTIONS.map((o) => ({
       value: o.value,
       label: o.label,
     })),
@@ -65,13 +70,13 @@ export function CalendarFilters({
 
   const triggerClassName = cn(
     FILTER_SELECT_TRIGGER_CLASS,
-    "w-[min(9.5rem,28vw)] min-w-[7rem]",
+    "w-[7.25rem] shrink-0",
   );
 
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-nowrap items-center gap-2",
+        "flex shrink-0 items-center gap-2",
         className,
       )}
     >
@@ -80,7 +85,7 @@ export function CalendarFilters({
           value={search}
           onChange={onSearchChange}
           placeholder="Search…"
-          className={cn(FILTER_SEARCH_CLASS, "min-w-[7rem] max-w-[12rem]")}
+          className={cn(FILTER_SEARCH_CLASS, "w-[8.5rem] shrink-0")}
         />
       ) : null}
       <SearchableSelect

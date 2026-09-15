@@ -14,11 +14,12 @@ export const INVOICE_STATUS_OPTIONS: {
   { value: "PAID", label: "Paid" },
   { value: "OVERDUE", label: "Overdue" },
   { value: "VOID", label: "Void" },
+  { value: "OPEN", label: "Open" },
 ];
 
-/** Statuses users may set manually — OVERDUE is set when the due date passes. */
+/** Statuses users may set manually — OVERDUE/OPEN are system-managed. */
 export const INVOICE_MANUAL_STATUS_OPTIONS = INVOICE_STATUS_OPTIONS.filter(
-  (o) => o.value !== "OVERDUE",
+  (o) => o.value !== "OVERDUE" && o.value !== "OPEN",
 );
 
 type InvoicePaymentEligibility = Pick<
@@ -76,9 +77,9 @@ export function invoiceStatusVariant(
 }
 
 export function formatInvoiceDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString(undefined, { dateStyle: "medium" });
 }
 
@@ -104,7 +105,15 @@ export const invoiceFormSchema = z.object({
   workItemId: z.string().uuid().optional().or(z.literal("")),
   issueDate: z.string().min(1, "Issue date required"),
   dueDate: z.string().optional(),
-  status: z.enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"]),
+  status: z.enum([
+    "DRAFT",
+    "SENT",
+    "PARTIAL",
+    "PAID",
+    "OVERDUE",
+    "VOID",
+    "OPEN",
+  ]),
   taxAmount: z.number().min(0),
   discountAmount: z.number().min(0),
   notes: z.string().max(5000).optional(),
@@ -156,7 +165,8 @@ export function calculateFormTotals(values: Pick<
   const tax = values.taxAmount ?? 0;
   const discount = values.discountAmount ?? 0;
   const total = Math.max(0, subtotal + tax - discount);
-  return { subtotal, tax, discount, total };
+  return { subtotal, tax, discount, total,
+};
 }
 
 export function invoiceToForm(invoice: Invoice): InvoiceFormValues {
@@ -234,10 +244,12 @@ export function invoiceFormToApiBody(
     ...(values.workItemId ? { workItemId: values.workItemId } : {}),
     issueDate: new Date(values.issueDate).toISOString(),
     ...(values.dueDate
-      ? { dueDate: new Date(values.dueDate).toISOString() }
+      ? { dueDate: new Date(values.dueDate).toISOString(),
+}
       : {}),
     ...(includeStatus
-      ? { status: options?.status ?? values.status }
+      ? { status: options?.status ?? values.status,
+}
       : {}),
     taxAmount: values.taxAmount,
     discountAmount: values.discountAmount,
@@ -248,7 +260,8 @@ export function invoiceFormToApiBody(
       ...(item.serviceId ? { serviceId: item.serviceId } : {}),
       title: item.title.trim(),
       ...(item.description?.trim()
-        ? { description: item.description.trim() }
+        ? { description: item.description.trim(),
+}
         : {}),
       quantity: item.quantity,
       unitPrice: item.unitPrice,

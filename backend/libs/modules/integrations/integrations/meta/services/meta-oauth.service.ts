@@ -14,6 +14,7 @@ import { RootConfig } from '@app/core/config/configuration';
 import { AuditService } from '@app/modules/platform/audit/services/audit.service';
 import { getMetaScopesForProvider } from '../constants/meta-oauth.constants';
 import {
+  buildInstagramLoginAuthorizationUrl,
   buildMetaOAuthAuthorizationUrl,
   getOAuthAuthorizeUrlHost,
 } from '../utils/meta-oauth-url.util';
@@ -23,8 +24,11 @@ import {
   getMetaProviderConfig,
   isMetaBusinessOAuthProviderKey,
   isMetaProviderKey,
+  META_INSTAGRAM_LOGIN_AUTH_SCOPES,
   META_WHATSAPP_PROVIDER_KEY,
+  parseMetaInstagramAuthFlow,
   type MetaBusinessOAuthProviderKey,
+  type MetaInstagramAuthFlow,
 } from '../constants/meta-provider.config';
 import {
   createMetaOAuthState,
@@ -63,6 +67,30 @@ export class MetaOAuthService {
     user: RequestUser,
     providerKey: string | undefined,
     res: Response,
+    authFlow?: string,
+  ): Promise<void> {
+    if (!user.businessId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Business context is required for Meta OAuth',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.redirectToMetaForBusiness(
+      user,
+      user.businessId,
+      providerKey,
+      res,
+      authFlow,
+    );
+  }
+
+  async redirectToMetaForBusiness(
+    user: RequestUser,
+    businessId: string,
+    providerKey: string | undefined,
+    res: Response,
+    authFlowRaw?: string,
   ): Promise<void> {
     this.assertMetaOAuthConfigured();
 
@@ -75,8 +103,25 @@ export class MetaOAuthService {
     }
 
     const normalizedKey = providerKey.trim();
+    const authFlow =
+      normalizedKey === 'instagram'
+        ? parseMetaInstagramAuthFlow(authFlowRaw)
+        : undefined;
 
-    this.logger.log(`Meta OAuth start providerKey=${normalizedKey}`);
+    if (normalizedKey === 'facebook' && authFlowRaw) {
+      const requested = parseMetaInstagramAuthFlow(authFlowRaw);
+      if (requested === 'INSTAGRAM_LOGIN') {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Direct Instagram Login cannot be used for Facebook connect',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Meta OAuth start providerKey=${normalizedKey} businessId=${businessId} authFlow=${authFlow ?? 'n/a'}`,
+    );
 
     if (!isMetaBusinessOAuthProviderKey(normalizedKey)) {
       if (normalizedKey === META_WHATSAPP_PROVIDER_KEY) {
@@ -98,16 +143,21 @@ export class MetaOAuthService {
     const providerConfig = getMetaProviderConfig(normalizedKey)!;
     const state = createMetaOAuthState(
       {
-        businessId: user.businessId!,
+        businessId,
         userId: user.id,
         providerKey: normalizedKey,
         flowType: providerConfig.flowType,
+        authFlow,
       },
       this.metaConfigService.getStateSecret(),
     );
 
-    const authUrl = this.buildAuthorizationUrl(normalizedKey, state);
-    this.logOAuthStartDebug(normalizedKey, authUrl);
+    const authUrl = this.buildAuthorizationUrl(
+      normalizedKey,
+      state,
+      authFlow ?? 'FACEBOOK_LOGIN',
+    );
+    this.logOAuthStartDebug(normalizedKey, authUrl, authFlow);
 
     res.redirect(authUrl);
   }
@@ -159,8 +209,13 @@ export class MetaOAuthService {
       return;
     }
 
+    const authFlow: MetaInstagramAuthFlow | undefined =
+      payload.providerKey === 'instagram'
+        ? (payload.authFlow ?? 'FACEBOOK_LOGIN')
+        : undefined;
+
     this.logger.log(
-      `[Meta OAuth] callback reached providerKey=${payload.providerKey} flowType=${payload.flowType}`,
+      `[Meta OAuth] callback reached providerKey=${payload.providerKey} flowType=${payload.flowType} authFlow=${authFlow ?? 'n/a'}`,
     );
 
     if (payload.flowType !== 'META_OAUTH') {
@@ -187,45 +242,21 @@ export class MetaOAuthService {
 
     try {
       await this.assertMetaOAuthProvider(oauthProviderKey);
-      const shortLived = await this.metaApiClient.exchangeCodeForToken(
-        code,
-        oauthProviderKey,
-      );
-      const longLived = await this.metaApiClient.exchangeForLongLivedToken(
-        shortLived.access_token,
-      );
-      const profile = await this.metaApiClient.getUserProfile(
-        longLived.access_token,
-      );
 
-      const expiresAt = longLived.expires_in
-        ? new Date(Date.now() + longLived.expires_in * 1000).toISOString()
-        : null;
-
-      await this.saveBusinessIntegration(
-        {
-          businessId: payload.businessId,
-          userId: payload.userId,
-          providerKey: oauthProviderKey,
-        },
-        {
-          accessToken: longLived.access_token,
-          expiresAt,
-          tokenType: longLived.token_type ?? 'bearer',
-          metaUserId: profile.id,
-          scopes: getMetaScopesForProvider(oauthProviderKey),
-        },
-        profile,
-      );
+      if (authFlow === 'INSTAGRAM_LOGIN') {
+        await this.completeInstagramLoginCallback(payload, code);
+      } else {
+        await this.completeFacebookLoginCallback(payload, code, oauthProviderKey);
+      }
 
       this.logger.log(
-        `Meta OAuth saved BusinessIntegration providerKey=${oauthProviderKey}`,
+        `Meta OAuth saved BusinessIntegration providerKey=${oauthProviderKey} authFlow=${authFlow ?? 'FACEBOOK_LOGIN'}`,
       );
 
       const asyncJob = await this.jobEnqueueService.enqueueMetaResourceSync({
         businessId: payload.businessId,
         providerKey: oauthProviderKey,
-        idempotencyKey: `meta-oauth-sync-${payload.businessId}-${oauthProviderKey}`,
+        idempotencyKey: `meta-oauth-sync-${payload.businessId}-${oauthProviderKey}-${payload.nonce}`,
       });
 
       this.logger.log(
@@ -251,14 +282,108 @@ export class MetaOAuthService {
     }
   }
 
+  private async completeFacebookLoginCallback(
+    payload: {
+      businessId: string;
+      userId: string;
+    },
+    code: string,
+    oauthProviderKey: MetaBusinessOAuthProviderKey,
+  ): Promise<void> {
+    const shortLived = await this.metaApiClient.exchangeCodeForToken(
+      code,
+      oauthProviderKey,
+    );
+    const longLived = await this.metaApiClient.exchangeForLongLivedToken(
+      shortLived.access_token,
+    );
+    const profile = await this.metaApiClient.getUserProfile(
+      longLived.access_token,
+    );
+
+    const expiresAt = longLived.expires_in
+      ? new Date(Date.now() + longLived.expires_in * 1000).toISOString()
+      : null;
+
+    await this.saveBusinessIntegration(
+      {
+        businessId: payload.businessId,
+        userId: payload.userId,
+        providerKey: oauthProviderKey,
+        authFlow: oauthProviderKey === 'instagram' ? 'FACEBOOK_LOGIN' : undefined,
+      },
+      {
+        accessToken: longLived.access_token,
+        expiresAt,
+        tokenType: longLived.token_type ?? 'bearer',
+        metaUserId: profile.id,
+        scopes: getMetaScopesForProvider(oauthProviderKey),
+      },
+      profile,
+    );
+  }
+
+  private async completeInstagramLoginCallback(
+    payload: {
+      businessId: string;
+      userId: string;
+    },
+    code: string,
+  ): Promise<void> {
+    const shortLived =
+      await this.metaApiClient.exchangeInstagramLoginCodeForToken(code);
+    const longLived =
+      await this.metaApiClient.exchangeInstagramLoginForLongLivedToken(
+        shortLived.access_token,
+      );
+    const profile = await this.metaApiClient.getInstagramLoginProfile(
+      longLived.access_token,
+    );
+
+    const expiresAt = longLived.expires_in
+      ? new Date(Date.now() + longLived.expires_in * 1000).toISOString()
+      : null;
+
+    const scopes = [...META_INSTAGRAM_LOGIN_AUTH_SCOPES];
+
+    await this.saveBusinessIntegration(
+      {
+        businessId: payload.businessId,
+        userId: payload.userId,
+        providerKey: 'instagram',
+        authFlow: 'INSTAGRAM_LOGIN',
+      },
+      {
+        accessToken: longLived.access_token,
+        expiresAt,
+        tokenType: longLived.token_type ?? 'bearer',
+        metaUserId: profile.id,
+        instagramUserId: profile.id,
+        scopes,
+      },
+      {
+        id: profile.id,
+        name: profile.username ?? profile.name,
+      },
+    );
+  }
+
   private buildAuthorizationUrl(
     providerKey: MetaBusinessOAuthProviderKey,
     state: string,
+    authFlow: MetaInstagramAuthFlow = 'FACEBOOK_LOGIN',
   ): string {
+    if (providerKey === 'instagram' && authFlow === 'INSTAGRAM_LOGIN') {
+      return this.buildInstagramLoginAuthorizationUrl(state);
+    }
+
     const { appId } = this.metaConfigService.getMetaAppConfig();
     const { configId: loginConfigId, source: configIdSource } =
       this.metaConfigService.assertLoginConfigForOAuth(providerKey);
-    const redirectUri = this.metaConfigService.getMetaRedirectUri(providerKey);
+    const redirectUri = this.metaConfigService.getMetaRedirectUri(
+      providerKey,
+      authFlow,
+    );
     const scopes = getMetaScopesForProvider(providerKey);
 
     if (providerKey === 'instagram') {
@@ -296,20 +421,64 @@ export class MetaOAuthService {
 
     if (this.isMetaOAuthDebugEnabled()) {
       this.logger.log(
-        `[Meta OAuth] providerKey=${providerKey} configIdSource=${configIdSource} authorizeHost=${getOAuthAuthorizeUrlHost(authUrl)} redirectUri=${redirectUri}`,
+        `[Meta OAuth] providerKey=${providerKey} authFlow=${authFlow} configIdSource=${configIdSource} authorizeHost=${getOAuthAuthorizeUrlHost(authUrl)} redirectUri=${redirectUri}`,
       );
     }
 
     return authUrl;
   }
 
-  private logOAuthStartDebug(providerKey: string, authUrl: string): void {
+  private buildInstagramLoginAuthorizationUrl(state: string): string {
+    const { appId } = this.metaConfigService.getInstagramLoginAppCredentials();
+    const redirectUri = this.metaConfigService.getMetaRedirectUri(
+      'instagram',
+      'INSTAGRAM_LOGIN',
+    );
+    const scopes = [...META_INSTAGRAM_LOGIN_AUTH_SCOPES];
+
+    let authUrl: string;
+    try {
+      authUrl = buildInstagramLoginAuthorizationUrl({
+        appId,
+        redirectUri,
+        scopes,
+        state,
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Invalid Instagram Login authorization URL';
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        message,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (this.isMetaOAuthDebugEnabled()) {
+      this.logger.log(
+        `[Meta OAuth] providerKey=instagram authFlow=INSTAGRAM_LOGIN authorizeHost=${getOAuthAuthorizeUrlHost(authUrl)} redirectUri=${redirectUri}`,
+      );
+    }
+
+    return authUrl;
+  }
+
+  private logOAuthStartDebug(
+    providerKey: string,
+    authUrl: string,
+    authFlow?: MetaInstagramAuthFlow,
+  ): void {
     if (!this.isMetaOAuthDebugEnabled()) {
       return;
     }
-    const redirectUri = this.metaConfigService.getMetaRedirectUri(providerKey);
+    const redirectUri = this.metaConfigService.getMetaRedirectUri(
+      providerKey,
+      authFlow,
+    );
     this.logger.log(
-      `[Meta OAuth] start providerKey=${providerKey} authorizeHost=${getOAuthAuthorizeUrlHost(authUrl)} redirectUri=${redirectUri}`,
+      `[Meta OAuth] start providerKey=${providerKey} authFlow=${authFlow ?? 'n/a'} authorizeHost=${getOAuthAuthorizeUrlHost(authUrl)} redirectUri=${redirectUri}`,
     );
   }
 
@@ -325,6 +494,7 @@ export class MetaOAuthService {
       businessId: string;
       userId: string;
       providerKey: MetaBusinessOAuthProviderKey;
+      authFlow?: MetaInstagramAuthFlow;
     },
     credentials: StoredMetaCredentials,
     profile: { id: string; name?: string; email?: string },
@@ -335,6 +505,10 @@ export class MetaOAuthService {
     );
 
     const { webhookVerifyToken } = this.metaConfigService.getMetaAppConfig();
+    const authFlow =
+      payload.providerKey === 'instagram'
+        ? (payload.authFlow ?? 'FACEBOOK_LOGIN')
+        : undefined;
 
     const integration = await this.businessIntegrationRepository.upsert(
       payload.businessId,
@@ -344,6 +518,10 @@ export class MetaOAuthService {
         config: {
           provider: 'meta',
           flowType: 'META_OAUTH',
+          ...(authFlow ? { authFlow } : {}),
+          ...(authFlow === 'INSTAGRAM_LOGIN'
+            ? { graphHost: 'graph.instagram.com' }
+            : {}),
           scopes: credentials.scopes,
           metaUserId: profile.id,
           webhookStatus: resolveMetaWebhookStatusLabel(webhookVerifyToken),
@@ -372,6 +550,7 @@ export class MetaOAuthService {
       metadata: {
         providerKey: payload.providerKey,
         method: 'meta_oauth',
+        authFlow: authFlow ?? null,
         email: profile.email,
       },
     });

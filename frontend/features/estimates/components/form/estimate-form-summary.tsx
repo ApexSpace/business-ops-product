@@ -16,7 +16,8 @@ import { formatMoney, type EstimateFormValues } from "@/features/estimates/schem
 interface EstimateFormSummaryProps {
   form: UseFormReturn<EstimateFormValues>;
   dialogOpen?: boolean;
-  totals: { subtotal: number; tax: number; discount: number; total: number };
+  totals: { subtotal: number; tax: number; discount: number; total: number,
+};
   currencyCode?: string;
 }
 

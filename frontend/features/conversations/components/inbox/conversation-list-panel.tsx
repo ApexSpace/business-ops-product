@@ -1,130 +1,161 @@
 "use client";
 
-import { MailPlus, Search } from "lucide-react";
+import { SquarePen } from "lucide-react";
+import { ApiErrorState } from "@/components/data-display/api-error-state";
+import { EmptyState } from "@/components/data-display/empty-state";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { VirtualList } from "@/components/data-display/virtual-list";
+import { SearchInput } from "@/components/forms/search-input";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import type { Conversation } from "@/features/conversations/api/conversations.api";
-import { ConversationThreadRow } from "@/features/conversations/components/inbox/conversation-thread-row";
+import { IconButton } from "@/components/ui/icon-button";
+import type { UnifiedConversationThread } from "@/features/conversations/api/conversations.api";
+import { UnifiedThreadRow } from "@/features/conversations/components/inbox/unified-thread-row";
 import {
   THREAD_ROW_HEIGHT,
   VIRTUALIZE_THRESHOLD,
 } from "@/features/conversations/components/inbox/conversation-inbox-utils";
+import type { InboxStatusFilter } from "@/features/conversations/hooks/use-conversations-inbox-filters";
+import {
+  INBOX_LIST_HEADER_CLASS,
+  INBOX_LIST_PANEL_CLASS,
+  INBOX_LIST_TOOLS_CLASS,
+} from "@/features/contacts/workspace/contact-workspace";
+import { cn } from "@/lib/utils";
 
-type InboxFilter =
-  | "all"
-  | "facebook"
-  | "instagram"
-  | "whatsapp"
-  | "email"
-  | "webchat"
-  | "open"
-  | "unread"
-  | "assigned";
+const STATUS_FILTER_CHIPS: { value: InboxStatusFilter; label: string }[] = [
+  { value: "ALL", label: "ALL" },
+  { value: "OPEN", label: "OPEN" },
+  { value: "CLOSED", label: "CLOSED" },
+  { value: "SPAM", label: "SPAM" },
+];
 
 interface ConversationListPanelProps {
   search: string;
   onSearchChange: (value: string) => void;
-  filter: InboxFilter;
-  onFilterChange: (filter: InboxFilter) => void;
-  conversations: Conversation[];
+  statusFilter: InboxStatusFilter;
+  onStatusFilterChange: (value: InboxStatusFilter) => void;
+  threads: UnifiedConversationThread[];
   listLoading: boolean;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
+  listError?: unknown;
+  onListRetry?: () => void;
+  selectedThreadKey: string | null;
+  onSelectThread: (thread: UnifiedConversationThread) => void;
   useVirtualThreads: boolean;
-  onNewEmail?: () => void;
+  onNewConversation?: () => void;
+  className?: string;
 }
 
 export function ConversationListPanel({
   search,
   onSearchChange,
-  filter,
-  onFilterChange,
-  conversations,
+  statusFilter,
+  onStatusFilterChange,
+  threads,
   listLoading,
-  selectedId,
-  onSelect,
+  listError,
+  onListRetry,
+  selectedThreadKey,
+  onSelectThread,
   useVirtualThreads,
-  onNewEmail,
+  onNewConversation,
+  className,
 }: ConversationListPanelProps) {
   return (
-    <aside className="flex h-full min-h-0 w-full max-w-sm flex-col overflow-hidden border-r border-border/80">
-      <div className="space-y-3 border-b border-border/80 p-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search conversations…"
-            className="pl-8"
-          />
-        </div>
-        {onNewEmail ? (
-          <Button size="sm" className="w-full" onClick={onNewEmail}>
-            <MailPlus className="mr-2 size-4" />
-            New email
-          </Button>
+    <aside className={cn(INBOX_LIST_PANEL_CLASS, className)}>
+      <header className={INBOX_LIST_HEADER_CLASS}>
+        <h2 className="min-w-0 truncate text-heading-5 font-bold leading-none tracking-tight text-violet-primary-normal">
+          Conversation
+        </h2>
+        {onNewConversation ? (
+          <IconButton
+            variant="ghost"
+            size="icon-sm"
+            onClick={onNewConversation}
+            aria-label="New conversation"
+          >
+            <SquarePen className="size-4" />
+          </IconButton>
         ) : null}
-        <div className="flex flex-wrap gap-1">
-          {(
-            [
-              ["all", "All"],
-              ["facebook", "Facebook"],
-              ["instagram", "Instagram"],
-              ["whatsapp", "WhatsApp"],
-              ["email", "Email"],
-              ["webchat", "Website Chat"],
-              ["open", "Open"],
-              ["unread", "Unread"],
-              ["assigned", "Mine"],
-            ] as const
-          ).map(([key, label]) => (
-            <Button
-              key={key}
-              size="sm"
-              variant={filter === key ? "default" : "outline"}
-              className="h-7 px-2 text-xs"
-              onClick={() => onFilterChange(key)}
-            >
-              {label}
-            </Button>
-          ))}
+      </header>
+
+      <div className={INBOX_LIST_TOOLS_CLASS}>
+        <SearchInput
+          value={search}
+          onChange={onSearchChange}
+          placeholder="Search clients…"
+          className="max-w-none"
+        />
+
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label="Filter conversations by status"
+        >
+          {STATUS_FILTER_CHIPS.map((chip) => {
+            const selected = statusFilter === chip.value;
+            return (
+              <Button
+                key={chip.value}
+                type="button"
+                size="xs"
+                variant={selected ? "brand" : "outline"}
+                className="rounded-full px-3 uppercase tracking-wide"
+                aria-pressed={selected}
+                onClick={() => onStatusFilterChange(chip.value)}
+              >
+                {chip.label}
+              </Button>
+            );
+          })}
         </div>
       </div>
 
       <div className="min-h-0 flex-1">
-        {listLoading ? (
-          <p className="p-4 text-sm text-muted-foreground">Loading…</p>
-        ) : conversations.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">
-            No conversations yet. Messages from connected Facebook, Instagram,
-            WhatsApp, or website chat channels will appear here.
-          </p>
+        {listError ? (
+          <div className="p-3">
+            <ApiErrorState compact error={listError} onRetry={onListRetry} />
+          </div>
+        ) : listLoading ? (
+          <LoadingState variant="inline" label="Loading…" className="p-4" />
+        ) : threads.length === 0 ? (
+          <EmptyState
+            compact
+            title="No conversations yet"
+            description="Messages from connected Facebook, Instagram, WhatsApp, or website chat channels will appear here."
+            className="px-3 py-8"
+            action={
+              onNewConversation ? (
+                <Button variant="brand" size="sm" onClick={onNewConversation}>
+                  New conversation
+                </Button>
+              ) : undefined
+            }
+          />
         ) : useVirtualThreads ? (
           <VirtualList
             className="h-full"
-            items={conversations}
+            items={threads}
             estimateSize={THREAD_ROW_HEIGHT}
-            getKey={(c) => c.id}
-            renderItem={(conversation) => (
-              <ConversationThreadRow
-                conversation={conversation}
-                selectedId={selectedId}
-                onSelect={onSelect}
+            getKey={(thread) => thread.threadKey}
+            renderItem={(thread) => (
+              <UnifiedThreadRow
+                thread={thread}
+                selectedThreadKey={selectedThreadKey}
+                onSelect={onSelectThread}
               />
             )}
           />
         ) : (
-          <ul className="divide-y divide-border/60 overflow-auto h-full">
-            {conversations.map((conversation) => (
-              <ConversationThreadRow
-                key={conversation.id}
-                conversation={conversation}
-                selectedId={selectedId}
-                onSelect={onSelect}
+          <div className="h-full overflow-auto">
+            {threads.map((thread) => (
+              <UnifiedThreadRow
+                key={thread.threadKey}
+                thread={thread}
+                selectedThreadKey={selectedThreadKey}
+                onSelect={onSelectThread}
               />
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </aside>

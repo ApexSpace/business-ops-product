@@ -4,6 +4,8 @@ export type EmailTypeCategory =
   | "membership"
   | "appointments"
   | "invoices"
+  | "gift_cards"
+  | "packages"
   | "auth";
 
 export type EmailMessageStatus =
@@ -156,7 +158,8 @@ export function listEmailLogs(params?: {
   const qs = searchParams.toString();
   return api.get<{
     items: EmailLog[];
-    meta: { total: number; page: number; limit: number };
+    meta: { total: number; page: number; limit: number,
+};
   }>(`/email-notifications/logs${qs ? `?${qs}` : ""}`);
 }
 
@@ -187,6 +190,10 @@ export function emailCategoryLabel(category: EmailTypeCategory): string {
       return "Appointments";
     case "invoices":
       return "Invoices & payments";
+    case "gift_cards":
+      return "Gift cards";
+    case "packages":
+      return "Packages";
     case "auth":
       return "Account (system)";
     default:
@@ -202,6 +209,10 @@ export function emailCategoryDescription(category: EmailTypeCategory): string {
       return "Booking confirmations, reminders, and schedule change notifications.";
     case "invoices":
       return "Invoice delivery, payment links, and payment receipts.";
+    case "gift_cards":
+      return "Gift card delivery, purchase confirmations, and sale notifications.";
+    case "packages":
+      return "Package purchase confirmations and online sale notifications.";
     case "auth":
       return "Platform-managed account emails. These cannot be disabled.";
     default:
@@ -219,6 +230,10 @@ export function entityLinkForLog(log: EmailLog): string | null {
       return `/business/operations/appointments/${log.entityId}`;
     case "BusinessMembership":
       return `/business/settings/team`;
+    case "GiftCard":
+      return `/business/gift-cards?selected=${log.entityId}`;
+    case "ClientPackage":
+      return `/business/packages?selected=${log.entityId}`;
     case "Contact":
       return `/business/crm/contacts/${log.entityId}`;
     default:

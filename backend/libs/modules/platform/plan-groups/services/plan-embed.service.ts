@@ -19,6 +19,7 @@ import {
   resolvePlanGroupDesignSettings,
 } from '../utils/plan-design-settings.util';
 import { PlanValidationService } from './plan-validation.service';
+import { tierHasStripePrice } from '../utils/plan-tier-stripe.util';
 
 @Injectable()
 export class PlanEmbedService {
@@ -118,6 +119,7 @@ export class PlanEmbedService {
         return tier.status === PlanTierStatus.PUBLISHED;
       })
       .map((tier) => ({
+        planTierId: tier.id,
         slug: tier.slug,
         name: tier.name,
         description: tier.description,
@@ -127,6 +129,7 @@ export class PlanEmbedService {
         trialDays: tier.trialDays,
         badge: tier.badge,
         highlighted: tier.highlighted,
+        stripeCheckoutEnabled: tierHasStripePrice(tier.metadata),
         ctaLabel:
           tier.ctaLabel?.trim() ||
           group.defaultCtaLabel?.trim() ||
@@ -285,6 +288,42 @@ export class PlanEmbedService {
   var cycle = DATA.billingCycles.indexOf("MONTHLY") >= 0 ? "MONTHLY" : "YEARLY";
   var currency = DATA.currency || "USD";
   var SETTINGS = DATA.designSettings || {};
+  var params = new URLSearchParams(window.location.search);
+  var businessId = params.get("businessId");
+
+  function startStripeCheckout(tier) {
+    if (!tier.stripeCheckoutEnabled || !tier.planTierId) {
+      alert("Stripe billing is not configured for this plan.");
+      return;
+    }
+    if (!businessId) {
+      alert("Missing businessId query parameter for Stripe checkout.");
+      return;
+    }
+    var apiBase = window.location.pathname.replace(/\\/embed\\/pricing\\/[^/]+$/, "");
+    fetch(apiBase + "/public/pricing/" + DATA.id + "/stripe/checkout-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        planTierId: tier.planTierId,
+        billingCycle: cycle,
+        businessId: businessId
+      })
+    }).then(function (res) {
+      if (!res.ok) {
+        return res.json().then(function (body) {
+          throw new Error((body && body.error && body.error.message) || "Checkout failed");
+        });
+      }
+      return res.json();
+    }).then(function (body) {
+      var url = (body && body.data && body.data.url) || (body && body.url);
+      if (!url) throw new Error("No checkout URL returned");
+      window.top.location.href = url;
+    }).catch(function (err) {
+      alert(err.message || "Unable to start checkout");
+    });
+  }
 
   function fmt(amount) {
     if (amount == null || amount === "") return "—";
@@ -418,17 +457,26 @@ export class PlanEmbedService {
         });
         card.appendChild(caps);
       }
-      if (tier.ctaUrl) {
+      if (tier.stripeCheckoutEnabled || tier.ctaUrl) {
         var ctaWrap = el("div", "cta-wrap" + (SETTINGS.ctaAlignment === "center" ? " center" : ""));
-        var a = document.createElement("a");
         var btnClass = "cta";
         if (SETTINGS.buttonStyle === "outline") btnClass += " outline";
-        a.className = btnClass;
-        a.href = tier.ctaUrl;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.textContent = tier.ctaLabel || "Get started";
-        ctaWrap.appendChild(a);
+        if (tier.stripeCheckoutEnabled) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = btnClass;
+          btn.textContent = tier.ctaLabel || "Get started";
+          btn.addEventListener("click", function () { startStripeCheckout(tier); });
+          ctaWrap.appendChild(btn);
+        } else {
+          var a = document.createElement("a");
+          a.className = btnClass;
+          a.href = tier.ctaUrl;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = tier.ctaLabel || "Get started";
+          ctaWrap.appendChild(a);
+        }
         card.appendChild(ctaWrap);
       }
       tiersEl.appendChild(card);

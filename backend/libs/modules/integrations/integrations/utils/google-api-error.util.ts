@@ -26,6 +26,7 @@ export function formatGoogleApiError(
   }
 
   const googleMessage = parsed?.error?.message;
+  const googleStatus = parsed?.error?.status;
   const disabledDetail = parsed?.error?.details?.find(
     (d) => d.reason === 'SERVICE_DISABLED',
   );
@@ -47,9 +48,36 @@ export function formatGoogleApiError(
 
   if (isQuotaError) {
     return (
-      `${context}: Google API rate limit reached. Wait at least 1 minute before syncing again. ` +
-      `Avoid clicking Sync repeatedly. If this keeps happening, open Google Cloud Console → ` +
-      `APIs & Services → Quotas, filter for "My Business", and request a higher quota.`
+      `${context}: Google API rate limit or zero quota. ` +
+      `If this is a new Google Cloud project, submit GBP API access (Basic API Access) and wait until My Business quotas are above 0 QPM. ` +
+      `Otherwise wait at least 1 minute before syncing again.`
+    );
+  }
+
+  const isInsufficientScopes =
+    googleMessage?.toLowerCase().includes('insufficient authentication scopes') ||
+    googleMessage?.toLowerCase().includes('insufficient scope') ||
+    googleStatus === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT';
+
+  if (isInsufficientScopes) {
+    return (
+      `${context}: ${googleMessage ?? 'Insufficient authentication scopes'}. ` +
+      `Disconnect and Reconnect with Google, approve Business Profile management ` +
+      `(business.manage) on the consent screen, and confirm that scope is listed ` +
+      `on your Google Cloud OAuth consent screen. Manager access from a company owner is supported once this scope is granted.`
+    );
+  }
+
+  if (
+    status === 403 ||
+    googleMessage?.toLowerCase().includes('permission') ||
+    googleMessage?.toLowerCase().includes('access not configured') ||
+    googleStatus === 'PERMISSION_DENIED'
+  ) {
+    return (
+      `${context}: ${googleMessage ?? 'Permission denied'}. ` +
+      `Confirm Account Management and Business Information APIs are enabled, ` +
+      `GBP API access is approved for this Cloud project, and the signed-in user owns or manages the Business Profile.`
     );
   }
 

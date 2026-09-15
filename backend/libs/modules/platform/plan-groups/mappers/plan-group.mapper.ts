@@ -139,7 +139,7 @@ export function toPlanTierFeature(
 export function toPlanTier(tier: PlanTierWithRelations): PlanTierDto {
   return {
     id: tier.id,
-    planGroupId: tier.planGroupId,
+    planGroupId: tier.planGroupId ?? '',
     slug: tier.slug,
     name: tier.name,
     description: tier.description,

@@ -1,6 +1,14 @@
 "use client";
 
-import { FormDialog } from "@/components/forms/form-dialog";
+import { FormSheet } from "@/components/forms/form-sheet";
+import {
+  FORM_DRAWER_CONTENT_COMPACT_CLASS,
+  FORM_DRAWER_DESCRIPTION_CLASS,
+  FORM_DRAWER_FOOTER_CLASS,
+  FORM_DRAWER_HEADER_COMPACT_CLASS,
+  FORM_DRAWER_SHEET_FINANCIAL_CLASS,
+  FORM_DRAWER_TITLE_COMPACT_CLASS,
+} from "@/components/forms/form-drawer-shell";
 import { estimateFormSchema } from "@/features/estimates/schemas/estimate-profile";
 import {
   EstimateBasicFields,
@@ -56,16 +64,22 @@ export function EstimateFormDialog({
   });
 
   return (
-    <FormDialog
+    <FormSheet
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? `Edit ${editingEstimate?.estimateNumber}` : "New estimate"}
-      description="Select a customer, add line items, and save."
+      description="Create a quote to send to your customer for approval."
+      className={FORM_DRAWER_SHEET_FINANCIAL_CLASS}
+      width="wide"
+      headerClassName={FORM_DRAWER_HEADER_COMPACT_CLASS}
+      titleClassName={FORM_DRAWER_TITLE_COMPACT_CLASS}
+      descriptionClassName={FORM_DRAWER_DESCRIPTION_CLASS}
+      contentClassName={FORM_DRAWER_CONTENT_COMPACT_CLASS}
+      footerClassName={FORM_DRAWER_FOOTER_CLASS}
       form={form}
       schema={estimateFormSchema}
       onSubmit={(values) => mutation.mutate(values)}
       isPending={mutation.isPending}
-      size="2xl"
     >
       <EstimateBasicFields
         form={form}
@@ -98,6 +112,6 @@ export function EstimateFormDialog({
       />
 
       <EstimateFormFooterFields form={form} dialogOpen={open} />
-    </FormDialog>
+    </FormSheet>
   );
 }

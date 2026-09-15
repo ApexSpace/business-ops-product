@@ -7,22 +7,18 @@ import { CheckCircle2, FileEdit, Layers } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CreateCapabilityDialog } from "@/features/platform/components/capabilities/create-capability-dialog";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import {
   DataTableRowActions,
   type RowAction,
 } from "@/components/data-display/data-table-row-actions";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { SearchInput } from "@/components/forms/search-input";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { StatsCard } from "@/components/layout/stats-card";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
@@ -62,6 +58,8 @@ function PlatformCapabilitiesPageContent() {
   const [deleteTarget, setDeleteTarget] = useState<CapabilityListItem | null>(
     null,
   );
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState(params.status);
   const canManage = useCan(PERMISSIONS["platform.capabilities.manage"]);
   const status = params.status;
 
@@ -164,119 +162,106 @@ function PlatformCapabilitiesPageContent() {
 
   return (
     <>
-      <div className="space-y-6">
-        {statsLoading ? (
-          <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="min-h-[7.25rem] rounded-lg" />
-            ))}
-          </div>
-        ) : stats ? (
-          <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <StatsCard
-              label="Total"
-              value={stats.total}
-              icon={Layers}
-            />
-            <StatsCard
-              label="Active"
-              value={stats.active}
-              icon={CheckCircle2}
-            />
-            <StatsCard
-              label="Draft"
-              value={stats.draft}
-              icon={FileEdit}
-            />
-          </div>
-        ) : null}
-
-        <ListPage
-          title="Capabilities"
-          description="Bundle platform modules into capability packages for plans and entitlements."
-          actions={canManage ? <CreateCapabilityDialog /> : null}
-          filters={
-            <FilterBar>
-              <SearchInput
-                value={params.search}
-                onChange={(v) =>
-                  setParams({ search: v, page: "1" }, { resetPage: true })
-                }
-                placeholder="Search by name…"
-                className="w-full sm:w-64"
+      <EntityListLayout
+        title="Capabilities"
+        description="Bundle platform modules into capability packages for plans and entitlements."
+        extraActions={canManage ? <CreateCapabilityDialog /> : null}
+        leading={
+          statsLoading ? (
+            <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="min-h-[7.25rem] rounded-lg" />
+              ))}
+            </div>
+          ) : stats ? (
+            <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <StatsCard label="Total" value={stats.total} icon={Layers} />
+              <StatsCard
+                label="Active"
+                value={stats.active}
+                icon={CheckCircle2}
               />
-              <SearchableSelect
-                items={capabilityStatusFilterOptions}
-                value={status}
-                onValueChange={(v) =>
-                  setParams(
-                    { status: v ?? "all", page: "1" },
-                    { resetPage: true },
-                  )
-                }
-                placeholder="Status"
-                triggerClassName="w-[180px]"
-              />
-            </FilterBar>
-          }
-          pagination={
-            data?.meta && !isEmpty ? (
-              <ListPagination
-                meta={data.meta}
-                page={page}
-                onPageChange={(p) => setParams({ page: String(p) })}
-                label="capabilities"
-              />
-            ) : null
-          }
-        >
-          <DataTable
-            columns={columns}
-            data={data?.items ?? []}
-            getRowId={(row) => row.id}
-            isLoading={isLoading}
-            emptyTitle="No capabilities yet"
-            emptyDescription="Create capability bundles and select which platform modules each includes."
-            emptyAction={canManage ? <CreateCapabilityDialog /> : undefined}
-            rowActions={
-              canManage
-                ? (row) => {
-                    const actions: RowAction[] = [
-                      {
-                        label: "View",
-                        onClick: () =>
-                          router.push(`/platform/capabilities/${row.id}`),
-                      },
-                      {
-                        label: "Edit",
-                        onClick: () =>
-                          router.push(`/platform/capabilities/${row.id}`),
-                      },
-                    ];
-                    if (row.status === "DRAFT") {
-                      actions.push({
-                        label: "Publish",
-                        onClick: () => publishMutation.mutate(row.id),
-                      });
-                    }
-                    if (row.status === "ACTIVE") {
-                      actions.push({
-                        label: "Move to Draft",
-                        onClick: () => draftMutation.mutate(row.id),
-                      });
-                    }
-                    actions.push({
-                      label: "Delete permanently",
-                      onClick: () => setDeleteTarget(row),
-                      destructive: true,
-                    });
-                    return <DataTableRowActions actions={actions} />;
-                  }
-                : undefined
-            }
+              <StatsCard label="Draft" value={stats.draft} icon={FileEdit} />
+            </div>
+          ) : null
+        }
+        searchPlaceholder="Search by name…"
+        searchValue={params.search}
+        onSearchChange={(v) =>
+          setParams({ search: v, page: "1" }, { resetPage: true })
+        }
+        filterAriaLabel="Capability filters"
+        filterActive={status !== "all"}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) setDraftStatus(status);
+          setFilterOpen(open);
+        }}
+        filterContent={
+          <ListFilterCheckboxGroup
+            legend="Status"
+            options={capabilityStatusFilterOptions}
+            value={draftStatus}
+            onChange={(next) => setDraftStatus(String(next))}
           />
-        </ListPage>
-      </div>
+        }
+        onFilterApply={() =>
+          setParams({ status: draftStatus, page: "1" }, { resetPage: true })
+        }
+        footer={
+          data?.meta && !isEmpty ? (
+            <ListPagination
+              meta={data.meta}
+              page={page}
+              onPageChange={(p) => setParams({ page: String(p) })}
+              label="capabilities"
+            />
+          ) : undefined
+        }
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        emptyTitle="No capabilities yet"
+        emptyDescription="Create capability bundles and select which platform modules each includes."
+        emptyAction={canManage ? <CreateCapabilityDialog /> : undefined}
+        rowActions={
+          canManage
+            ? (row) => {
+                  const actions: RowAction[] = [
+                    {
+                      label: "View",
+                      onClick: () =>
+                        router.push(`/platform/capabilities/${row.id}`),
+                    },
+                    {
+                      label: "Edit",
+                      onClick: () =>
+                        router.push(`/platform/capabilities/${row.id}`),
+                    },
+                  ];
+                  if (row.status === "DRAFT") {
+                    actions.push({
+                      label: "Publish",
+                      onClick: () => publishMutation.mutate(row.id),
+                    });
+                  }
+                  if (row.status === "ACTIVE") {
+                    actions.push({
+                      label: "Move to Draft",
+                      onClick: () => draftMutation.mutate(row.id),
+                    });
+                  }
+                  actions.push({
+                    label: "Delete permanently",
+                    onClick: () => setDeleteTarget(row),
+                    destructive: true,
+                  });
+                  return <DataTableRowActions actions={actions} />;
+                }
+            : undefined
+        }
+      />
 
       <ConfirmDeleteDialog
         open={!!deleteTarget}

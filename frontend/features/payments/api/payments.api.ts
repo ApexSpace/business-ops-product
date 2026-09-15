@@ -27,7 +27,8 @@ export async function listPayments(
       paidTo: filters.paidTo,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getPayment(id: string) {

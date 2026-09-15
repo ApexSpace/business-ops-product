@@ -38,7 +38,8 @@ export function PlanGroupOverviewTab({
   canManage,
   onSave,
 }: PlanGroupOverviewTabProps) {
-  const snapshotListFilters = { page: 1, limit: 100 } as const;
+  const snapshotListFilters = { page: 1, limit: 100,
+} as const;
 
   const {
     data: snapshots,

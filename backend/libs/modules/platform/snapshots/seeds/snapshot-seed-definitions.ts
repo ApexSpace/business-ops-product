@@ -53,6 +53,13 @@ function baseNavigation(): SnapshotAssets['navigation'] {
       order: 6,
     },
     {
+      key: 'social-planner',
+      route: '/business/social-planner',
+      icon: 'share-2',
+      labelKey: 'nav.socialPlanner',
+      order: 6.5,
+    },
+    {
       key: 'appointments',
       route: '/business/appointments',
       icon: 'calendar',
@@ -60,11 +67,39 @@ function baseNavigation(): SnapshotAssets['navigation'] {
       order: 7,
     },
     {
+      key: 'time-clock',
+      route: '/business/time-clock',
+      icon: 'clock',
+      labelKey: 'nav.timeClock',
+      order: 8,
+    },
+    {
+      key: 'time-cards',
+      route: '/business/time-cards',
+      icon: 'clock',
+      labelKey: 'nav.timeCards',
+      order: 9,
+    },
+    {
       key: 'payments',
       route: '/business/payments',
       icon: 'credit-card',
       labelKey: 'nav.payments',
-      order: 8,
+      order: 10,
+    },
+    {
+      key: 'sales',
+      route: '/business/sales',
+      icon: 'shopping-bag',
+      labelKey: 'nav.sales',
+      order: 11,
+    },
+    {
+      key: 'products',
+      route: '/business/products',
+      icon: 'package',
+      labelKey: 'nav.products',
+      order: 12,
     },
   ];
 }
@@ -103,6 +138,7 @@ function baseEmailPrefs() {
   return [
     { emailType: 'membership.invite', enabled: true },
     { emailType: 'appointment.confirmation', enabled: true },
+    { emailType: 'appointment.booked_for', enabled: true },
     { emailType: 'appointment.reminder', enabled: true },
     { emailType: 'invoice.sent', enabled: true },
   ];
@@ -250,7 +286,7 @@ export function buildDefaultBusinessSnapshot(): SnapshotSeedDefinition {
         templates: baseEmailTemplates(),
       },
       branding: {
-        productName: 'Business Hub',
+        productName: 'PandaCue',
         accentColor: '#2563eb',
       },
       integrations: {

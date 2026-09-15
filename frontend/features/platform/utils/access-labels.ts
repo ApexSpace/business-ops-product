@@ -60,6 +60,8 @@ export function formatSubscriptionStatus(
     EXPIRED: "Expired",
     INTERNAL: "Free/Internal",
     PAST_DUE: "Past Due",
+    UNPAID: "Unpaid",
+    INCOMPLETE: "Incomplete",
   };
   return labels[status] ?? status;
 }
@@ -75,7 +77,7 @@ export function formatPaymentMethod(
     CASH: "Cash",
     JAZZCASH: "JazzCash",
     EASYPAISA: "EasyPaisa",
-    MANUAL_INVOICE: "Manual Invoice",
+    MANUAL_INVOICE: "Manual Invoice (offline)",
     FREE_INTERNAL: "Free/Internal",
     NOT_SELECTED: "Not Selected",
   };
@@ -214,8 +216,8 @@ export function formatPlanTierTransition(
 ): string {
   const from = fromName?.trim() || null;
   const to = toName?.trim() || null;
-  if (!from && !to) return "—";
-  if (!from || from === to) return to ?? from ?? "—";
+  if (!from && !to) return "";
+  if (!from || from === to) return to ?? from ?? "";
   if (!to) return from;
   return `${from} → ${to}`;
 }
@@ -226,8 +228,8 @@ export function formatSubscriptionStatusTransition(
 ): string {
   const fromLabel = from ? formatSubscriptionStatus(from) : null;
   const toLabel = to ? formatSubscriptionStatus(to) : null;
-  if (!fromLabel && !toLabel) return "—";
-  if (!fromLabel || fromLabel === toLabel) return toLabel ?? fromLabel ?? "—";
+  if (!fromLabel && !toLabel) return "";
+  if (!fromLabel || fromLabel === toLabel) return toLabel ?? fromLabel ?? "";
   if (!toLabel) return fromLabel;
   return `${fromLabel} → ${toLabel}`;
 }
@@ -271,7 +273,7 @@ export function formatAccessImpact(
   fromCanAccess?: boolean,
   toCanAccess?: boolean,
 ): string {
-  if (fromCanAccess === undefined && toCanAccess === undefined) return "—";
+  if (fromCanAccess === undefined && toCanAccess === undefined) return "";
   const from = fromCanAccess ? "Can access" : "Cannot access";
   const to = toCanAccess ? "Can access" : "Cannot access";
   return `${from} → ${to}`;
@@ -291,6 +293,8 @@ export function formatAccessReasonCode(code: BusinessAccessReasonCode): string {
     SUBSCRIPTION_EXPIRED: "Expired",
     SUBSCRIPTION_CANCELED: "Canceled",
     SUBSCRIPTION_PAST_DUE: "Past due",
+    SUBSCRIPTION_UNPAID: "Unpaid",
+    SUBSCRIPTION_INCOMPLETE: "Incomplete",
     SUBSCRIPTION_UNKNOWN: "Cannot access",
   };
   return labels[code] ?? code;

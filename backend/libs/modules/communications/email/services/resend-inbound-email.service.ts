@@ -18,11 +18,16 @@ export class ResendInboundEmailService {
     private readonly conversationWebhookIngestion: ConversationWebhookIngestionService,
   ) {}
 
-  async processInboundPayload(payload: ResendInboundEmailPayload): Promise<void> {
+  async processInboundPayload(
+    payload: ResendInboundEmailPayload,
+  ): Promise<void> {
     const enriched = await this.enrichFromResendApi(payload);
-    const inboundDomain = this.configService.get('email.platform.inboundDomain', {
-      infer: true,
-    });
+    const inboundDomain = this.configService.get(
+      'email.platform.inboundDomain',
+      {
+        infer: true,
+      },
+    );
     const inbound = normalizeResendInboundEmail(enriched, inboundDomain);
     if (!inbound) {
       this.logger.warn(
@@ -56,7 +61,9 @@ export class ResendInboundEmailService {
       };
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to fetch received email';
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch received email';
       this.logger.warn(
         `Could not fetch Resend received email ${emailId}; using webhook metadata only: ${message}`,
       );

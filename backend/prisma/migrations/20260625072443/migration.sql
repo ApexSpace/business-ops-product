@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "service_option_resource_requirements_businessId_serviceOptionI_" RENAME TO "service_option_resource_requirements_businessId_serviceOpti_idx";

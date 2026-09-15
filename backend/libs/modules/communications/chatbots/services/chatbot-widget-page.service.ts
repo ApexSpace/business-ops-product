@@ -187,7 +187,7 @@ export class ChatbotWidgetPageService {
       startSession(!state.config.collectContactInfo);
       return;
     }
-    api("/public/chatbots/sessions/" + encodeURIComponent(state.sessionId) + "/messages", { method: "POST", body: JSON.stringify({ text: text }) })
+    api("/public/chatbots/" + encodeURIComponent(PUBLIC_KEY) + "/sessions/" + encodeURIComponent(state.sessionId) + "/messages", { method: "POST", body: JSON.stringify({ text: text }) })
       .then(function (msg) {
         state.messages.push(msg);
         var input = document.getElementById("composer-input");
@@ -199,7 +199,7 @@ export class ChatbotWidgetPageService {
   function poll() {
     if (!state.sessionId) return;
     var q = state.since ? "?since=" + encodeURIComponent(state.since) : "";
-    api("/public/chatbots/sessions/" + encodeURIComponent(state.sessionId) + "/messages" + q)
+    api("/public/chatbots/" + encodeURIComponent(PUBLIC_KEY) + "/sessions/" + encodeURIComponent(state.sessionId) + "/messages" + q)
       .then(function (items) {
         if (items && items.length) {
           var seen = {};

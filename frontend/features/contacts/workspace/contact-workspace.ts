@@ -1,15 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
-  Bot,
-  Calendar,
-  CheckSquare,
-  ClipboardList,
-  Receipt,
-  StickyNote,
-  Target,
+  Clock,
+  Package,
+  ShoppingBag,
+  UserRound,
   Wallet,
-  Wrench,
 } from "lucide-react";
 import type { Contact, IndustryLabels, Lead, Note, Task, WorkItem } from "@/features/contacts/types";
 import { getLeadDisplayTitle } from "@/features/leads/utils/leads";
@@ -23,6 +19,12 @@ import {
 import { formatDateTimeInTimezone } from "@/features/calendars/utils/timezone";
 
 export type ContactRecordsSectionId =
+  | "profile"
+  | "timeline"
+  | "wallet"
+  | "memberships"
+  | "adjustments"
+  | "sales"
   | "leads"
   | "work-items"
   | "appointments"
@@ -35,13 +37,9 @@ export type ContactRecordsSectionId =
   | "automations";
 
 export const DEFAULT_CONTACT_RECORDS_SECTION: ContactRecordsSectionId =
-  "activity";
+  "timeline";
 
-export type ContactMobilePanel =
-  | "details"
-  | "conversation"
-  | "records"
-  | "actions";
+export type ContactMobilePanel = "details" | "conversation" | "records";
 
 export interface ContactRailItem {
   id: string;
@@ -51,68 +49,43 @@ export interface ContactRailItem {
   placeholder?: boolean;
 }
 
-/** Rail order: activity first (default), then operational sections */
+/** Rail order: Mangomint-aligned primary tabs */
 export const CONTACT_RAIL_ITEMS: ContactRailItem[] = [
   {
-    id: "activity",
-    label: "Activity",
+    id: "timeline",
+    label: "Timeline",
     icon: Activity,
-    sectionId: "activity",
+    sectionId: "timeline",
   },
   {
-    id: "leads",
-    label: "Opportunities",
-    icon: Target,
-    sectionId: "leads",
-  },
-  {
-    id: "work-items",
-    label: "Work items",
-    icon: Wrench,
-    sectionId: "work-items",
-  },
-  {
-    id: "appointments",
-    label: "Appointments",
-    icon: Calendar,
-    sectionId: "appointments",
-  },
-  {
-    id: "notes",
-    label: "Notes",
-    icon: StickyNote,
-    sectionId: "notes",
-  },
-  {
-    id: "tasks",
-    label: "Tasks",
-    icon: CheckSquare,
-    sectionId: "tasks",
-  },
-  {
-    id: "invoices",
-    label: "Invoices",
-    icon: Receipt,
-    sectionId: "invoices",
-  },
-  {
-    id: "estimates",
-    label: "Estimates",
-    icon: ClipboardList,
-    sectionId: "estimates",
-  },
-  {
-    id: "payments",
-    label: "Received Payments",
+    id: "wallet",
+    label: "Wallet",
     icon: Wallet,
-    sectionId: "payments",
+    sectionId: "wallet",
   },
   {
-    id: "automations",
-    label: "Automations",
-    icon: Bot,
-    sectionId: "automations",
-    placeholder: true,
+    id: "memberships",
+    label: "Memberships",
+    icon: Package,
+    sectionId: "memberships",
+  },
+  {
+    id: "adjustments",
+    label: "Adjustments",
+    icon: Clock,
+    sectionId: "adjustments",
+  },
+  {
+    id: "sales",
+    label: "Sales",
+    icon: ShoppingBag,
+    sectionId: "sales",
+  },
+  {
+    id: "profile",
+    label: "Profile",
+    icon: UserRound,
+    sectionId: "profile",
   },
 ];
 
@@ -121,6 +94,18 @@ export function getRecordsSectionTitle(
   labels: IndustryLabels,
 ): string {
   switch (section) {
+    case "profile":
+      return "Contact details";
+    case "timeline":
+      return "Timeline";
+    case "wallet":
+      return "Wallet";
+    case "memberships":
+      return "Memberships & packages";
+    case "adjustments":
+      return "Custom service durations";
+    case "sales":
+      return "Sales";
     case "leads":
       return labels.leads;
     case "work-items":
@@ -154,22 +139,22 @@ export function isPlaceholderSection(section: ContactRecordsSectionId): boolean 
 export const WORKSPACE_PANEL_CLASS =
   "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-elevation-xs";
 
-/** Workspace inset from shell edges */
-export const WORKSPACE_PADDING_CLASS = "p-2 sm:p-2.5 lg:p-3";
+/** Workspace inset from shell edges (tighter top gap below page heading) */
+export const WORKSPACE_PADDING_CLASS =
+  "px-2 pb-2 pt-[var(--page-content-top-gap)] sm:px-2.5 sm:pb-2.5 lg:px-3 lg:pb-3";
 
 /** Tight gap between columns (all breakpoints) */
 export const WORKSPACE_GAP_CLASS = "gap-1.5 sm:gap-2";
 
 /**
- * Desktop xl+ — grid with fixed side tracks; center fills remainder (not all extra space on narrow lg).
- * Below xl, tablet layout is used instead of squeezing four columns.
+ * Desktop xl+ — conversation fills left; contact sidebar on the right.
  */
 export const WORKSPACE_DESKTOP_ROW_CLASS = [
   "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-x-auto overflow-y-hidden xl:grid",
   WORKSPACE_GAP_CLASS,
   WORKSPACE_PADDING_CLASS,
-  "xl:grid-cols-[280px_minmax(240px,1fr)_300px_3rem]",
-  "2xl:grid-cols-[320px_minmax(280px,1fr)_360px_3.5rem]",
+  "xl:grid-cols-[minmax(360px,1fr)_minmax(280px,340px)]",
+  "2xl:grid-cols-[minmax(420px,1fr)_360px]",
 ].join(" ");
 
 /** Grid/flex cell wrapper — track size comes from parent layout */
@@ -180,36 +165,93 @@ export const WORKSPACE_COLUMN_CELL_CLASS =
 export const WORKSPACE_DETAILS_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
 export const WORKSPACE_CONVERSATION_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
 export const WORKSPACE_RECORDS_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
-export const WORKSPACE_RAIL_COL_CLASS = WORKSPACE_COLUMN_CELL_CLASS;
-
-/** Tablet md–xl: contact + conversation (balanced flex, no tiny side columns) */
+/** Tablet md–xl: conversation + sidebar in one row */
 export const WORKSPACE_TABLET_MAIN_ROW_CLASS = [
-  "flex min-h-0 flex-1 overflow-hidden",
+  "flex h-full min-h-0 w-full flex-1 overflow-hidden",
   WORKSPACE_GAP_CLASS,
 ].join(" ");
-
-export const WORKSPACE_TABLET_DETAILS_COL_CLASS =
-  "flex h-full min-h-0 w-[min(38%,320px)] min-w-[240px] max-w-[360px] shrink-0 overflow-hidden";
 
 export const WORKSPACE_TABLET_CONVERSATION_COL_CLASS =
-  "flex h-full min-h-0 min-w-[200px] flex-1 basis-0 overflow-hidden";
+  "flex h-full min-h-0 min-w-[240px] flex-1 basis-0 overflow-hidden";
 
-/** Tablet: records + rail */
-export const WORKSPACE_TABLET_BOTTOM_ROW_CLASS = [
-  "flex shrink-0 overflow-hidden",
-  WORKSPACE_GAP_CLASS,
-  "min-h-[200px] max-h-[min(38vh,300px)]",
+export const WORKSPACE_TABLET_SIDEBAR_COL_CLASS =
+  "flex h-full min-h-0 w-[min(34%,300px)] min-w-[240px] max-w-[320px] shrink-0 overflow-hidden";
+
+/** @deprecated tablet bottom row removed — records live in sidebar */
+export const WORKSPACE_TABLET_DETAILS_COL_CLASS =
+  WORKSPACE_TABLET_SIDEBAR_COL_CLASS;
+
+/** @deprecated */
+export const WORKSPACE_TABLET_BOTTOM_ROW_CLASS =
+  "hidden";
+
+/** @deprecated */
+export const WORKSPACE_TABLET_RECORDS_COL_CLASS =
+  WORKSPACE_COLUMN_CELL_CLASS;
+
+/** @deprecated Prefer `@/components/shell/shell-full-bleed-paths`. */
+export {
+  isContactWorkspacePath,
+  isConversationsInboxPath,
+  isAppointmentsCalendarPath,
+  isSalesWorkspacePath,
+  isPaymentsWorkspacePath,
+} from "@/components/shell/shell-full-bleed-paths";
+
+/**
+ * Desktop lg+ — list, thread, and contact sidebar in three columns.
+ * List track is a stable rem width (Figma ~339px → 21.25rem), not a raw px lock.
+ */
+export const INBOX_DESKTOP_ROW_CLASS = [
+  "hidden h-full min-h-0 w-full max-w-full flex-1 items-stretch overflow-hidden lg:grid",
+  "lg:grid-cols-[minmax(16rem,21.25rem)_minmax(0,1fr)_minmax(16rem,22.5rem)]",
+  "2xl:grid-cols-[21.25rem_minmax(0,1fr)_22.5rem]",
 ].join(" ");
 
-export const WORKSPACE_TABLET_RECORDS_COL_CLASS =
-  "flex min-h-0 min-w-0 flex-1 basis-0 overflow-hidden";
+/** Conversation list pane — flush white column with a tokenized right divider. */
+export const INBOX_LIST_PANEL_CLASS =
+  "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden border-r border-border bg-white";
 
-export const WORKSPACE_TABLET_RAIL_COL_CLASS = "flex w-11 shrink-0 overflow-hidden";
+/** Conversation thread pane — flush white column between list and details. */
+export const INBOX_THREAD_PANEL_CLASS =
+  "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white";
 
-/** Contact detail workspace route (full-bleed below topbar, no shell content padding). */
-export function isContactWorkspacePath(pathname: string): boolean {
-  return /^\/business\/contacts\/[^/]+$/.test(pathname);
-}
+/**
+ * Shared inbox column header band (list / thread / details).
+ * Height: `--table-header-height` (same as list table headers). Do not override per column.
+ */
+export const INBOX_COLUMN_HEADER_CLASS =
+  "flex h-[var(--table-header-height)] min-h-[var(--table-header-height)] max-h-[var(--table-header-height)] shrink-0 items-center gap-3 overflow-hidden border-b border-border bg-white px-6";
+
+export const INBOX_LIST_HEADER_CLASS =
+  `${INBOX_COLUMN_HEADER_CLASS} justify-between`;
+
+export const INBOX_THREAD_HEADER_CLASS = INBOX_COLUMN_HEADER_CLASS;
+
+/** Same band as the thread header; hidden on mobile where a Back bar already exists. */
+export const INBOX_DETAILS_HEADER_CLASS =
+  `${INBOX_COLUMN_HEADER_CLASS} max-md:hidden max-lg:pr-12`;
+
+/** Details pane — Figma ~360px → 22.5rem, flush white with a left divider on desktop. */
+export const INBOX_DETAILS_PANEL_CLASS =
+  "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white lg:border-l lg:border-border";
+
+/** Search + status chips under the list header — not part of the aligned band. */
+export const INBOX_LIST_TOOLS_CLASS =
+  "flex shrink-0 flex-col gap-4 border-b border-border px-6 py-4";
+
+export const INBOX_DETAILS_SECTION_CLASS =
+  "flex flex-col gap-2.5 border-b border-border px-6 py-drawer-section last:border-b-0";
+
+/** Tablet md–lg: list + thread; details open in a sheet */
+export const INBOX_TABLET_MAIN_ROW_CLASS =
+  "flex h-full min-h-0 w-full flex-1 overflow-hidden";
+
+export const INBOX_TABLET_LIST_COL_CLASS =
+  "flex h-full min-h-0 w-[min(40%,21.25rem)] min-w-[16rem] max-w-[21.25rem] shrink-0 overflow-hidden";
+
+export const INBOX_TABLET_THREAD_COL_CLASS =
+  "flex h-full min-h-0 min-w-[300px] flex-[1.6] basis-0 overflow-hidden";
 
 export type TimelineEventType =
   | "contact_created"

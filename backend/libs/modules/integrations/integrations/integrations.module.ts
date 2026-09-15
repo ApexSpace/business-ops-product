@@ -4,24 +4,36 @@ import { InvoicesModule } from '@app/modules/finance/invoices/invoices.module';
 import { AuditModule } from '@app/modules/platform/audit/audit.module';
 import { ConversationsModule } from '@app/modules/communications/conversations/conversations.module';
 import { MetaWebhookProcessorModule } from '@app/modules/communications/webhooks/meta-webhook-processor.module';
+import { MembershipsModule } from '@app/modules/finance/memberships/memberships.module';
+import { StripePlatformBillingModule } from '@app/modules/platform/billing/stripe/stripe-platform-billing.module';
 import { BusinessIntegrationResourcesController } from './business-integration-resources.controller';
 import { BusinessIntegrationsController } from './business-integrations.controller';
+import { BusinessWhatsAppController } from './controllers/business-whatsapp.controller';
 import { GoogleOAuthController } from './google-oauth.controller';
 import { GoogleOAuthService } from './google-oauth.service';
 import { IntegrationProvidersController } from './integration-providers.controller';
 import { IntegrationsService } from './integrations.service';
 import { LinkedInOAuthController } from './linkedin-oauth.controller';
 import { LinkedInOAuthService } from './linkedin-oauth.service';
+import { SocialOAuthController } from './social-oauth.controller';
+import { SocialOAuthService } from './social-oauth.service';
+import { StripeAccountSettingsController } from './stripe/controllers/stripe-account-settings.controller';
 import { StripeOAuthController } from './stripe/controllers/stripe-oauth.controller';
 import { StripeWebhookController } from './stripe/controllers/stripe-webhook.controller';
+import { StripeAccountLinksService } from './stripe/services/stripe-account-links.service';
 import { StripeAccountService } from './stripe/services/stripe-account.service';
 import { StripeApiService } from './stripe/services/stripe-api.service';
 import { StripeCheckoutService } from './stripe/services/stripe-checkout.service';
+import { StripeConnectContextService } from './stripe/services/stripe-connect-context.service';
+import { StripeCustomerService } from './stripe/services/stripe-customer.service';
+import { StripePaymentIntentService } from './stripe/services/stripe-payment-intent.service';
 import { StripeOAuthService } from './stripe/services/stripe-oauth.service';
 import { StripeWebhookDispatchService } from './stripe/services/stripe-webhook-dispatch.service';
 import { StripeWebhookService } from './stripe/services/stripe-webhook.service';
 import { MetaOAuthController } from './meta/controllers/meta-oauth.controller';
 import { EmailIntegrationController } from './email/controllers/email-integration.controller';
+import { SmsIntegrationController } from './sms/controllers/sms-integration.controller';
+import { TwilioModule } from '../twilio/twilio.module';
 import { PlatformEmailProvisioningService } from './email/services/platform-email-provisioning.service';
 import { MetaWebhookController } from './meta/controllers/meta-webhook.controller';
 import { MetaApiClient } from './meta/services/meta-api-client';
@@ -35,6 +47,7 @@ import { MetaWebhookDispatchService } from './meta/services/meta-webhook-dispatc
 import { MetaWebhookRecoveryService } from './meta/services/meta-webhook-recovery.service';
 import { MetaWebhookService } from './meta/services/meta-webhook.service';
 import { PlatformIntegrationsController } from './platform-integrations.controller';
+import { PlatformOpsMessagingController } from './controllers/platform-ops-messaging.controller';
 import { FacebookResourceSyncHandler } from './providers/resource-sync/facebook-resource-sync.handler';
 import { GoogleBusinessProfileResourceSyncHandler } from './providers/resource-sync/google-business-profile-resource-sync.handler';
 import { GoogleCalendarResourceSyncHandler } from './providers/resource-sync/google-calendar-resource-sync.handler';
@@ -42,13 +55,21 @@ import { InstagramResourceSyncHandler } from './providers/resource-sync/instagra
 import { IntegrationResourceSyncRegistry } from './providers/resource-sync/integration-resource-sync.registry';
 import { StripeResourceSyncHandler } from './providers/resource-sync/stripe-resource-sync.handler';
 import { WhatsAppResourceSyncHandler } from './providers/resource-sync/whatsapp-resource-sync.handler';
+import { YouTubeResourceSyncHandler } from './providers/resource-sync/youtube-resource-sync.handler';
+import { LinkedInResourceSyncHandler } from './providers/resource-sync/linkedin-resource-sync.handler';
+import { PinterestResourceSyncHandler } from './providers/resource-sync/pinterest-resource-sync.handler';
 import { BusinessIntegrationRepository } from './repositories/business-integration.repository';
 import { IntegrationProviderRepository } from './repositories/integration-provider.repository';
 import { IntegrationResourceRepository } from './repositories/integration-resource.repository';
 import { PlatformIntegrationRepository } from './repositories/platform-integration.repository';
 import { GoogleTokenService } from './services/google-token.service';
+import { PinterestTokenService } from './services/pinterest-token.service';
+import { TikTokTokenService } from './services/tiktok-token.service';
 import { IntegrationResourcesService } from './services/integration-resources.service';
 import { MessagingStatusService } from './services/messaging-status.service';
+import { WhatsAppNumbersService } from './services/whatsapp-numbers.service';
+import { WhatsAppModule } from '../whatsapp/whatsapp.module';
+import { WhatsAppTemplatesController } from '../whatsapp/controllers/whatsapp-templates.controller';
 
 @Module({
   imports: [
@@ -56,20 +77,30 @@ import { MessagingStatusService } from './services/messaging-status.service';
     forwardRef(() => BusinessModule),
     forwardRef(() => ConversationsModule),
     forwardRef(() => InvoicesModule),
-    MetaWebhookProcessorModule,
+    forwardRef(() => MembershipsModule),
+    forwardRef(() => MetaWebhookProcessorModule),
+    WhatsAppModule,
+    StripePlatformBillingModule,
+    TwilioModule,
   ],
   controllers: [
     IntegrationProvidersController,
     BusinessIntegrationsController,
     BusinessIntegrationResourcesController,
+    BusinessWhatsAppController,
+    WhatsAppTemplatesController,
+    PlatformOpsMessagingController,
     PlatformIntegrationsController,
     GoogleOAuthController,
     LinkedInOAuthController,
+    SocialOAuthController,
     StripeOAuthController,
+    StripeAccountSettingsController,
     StripeWebhookController,
     MetaOAuthController,
     MetaWebhookController,
     EmailIntegrationController,
+    SmsIntegrationController,
   ],
   providers: [
     IntegrationProviderRepository,
@@ -79,13 +110,20 @@ import { MessagingStatusService } from './services/messaging-status.service';
     IntegrationsService,
     GoogleOAuthService,
     LinkedInOAuthService,
+    SocialOAuthService,
     StripeApiService,
     StripeAccountService,
+    StripeAccountLinksService,
     StripeOAuthService,
     StripeWebhookService,
     StripeWebhookDispatchService,
     StripeCheckoutService,
+    StripeConnectContextService,
+    StripeCustomerService,
+    StripePaymentIntentService,
     GoogleTokenService,
+    TikTokTokenService,
+    PinterestTokenService,
     IntegrationResourcesService,
     GoogleCalendarResourceSyncHandler,
     GoogleBusinessProfileResourceSyncHandler,
@@ -93,6 +131,9 @@ import { MessagingStatusService } from './services/messaging-status.service';
     InstagramResourceSyncHandler,
     WhatsAppResourceSyncHandler,
     StripeResourceSyncHandler,
+    YouTubeResourceSyncHandler,
+    LinkedInResourceSyncHandler,
+    PinterestResourceSyncHandler,
     IntegrationResourceSyncRegistry,
     MetaConfigService,
     MetaApiClient,
@@ -106,16 +147,23 @@ import { MessagingStatusService } from './services/messaging-status.service';
     MetaWebhookService,
     PlatformEmailProvisioningService,
     MessagingStatusService,
+    WhatsAppNumbersService,
   ],
   exports: [
     IntegrationsService,
     IntegrationResourcesService,
     GoogleTokenService,
+    TikTokTokenService,
+    PinterestTokenService,
     MetaTokenService,
     MetaConfigService,
     StripeApiService,
     StripeAccountService,
+    StripeAccountLinksService,
     StripeCheckoutService,
+    StripeConnectContextService,
+    StripeCustomerService,
+    StripePaymentIntentService,
     StripeWebhookDispatchService,
     BusinessIntegrationRepository,
     IntegrationResourceRepository,
@@ -123,6 +171,7 @@ import { MessagingStatusService } from './services/messaging-status.service';
     MetaApiClient,
     MetaResourceSyncService,
     PlatformEmailProvisioningService,
+    TwilioModule,
   ],
 })
 export class IntegrationsModule {}

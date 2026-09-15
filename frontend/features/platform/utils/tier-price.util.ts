@@ -44,7 +44,7 @@ export function formatBillingCycleLabel(
     case "CUSTOM":
       return "Custom";
     default:
-      return "—";
+      return "";
   }
 }
 

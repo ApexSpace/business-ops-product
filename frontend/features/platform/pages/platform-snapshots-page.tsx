@@ -9,20 +9,17 @@ import { toast } from "sonner";
 import { CreateSnapshotWizard } from "@/features/platform/components/create-snapshot-wizard";
 import { CloneSnapshotDialog } from "@/features/platform/components/clone-snapshot-dialog";
 import { ApplySnapshotDialog } from "@/features/platform/components/apply-snapshot-dialog";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import {
   DataTableRowActions,
   type RowAction,
 } from "@/components/data-display/data-table-row-actions";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { SearchableSelect } from "@/components/forms/searchable-select";
 import { Button } from "@/components/ui/button";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import {
@@ -50,6 +47,8 @@ function PlatformSnapshotsPageContent() {
   const [applyTarget, setApplyTarget] = useState<SnapshotListItem | null>(null);
   const [cloneTarget, setCloneTarget] = useState<SnapshotListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SnapshotListItem | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState(params.status);
   const canManage = useCan(PERMISSIONS["platform.snapshots.manage"]);
   const status = params.status;
 
@@ -138,24 +137,29 @@ function PlatformSnapshotsPageContent() {
 
   return (
     <>
-      <ListPage
+      <EntityListLayout
         title="Snapshots"
         description="Reusable business blueprints—navigation, terminology, dashboard layout, and default provisioning assets."
-        actions={canManage ? <CreateSnapshotWizard /> : null}
-        filters={
-          <FilterBar>
-            <SearchableSelect
-              items={snapshotStatusFilterOptions}
-              value={status}
-              onValueChange={(v) =>
-                setParams({ status: v ?? "all", page: "1" }, { resetPage: true })
-              }
-              placeholder="Status"
-              triggerClassName="w-[180px]"
-            />
-          </FilterBar>
+        extraActions={canManage ? <CreateSnapshotWizard /> : null}
+        filterAriaLabel="Snapshot filters"
+        filterActive={status !== "all"}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) setDraftStatus(status);
+          setFilterOpen(open);
+        }}
+        filterContent={
+          <ListFilterCheckboxGroup
+            legend="Status"
+            options={snapshotStatusFilterOptions}
+            value={draftStatus}
+            onChange={(next) => setDraftStatus(String(next))}
+          />
         }
-        pagination={
+        onFilterApply={() =>
+          setParams({ status: draftStatus, page: "1" }, { resetPage: true })
+        }
+        footer={
           data?.meta && !isEmpty ? (
             <ListPagination
               meta={data.meta}
@@ -163,35 +167,33 @@ function PlatformSnapshotsPageContent() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="snapshots"
             />
-          ) : null
+          ) : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          emptyTitle="No snapshots yet"
-          emptyDescription="Create a business blueprint to define navigation, labels, dashboard widgets, and default CRM assets for new businesses."
-          emptyAction={
-            canManage ? (
-              <div className="flex flex-wrap justify-center gap-2">
-                <CreateSnapshotWizard />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled
-                  title="Clone becomes available once you have at least one snapshot"
-                >
-                  <Copy className="mr-2 size-4" />
-                  Clone existing
-                </Button>
-              </div>
-            ) : undefined
-          }
-          rowActions={
-            canManage
-              ? (row) => {
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        emptyTitle="No snapshots yet"
+        emptyDescription="Create a business blueprint to define navigation, labels, dashboard widgets, and default CRM assets for new businesses."
+        emptyAction={
+          canManage ? (
+            <div className="flex flex-wrap justify-center gap-2">
+              <CreateSnapshotWizard />
+              <Button
+                type="button"
+                variant="outline"
+                disabled
+                title="Clone becomes available once you have at least one snapshot"
+              >
+                <Copy className="mr-2 size-4" />
+                Clone existing
+              </Button>
+            </div>
+          ) : undefined
+        }
+        rowActions={
+          canManage
+            ? (row) => {
                   const actions: RowAction[] = [
                     {
                       label: "Edit",
@@ -227,10 +229,9 @@ function PlatformSnapshotsPageContent() {
                   }
                   return <DataTableRowActions actions={actions} />;
                 }
-              : undefined
-          }
-        />
-      </ListPage>
+            : undefined
+        }
+      />
 
       <ApplySnapshotDialog
         snapshot={applyTarget}

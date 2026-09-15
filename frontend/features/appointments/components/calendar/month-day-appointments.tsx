@@ -34,16 +34,15 @@ export function MonthDayAppointments({
         return (
           <div
             key={apt.id}
-            className="min-h-0 shrink-0"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
+            className="min-h-[1.625rem] shrink-0"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
           >
             <AppointmentEventCard
               appointment={apt}
               timeZone={tz}
-              compact
-              ultraCompact
-              className="shadow-elevation-xs transition-shadow hover:shadow-md"
+              variant="month"
+              className="shadow-elevation-xs"
               onClick={() => onAppointmentClick(apt)}
             />
           </div>
@@ -52,8 +51,8 @@ export function MonthDayAppointments({
       {overflow.length > 0 ? (
         <div
           className="shrink-0"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
         >
           <AppointmentMorePopover
             appointments={overflow}

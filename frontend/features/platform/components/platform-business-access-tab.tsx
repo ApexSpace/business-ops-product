@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { AccessAdvancedSection } from "@/features/platform/components/access/access-advanced-section";
 import { ActionImpactPreviewDialog } from "@/features/platform/components/access/action-impact-preview-dialog";
+import { BusinessAddonPackagingCard } from "@/features/platform/components/access/business-addon-packaging-card";
 import { ChangePackageDialog } from "@/features/platform/components/access/change-package-dialog";
 import { MarkPaidDialog } from "@/features/platform/components/access/mark-paid-dialog";
 import { ChangeSnapshotDialog } from "@/features/platform/components/access/change-snapshot-dialog";
@@ -221,6 +222,11 @@ function PlatformBusinessAccessPanel({
         canUpdate={canUpdate}
         onAction={handleAction}
         isLoading={actionFlow.isPreviewing || actionFlow.isExecuting}
+      />
+
+      <BusinessAddonPackagingCard
+        businessId={business.id}
+        canUpdate={canUpdate}
       />
 
       <AccessAdvancedSection

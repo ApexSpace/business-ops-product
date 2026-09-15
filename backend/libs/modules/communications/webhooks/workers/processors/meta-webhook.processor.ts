@@ -5,6 +5,10 @@ import type { ProcessMetaWebhookPayload } from '@app/core/queue/queue.types';
 import { isWhatsAppWebhookObject } from '@app/modules/communications/conversations/adapters/meta/meta-inbound-normalizer';
 import { ConversationWebhookIngestionService } from '@app/modules/communications/conversations/services/conversation-webhook-ingestion.service';
 import { WebhookEventsRepository } from '@app/modules/communications/conversations/repositories/webhook-events.repository';
+import { WhatsAppTemplateWebhookService } from '@app/modules/integrations/whatsapp/services/whatsapp-template-webhook.service';
+import { extractWhatsAppTemplateStatusUpdates } from '@app/modules/integrations/whatsapp/utils/template-webhook.util';
+import { hasMetaSocialCommentChanges } from '@app/modules/integrations/integrations/meta/utils/meta-webhook-event-id.util';
+import { SocialCommentIngestionService } from '@app/modules/communications/social-planner/services/social-comment-ingestion.service';
 
 @Injectable()
 export class MetaWebhookProcessor {
@@ -13,7 +17,9 @@ export class MetaWebhookProcessor {
   constructor(
     private readonly webhookEventsRepository: WebhookEventsRepository,
     private readonly conversationWebhookIngestion: ConversationWebhookIngestionService,
+    private readonly socialCommentIngestion: SocialCommentIngestionService,
     private readonly idempotencyService: IdempotencyService,
+    private readonly whatsAppTemplateWebhookService: WhatsAppTemplateWebhookService,
   ) {}
 
   async process(payload: ProcessMetaWebhookPayload): Promise<void> {
@@ -68,10 +74,39 @@ export class MetaWebhookProcessor {
         object === 'instagram' ||
         isWhatsAppWebhookObject(object ?? null)
       ) {
+        if (isWhatsAppWebhookObject(object ?? null)) {
+          const templateUpdates = extractWhatsAppTemplateStatusUpdates(body);
+          if (templateUpdates.length > 0) {
+            await this.whatsAppTemplateWebhookService.processStatusUpdates(
+              templateUpdates,
+            );
+          }
+        }
+
+        let commentHandled = false;
+        if (hasMetaSocialCommentChanges(body)) {
+          commentHandled =
+            await this.socialCommentIngestion.processMetaPayload(body);
+        }
+
         await this.conversationWebhookIngestion.processMetaPayload(
           body,
           event.id,
         );
+
+        // Conversation ingestion marks feed-only payloads IGNORED; promote to
+        // PROCESSED when we successfully handled social comments.
+        if (commentHandled) {
+          const refreshed = await this.webhookEventsRepository.findById(
+            event.id,
+          );
+          if (refreshed?.status === WebhookEventStatus.IGNORED) {
+            await this.webhookEventsRepository.updateStatus(
+              event.id,
+              WebhookEventStatus.PROCESSED,
+            );
+          }
+        }
       } else {
         await this.webhookEventsRepository.updateStatus(
           event.id,
@@ -79,7 +114,8 @@ export class MetaWebhookProcessor {
         );
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Processing failed';
+      const message =
+        error instanceof Error ? error.message : 'Processing failed';
       await this.webhookEventsRepository.updateStatus(
         event.id,
         WebhookEventStatus.FAILED,

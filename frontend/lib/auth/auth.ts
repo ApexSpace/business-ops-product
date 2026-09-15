@@ -23,7 +23,7 @@ export function formatRoleLabel(role: string): string {
 
 export function getContextLabel(ctx: AuthContextItem): string {
   if (ctx.type === "platform") {
-    return `CodeSol Platform — ${formatRoleLabel(ctx.platformRole ?? "Member")}`;
+    return `PandaCue Platform — ${formatRoleLabel(ctx.platformRole ?? "Member")}`;
   }
   return `${ctx.businessName ?? "Business"} — ${formatRoleLabel(ctx.businessRole ?? "Member")}`;
 }
@@ -39,7 +39,7 @@ export function getContextRoleLabel(ctx: AuthContextItem): string {
 }
 
 export function getContextShortLabel(ctx: AuthContextItem): string {
-  if (ctx.type === "platform") return "CodeSol Platform";
+  if (ctx.type === "platform") return "PandaCue Platform";
   return ctx.businessName ?? "Business";
 }
 

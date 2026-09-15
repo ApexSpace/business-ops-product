@@ -18,6 +18,13 @@ export interface PublicChatbotConfig {
   showBranding: boolean;
   acknowledgementMessage?: string;
   businessName: string;
+  isOnline: boolean;
+  requiresPhoneCapture: boolean;
+  consentEnabled: boolean;
+  consentText: string | null;
+  launcherIcon: "message" | "chat" | "help";
+  offsetX: number;
+  offsetY: number;
 }
 
 export interface PublicChatbotSession {
@@ -31,6 +38,7 @@ export interface PublicChatbotMessage {
   senderType: string;
   text: string | null;
   createdAt: string;
+  requiresProfile?: "email" | "name" | "phone" | null;
 }
 
 async function publicFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -84,16 +92,42 @@ export function startPublicChatbotSession(
   );
 }
 
-export function sendPublicChatbotMessage(sessionId: string, text: string) {
+export function sendPublicChatbotMessage(
+  publicKey: string,
+  sessionId: string,
+  text: string,
+) {
   return publicFetch<PublicChatbotMessage>(
-    `public/chatbots/sessions/${encodeURIComponent(sessionId)}/messages`,
+    `public/chatbots/${encodeURIComponent(publicKey)}/sessions/${encodeURIComponent(sessionId)}/messages`,
     { method: "POST", body: JSON.stringify({ text }) },
   );
 }
 
-export function listPublicChatbotMessages(sessionId: string, since?: string) {
+export function listPublicChatbotMessages(
+  publicKey: string,
+  sessionId: string,
+  since?: string,
+) {
   const qs = since ? `?since=${encodeURIComponent(since)}` : "";
   return publicFetch<PublicChatbotMessage[]>(
-    `public/chatbots/sessions/${encodeURIComponent(sessionId)}/messages${qs}`,
+    `public/chatbots/${encodeURIComponent(publicKey)}/sessions/${encodeURIComponent(sessionId)}/messages${qs}`,
+  );
+}
+
+export function endPublicChatbotSession(publicKey: string, sessionId: string) {
+  return publicFetch<{ sessionId: string; status: string }>(
+    `public/chatbots/${encodeURIComponent(publicKey)}/sessions/${encodeURIComponent(sessionId)}/end`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+export function updatePublicChatbotSessionProfile(
+  publicKey: string,
+  sessionId: string,
+  body: { visitorEmail?: string; visitorName?: string; visitorPhone?: string },
+) {
+  return publicFetch<{ contactId: string | null }>(
+    `public/chatbots/${encodeURIComponent(publicKey)}/sessions/${encodeURIComponent(sessionId)}/profile`,
+    { method: "PATCH", body: JSON.stringify(body) },
   );
 }

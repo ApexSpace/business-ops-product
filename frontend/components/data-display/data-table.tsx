@@ -21,6 +21,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import {
+  DATA_TABLE_CHROME_COLUMN_CLASS,
+  DATA_TABLE_COLUMN_CLASS,
+  DATA_TABLE_COLUMN_INNER_CLASS,
+  DATA_TABLE_EMPTY_FILL_CLASS,
+  DATA_TABLE_GRID_CLASS,
+  DATA_TABLE_HEADER_CLASS,
+  DATA_TABLE_HEADER_ROW_CLASS,
+  DATA_TABLE_SCROLL_CLASS,
+  DATA_TABLE_SHELL_CLASS,
+  DATA_TABLE_SPACER_CELL_CLASS,
+} from "@/lib/design/data-table-tokens";
 import { DataTableColumnHeader } from "@/components/data-display/data-table-column-header";
 import { EmptyState } from "@/components/data-display/empty-state";
 
@@ -48,12 +60,49 @@ export interface DataTableProps<T> {
   onRowSelectionChange?: (selection: RowSelectionState) => void;
   rowActions?: (row: T) => React.ReactNode;
   actionsColumnHeader?: string;
+  /** Kept for API compatibility. All tables use `--table-row-height`. */
   density?: DataTableDensity;
   toolbar?: React.ReactNode;
   className?: string;
+  activeRowId?: string | null;
+  onRowClick?: (row: T) => void;
+  getRowClassName?: (row: T) => string | undefined;
 }
 
 const SKELETON_ROWS = 5;
+
+function isChromeColumn(columnId: string) {
+  return columnId === "select" || columnId === "actions";
+}
+
+function dataTableColumnClass(columnId: string) {
+  return cn(
+    DATA_TABLE_COLUMN_CLASS,
+    isChromeColumn(columnId) && DATA_TABLE_CHROME_COLUMN_CLASS,
+    columnId === "actions" && "text-right",
+  );
+}
+
+function DataTableColumnInner({
+  columnId,
+  children,
+}: {
+  columnId?: string;
+  children: React.ReactNode;
+}) {
+  if (columnId && isChromeColumn(columnId)) {
+    return children;
+  }
+  return <div className={DATA_TABLE_COLUMN_INNER_CLASS}>{children}</div>;
+}
+
+function DataTableSpacerHead() {
+  return <TableHead aria-hidden className={DATA_TABLE_SPACER_CELL_CLASS} />;
+}
+
+function DataTableSpacerCell() {
+  return <TableCell aria-hidden className={DATA_TABLE_SPACER_CELL_CLASS} />;
+}
 
 export function DataTable<T>({
   columns,
@@ -68,9 +117,11 @@ export function DataTable<T>({
   onRowSelectionChange,
   rowActions,
   actionsColumnHeader = "",
-  density = "default",
   toolbar,
   className,
+  activeRowId,
+  onRowClick,
+  getRowClassName,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [internalSelection, setInternalSelection] = useState<RowSelectionState>(
@@ -79,14 +130,11 @@ export function DataTable<T>({
 
   const rowSelection = controlledSelection ?? internalSelection;
   const setRowSelection = onRowSelectionChange ?? setInternalSelection;
-  const isCompact = density === "compact";
 
   const tanstackColumns = useMemo<ColumnDef<T>[]>(() => {
     const defs: ColumnDef<T>[] = columns.map((col) => ({
       id: col.id,
-      accessorFn: col.sortValue
-        ? (row) => col.sortValue!(row)
-        : undefined,
+      accessorFn: col.sortValue ? (row) => col.sortValue!(row) : undefined,
       header: col.header,
       cell: ({ row }) => col.cell(row.original),
       enableSorting: col.sortable ?? false,
@@ -147,111 +195,165 @@ export function DataTable<T>({
   });
 
   const colSpan =
-    table.getVisibleFlatColumns().length || columns.length + (rowActions ? 1 : 0);
+    table.getVisibleFlatColumns().length ||
+    columns.length + (rowActions ? 1 : 0);
+  const hasRows = table.getRowModel().rows.length > 0;
+  const showGrid = isLoading || hasRows;
 
   return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-lg bg-card shadow-elevation-xs ring-1 ring-border/70",
-        className,
-      )}
-      style={
-        isCompact
-          ? ({ "--table-row-height": "var(--table-row-height-compact)" } as React.CSSProperties)
-          : undefined
-      }
-    >
+    <div className={cn(DATA_TABLE_SHELL_CLASS, className)}>
       {toolbar ? (
-        <div className="border-b border-border/80 px-3 py-2.5 sm:px-4">
+        <div className="shrink-0 border-b border-[#F3F0F9] px-4 py-3">
           {toolbar}
         </div>
       ) : null}
-      <Table>
-        <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm supports-[backdrop-filter]:bg-card/80">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow
-              key={headerGroup.id}
-              className="h-9 border-b border-border/80 hover:bg-transparent"
-            >
-              {headerGroup.headers.map((header) => {
-                const sorted = header.column.getIsSorted();
-                return (
-                  <TableHead
-                    key={header.id}
-                    className={cn(
-                      header.column.id === "actions" && "w-[1%] text-right",
-                      (
-                        header.column.columnDef.meta as
-                          | { className?: string }
-                          | undefined
-                      )?.className,
-                    )}
-                  >
-                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                      <DataTableColumnHeader
-                        title={String(header.column.columnDef.header)}
-                        sorted={sorted || false}
-                        onSort={header.column.getToggleSortingHandler()}
-                      />
-                    ) : (
-                      flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )
-                    )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-              <TableRow key={`skeleton-${i}`}>
-                {Array.from({ length: colSpan }).map((__, j) => (
-                  <TableCell key={j}>
-                    <Skeleton className="h-4 w-full max-w-[200px]" />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          ) : table.getRowModel().rows.length === 0 ? (
-            <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={colSpan} className="p-0">
-                <EmptyState
-                  title={emptyTitle}
-                  description={emptyDescription}
-                  action={emptyAction}
+      <div className={DATA_TABLE_SCROLL_CLASS}>
+        {showGrid ? (
+          <Table
+            className={DATA_TABLE_GRID_CLASS}
+            containerClassName={cn("overflow-visible", DATA_TABLE_GRID_CLASS)}
+          >
+            <colgroup>
+              {table.getVisibleLeafColumns().map((column) => (
+                <col
+                  key={column.id}
+                  className={
+                    isChromeColumn(column.id)
+                      ? DATA_TABLE_CHROME_COLUMN_CLASS
+                      : DATA_TABLE_COLUMN_CLASS
+                  }
                 />
-              </TableCell>
-            </TableRow>
-          ) : (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() ? "selected" : undefined}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={cn(
-                      cell.column.id === "actions" && "text-right",
-                      (
-                        cell.column.columnDef.meta as
-                          | { className?: string }
-                          | undefined
-                      )?.className,
-                    )}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+              ))}
+              <col className="w-full" />
+            </colgroup>
+            <TableHeader className={DATA_TABLE_HEADER_CLASS}>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow
+                  key={headerGroup.id}
+                  className={DATA_TABLE_HEADER_ROW_CLASS}
+                >
+                  {headerGroup.headers.map((header) => {
+                    const sorted = header.column.getIsSorted();
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={cn(
+                          dataTableColumnClass(header.column.id),
+                          (
+                            header.column.columnDef.meta as
+                              { className?: string } | undefined
+                          )?.className,
+                        )}
+                      >
+                        {header.isPlaceholder ? null : (
+                          <DataTableColumnInner columnId={header.column.id}>
+                            {header.column.getCanSort() ? (
+                              <DataTableColumnHeader
+                                title={String(header.column.columnDef.header)}
+                                sorted={sorted || false}
+                                onSort={header.column.getToggleSortingHandler()}
+                              />
+                            ) : (
+                              flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )
+                            )}
+                          </DataTableColumnInner>
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                  <DataTableSpacerHead />
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {isLoading
+                ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      {Array.from({ length: colSpan }).map((__, j) => (
+                        <TableCell
+                          key={j}
+                          className={DATA_TABLE_COLUMN_CLASS}
+                        >
+                          <DataTableColumnInner>
+                            <Skeleton className="h-4 w-full max-w-[200px]" />
+                          </DataTableColumnInner>
+                        </TableCell>
+                      ))}
+                      <DataTableSpacerCell />
+                    </TableRow>
+                  ))
+                : table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={
+                        row.getIsSelected() || activeRowId === row.id
+                          ? "selected"
+                          : undefined
+                      }
+                      tabIndex={onRowClick ? 0 : undefined}
+                      role={onRowClick ? "button" : undefined}
+                      className={cn(
+                        onRowClick &&
+                          "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7E3BED]/40 focus-visible:ring-inset",
+                        getRowClassName?.(row.original),
+                      )}
+                      onClick={(event) => {
+                        if (!onRowClick) return;
+                        const target = event.target as HTMLElement;
+                        if (
+                          target.closest(
+                            "a,button,input,textarea,select,label,[role='checkbox'],[data-row-click-ignore='true']",
+                          )
+                        ) {
+                          return;
+                        }
+                        onRowClick(row.original);
+                      }}
+                      onKeyDown={(event) => {
+                        if (!onRowClick) return;
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onRowClick(row.original);
+                        }
+                      }}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            dataTableColumnClass(cell.column.id),
+                            (
+                              cell.column.columnDef.meta as
+                                { className?: string } | undefined
+                            )?.className,
+                          )}
+                        >
+                          <DataTableColumnInner columnId={cell.column.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </DataTableColumnInner>
+                        </TableCell>
+                      ))}
+                      <DataTableSpacerCell />
+                    </TableRow>
+                  ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <div className={DATA_TABLE_EMPTY_FILL_CLASS}>
+            <EmptyState
+              title={emptyTitle}
+              description={emptyDescription}
+              action={emptyAction}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

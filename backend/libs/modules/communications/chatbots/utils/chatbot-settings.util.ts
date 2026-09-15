@@ -8,6 +8,7 @@ import {
   ChatbotMessagingSettings,
   ChatbotSettingsBundle,
   ChatbotSettingsView,
+  ChatbotWelcomeVariant,
 } from '../types/chatbot-settings.types';
 import type { CreateChatbotDto, UpdateChatbotDto } from '../dto/chatbot.dto';
 
@@ -17,6 +18,32 @@ export const DEFAULT_OFFLINE_MESSAGE =
   "We're currently away. Leave a message and we'll respond soon.";
 export const DEFAULT_HANDOFF_MESSAGE =
   "I'll connect you with our team. Someone will reply here shortly.";
+
+export const DEFAULT_WEB_CHAT_WELCOME =
+  "Hey there! Have questions or need help booking? We're here to help!";
+export const DEFAULT_WEB_CHAT_OFFLINE =
+  "You have reached us outside business hours. Leave your number and we'll get back to you when we're open.";
+export const DEFAULT_WEB_CHAT_ACKNOWLEDGEMENT =
+  "We typically respond within a few minutes. Prefer to text instead? Just leave your number and we'll get back to you.";
+
+export function defaultWebChatSettingsBundle(): ChatbotSettingsBundle {
+  return defaultSettingsBundle({
+    chatWindow: {
+      title: 'Web Chat',
+      introMessage: DEFAULT_WEB_CHAT_WELCOME,
+      offlineMessage: DEFAULT_WEB_CHAT_OFFLINE,
+      acknowledgementMessage: DEFAULT_WEB_CHAT_ACKNOWLEDGEMENT,
+      liveChatEnabled: true,
+    },
+    messaging: {
+      welcomeMessage: DEFAULT_WEB_CHAT_WELCOME,
+      offlineMessage: DEFAULT_WEB_CHAT_OFFLINE,
+    },
+    bot: {
+      embedEnabled: true,
+    },
+  });
+}
 
 const DEFAULT_APPEARANCE: ChatbotAppearanceSettings = {
   placement: ChatbotWidgetPosition.BOTTOM_RIGHT,
@@ -66,11 +93,19 @@ const DEFAULT_FORM: ChatbotFormSettings = {
   requirePhone: false,
   showNotesField: false,
   allowAnonymous: true,
+  collectPhoneWhenOffline: true,
+  progressiveProfiling: {
+    enabled: false,
+    askEmailAfterMessages: 2,
+    promptMessage: 'Could you share your email so we can follow up?',
+  },
 };
 
 const DEFAULT_BOT: ChatbotBotSettings = {
   embedEnabled: true,
   knowledgeBaseText: null,
+  allowedDomains: [],
+  welcomeVariants: [],
 };
 
 function asObject(value: unknown): Record<string, unknown> {
@@ -240,10 +275,27 @@ export function parseBusinessHoursSettings(
   };
 }
 
+function parseWelcomeVariants(raw: unknown): ChatbotWelcomeVariant[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item) => item && typeof item === 'object' && !Array.isArray(item))
+    .map((item) => item as Record<string, unknown>)
+    .map((item) => ({
+      matchType:
+        item.matchType === 'referrer'
+          ? ('referrer' as const)
+          : ('page_url' as const),
+      pattern: typeof item.pattern === 'string' ? item.pattern.trim() : '',
+      message: typeof item.message === 'string' ? item.message.trim() : '',
+    }))
+    .filter((item) => item.pattern && item.message);
+}
+
 export function parseFormSettings(
   raw: Prisma.JsonValue | null | undefined,
 ): ChatbotFormSettings {
   const o = asObject(raw);
+  const profiling = asObject(o.progressiveProfiling);
   return {
     collectContactInfo: pickBool(o, 'collectContactInfo', true),
     requireName: pickBool(o, 'requireName', true),
@@ -251,6 +303,16 @@ export function parseFormSettings(
     requirePhone: pickBool(o, 'requirePhone', false),
     showNotesField: pickBool(o, 'showNotesField', false),
     allowAnonymous: pickBool(o, 'allowAnonymous', true),
+    collectPhoneWhenOffline: pickBool(o, 'collectPhoneWhenOffline', true),
+    progressiveProfiling: {
+      enabled: pickBool(profiling, 'enabled', false),
+      askEmailAfterMessages: pickNumber(profiling, 'askEmailAfterMessages', 2),
+      promptMessage: pickString(
+        profiling,
+        'promptMessage',
+        DEFAULT_FORM.progressiveProfiling!.promptMessage!,
+      ),
+    },
   };
 }
 
@@ -258,10 +320,15 @@ export function parseBotSettings(
   raw: Prisma.JsonValue | null | undefined,
 ): ChatbotBotSettings {
   const o = asObject(raw);
+  const allowedDomains = Array.isArray(o.allowedDomains)
+    ? o.allowedDomains.filter((d): d is string => typeof d === 'string')
+    : [];
   return {
     embedEnabled: pickBool(o, 'embedEnabled', true),
     knowledgeBaseText:
       typeof o.knowledgeBaseText === 'string' ? o.knowledgeBaseText : null,
+    allowedDomains,
+    welcomeVariants: parseWelcomeVariants(o.welcomeVariants),
   };
 }
 
@@ -348,6 +415,7 @@ export function bundleFromCreateDto(
       requirePhone: dto.requirePhone ?? defaults.form.requirePhone,
       showNotesField: dto.showNotesField ?? defaults.form.showNotesField,
       allowAnonymous: dto.allowAnonymous ?? defaults.form.allowAnonymous,
+      collectPhoneWhenOffline: defaults.form.collectPhoneWhenOffline,
     },
     businessHours: defaults.businessHours,
     bot: {
@@ -374,6 +442,15 @@ export function mergeUpdateDto(
   if (dto.avatarUrl !== undefined) appearance.avatarUrl = dto.avatarUrl ?? null;
   if (dto.showBranding !== undefined)
     appearance.showBranding = dto.showBranding;
+  if (dto.consentEnabled !== undefined) {
+    appearance.consentEnabled = dto.consentEnabled;
+  }
+  if (dto.consentText !== undefined) {
+    appearance.consentText = dto.consentText.trim() || null;
+  }
+  if (dto.launcherIcon !== undefined) {
+    appearance.launcherIcon = dto.launcherIcon;
+  }
 
   if (dto.widgetTitle !== undefined) chatWindow.title = dto.widgetTitle.trim();
   if (dto.welcomeMessage !== undefined) {
@@ -387,6 +464,12 @@ export function mergeUpdateDto(
   if (dto.handoffMessage !== undefined) {
     chatWindow.handoffMessage = dto.handoffMessage.trim();
   }
+  if (dto.acknowledgementMessage !== undefined) {
+    chatWindow.acknowledgementMessage = dto.acknowledgementMessage.trim();
+  }
+  if (dto.liveChatEnabled !== undefined) {
+    chatWindow.liveChatEnabled = dto.liveChatEnabled;
+  }
   if (dto.fallbackMessage !== undefined) {
     messaging.fallbackMessage = dto.fallbackMessage.trim();
   }
@@ -397,6 +480,19 @@ export function mergeUpdateDto(
   if (dto.businessHoursOnly !== undefined) {
     messaging.businessHoursOnly = dto.businessHoursOnly;
     businessHours.enabled = dto.businessHoursOnly;
+  }
+  if (dto.businessHoursSettings !== undefined) {
+    const incoming = dto.businessHoursSettings;
+    if (incoming.enabled !== undefined) {
+      businessHours.enabled = incoming.enabled;
+      messaging.businessHoursOnly = incoming.enabled;
+    }
+    if (incoming.timezone !== undefined) {
+      businessHours.timezone = incoming.timezone.trim() || 'UTC';
+    }
+    if (incoming.schedule !== undefined) {
+      businessHours.schedule = incoming.schedule;
+    }
   }
 
   if (dto.collectContactInfo !== undefined) {
@@ -409,7 +505,38 @@ export function mergeUpdateDto(
     form.showNotesField = dto.showNotesField;
   if (dto.allowAnonymous !== undefined)
     form.allowAnonymous = dto.allowAnonymous;
+  if (dto.collectPhoneWhenOffline !== undefined) {
+    form.collectPhoneWhenOffline = dto.collectPhoneWhenOffline;
+  }
+  if (dto.progressiveProfilingEnabled !== undefined) {
+    form.progressiveProfiling = {
+      ...form.progressiveProfiling!,
+      enabled: dto.progressiveProfilingEnabled,
+    };
+  }
+  if (dto.progressiveProfilingAskAfterMessages !== undefined) {
+    form.progressiveProfiling = {
+      ...form.progressiveProfiling!,
+      askEmailAfterMessages: dto.progressiveProfilingAskAfterMessages,
+    };
+  }
+  if (dto.progressiveProfilingPromptMessage !== undefined) {
+    form.progressiveProfiling = {
+      ...form.progressiveProfiling!,
+      promptMessage: dto.progressiveProfilingPromptMessage.trim(),
+    };
+  }
   if (dto.embedEnabled !== undefined) bot.embedEnabled = dto.embedEnabled;
+  if (dto.allowedDomains !== undefined) {
+    bot.allowedDomains = dto.allowedDomains;
+  }
+  if (dto.welcomeVariants !== undefined) {
+    bot.welcomeVariants = dto.welcomeVariants.map((variant) => ({
+      matchType: variant.matchType === 'referrer' ? 'referrer' : 'page_url',
+      pattern: variant.pattern.trim(),
+      message: variant.message.trim(),
+    }));
+  }
 
   return {
     appearance,

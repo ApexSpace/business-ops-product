@@ -23,8 +23,6 @@ import {
   calendarToForm,
   DAYS_OF_WEEK,
   defaultWeeklyAvailability,
-  getCreationTypeLabel,
-  type CalendarDetail,
   type CalendarEditSectionId,
   type CalendarFormValues,
 } from "@/features/calendars/schemas/calendar-profile";
@@ -126,8 +124,6 @@ export function CalendarSettingsEditor({ calendarId }: CalendarSettingsEditorPro
   return (
     <div className="space-y-6">
       <PageHeader
-        title={detail.name}
-        description={`${getCreationTypeLabel(detail.type)} · Calendar settings`}
         actions={
           <Button
             variant="outline"
@@ -135,7 +131,7 @@ export function CalendarSettingsEditor({ calendarId }: CalendarSettingsEditorPro
             render={<Link href="/business/settings/calendars" />}
           >
             <ArrowLeft className="mr-2 size-4" />
-            All calendars
+            All Calendars
           </Button>
         }
       />
@@ -180,7 +176,7 @@ export function CalendarSettingsEditor({ calendarId }: CalendarSettingsEditorPro
                 {canManage ? "Cancel" : "Back to calendars"}
               </Button>
               {canManage ? (
-                <Button type="submit" disabled={saveMutation.isPending}>
+                <Button type="submit" variant="brand" disabled={saveMutation.isPending}>
                   {saveMutation.isPending ? "Saving…" : "Save calendar"}
                 </Button>
               ) : (

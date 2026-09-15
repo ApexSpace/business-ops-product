@@ -1,5 +1,6 @@
 "use client";
 
+import { isEmptyDisplayValue } from "@/lib/ui/display-value";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -37,7 +38,8 @@ export function BoardCard({
   const dragging = isDraggingProp ?? isDragging;
 
   const style = transform
-    ? { transform: CSS.Translate.toString(transform) }
+    ? { transform: CSS.Translate.toString(transform),
+}
     : undefined;
 
   return (
@@ -45,7 +47,7 @@ export function BoardCard({
       ref={isOverlay ? undefined : setNodeRef}
       style={isOverlay ? undefined : style}
       className={cn(
-        "group/card flex flex-col gap-3 rounded-xl border border-border/80 bg-card p-4 shadow-sm",
+        "group/card flex flex-col gap-3 rounded-xl border border-border/80 bg-card p-4 shadow-elevation-xs",
         "transition-[box-shadow,border-color,opacity,transform]",
         "hover:border-border hover:shadow-md",
         isOverlay && "rotate-1 scale-[1.02] border-primary/30 shadow-lg ring-2 ring-primary/15",
@@ -128,7 +130,12 @@ export function BoardCardValue({
   label?: string;
   value: React.ReactNode;
 }) {
-  if (value == null || value === "" || value === "—") return null;
+  if (
+    value == null ||
+    value === "" ||
+    (typeof value === "string" && isEmptyDisplayValue(value))
+  )
+    return null;
 
   return (
     <div className="rounded-md bg-muted/40 px-2.5 py-1.5">

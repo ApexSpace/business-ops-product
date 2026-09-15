@@ -10,6 +10,9 @@ import {
   parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { useCalendarDisplayRuntime } from "@/features/calendar-display-settings/context/calendar-display-runtime-context";
+import { monthWeekdayLabelsForWeekStart } from "@/features/calendar-display-settings/utils/calendar-display-runtime.util";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { cn } from "@/lib/utils";
 
 interface MonthCalendarViewProps {
@@ -19,6 +22,7 @@ interface MonthCalendarViewProps {
   businessTimezone?: string | null;
   appointments: Appointment[];
   isLoading?: boolean;
+  className?: string;
   onAppointmentClick: (appointment: Appointment) => void;
   onDayClick: (dateKey: string) => void;
 }
@@ -30,38 +34,48 @@ export function MonthCalendarView({
   businessTimezone,
   appointments,
   isLoading,
+  className,
   onAppointmentClick,
   onDayClick,
 }: MonthCalendarViewProps) {
-  const gridDateKeys = getMonthGridDateKeysInTimezone(anchorDateKey, timezone);
+  const { weekStartsOn } = useCalendarDisplayRuntime();
+  const gridDateKeys = getMonthGridDateKeysInTimezone(
+    anchorDateKey,
+    timezone,
+    weekStartsOn,
+  );
   const anchorMonth = parseDateKeyInTimezone(anchorDateKey, timezone).month;
   const byDay = groupAppointmentsByCalendarTimezone(
     appointments,
     calendars,
     businessTimezone,
   );
-  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const weekdays = monthWeekdayLabelsForWeekStart(weekStartsOn);
 
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl bg-card shadow-elevation-xs",
+        "overflow-hidden bg-white",
         CALENDAR_GRID.card,
+        className,
       )}
     >
-      <div className={cn("grid grid-cols-7 bg-muted/20", CALENDAR_GRID.headerRow)}>
+      <div className={cn("grid grid-cols-7", CALENDAR_GRID.headerRow)}>
         {weekdays.map((label) => (
           <div
             key={label}
-            className="px-2 py-2 text-center text-xs font-medium text-muted-foreground"
+            className={cn(
+              CALENDAR_GRID.dayHeaderWeekdayCell,
+              CALENDAR_GRID.dayHeaderWeekday,
+            )}
           >
             {label}
           </div>
         ))}
       </div>
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-          Loading appointments…
+        <div className="flex h-64 items-center justify-center">
+          <LoadingState variant="inline" label="Loading appointments…" />
         </div>
       ) : (
         <div className="grid grid-cols-7">
@@ -83,10 +97,10 @@ export function MonthCalendarView({
                   }
                 }}
                 className={cn(
-                  "flex min-h-[100px] cursor-pointer flex-col p-1.5 text-left transition-colors hover:bg-muted/30 sm:min-h-[120px]",
+                  "flex min-h-[100px] cursor-pointer flex-col p-1.5 text-left transition-colors hover:bg-[#F6F1FE]/60 sm:min-h-[120px]",
                   CALENDAR_GRID.monthCell,
-                  !inCurrentMonth && "bg-muted/10 text-muted-foreground",
-                  isTodayDateKey(dayKey, timezone) && "bg-primary/[0.04]",
+                  !inCurrentMonth && "bg-[#FAFAFA] text-grey-tertiary-normal",
+                  isTodayDateKey(dayKey, timezone) && "bg-[#F6F1FE]",
                 )}
               >
                 <span

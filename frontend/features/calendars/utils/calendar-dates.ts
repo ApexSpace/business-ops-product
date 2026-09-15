@@ -4,17 +4,20 @@ import {
   formatTimeInTimezone,
   getMinutesFromMidnightInTimezone,
 } from "@/features/calendars/utils/timezone";
+import { eventMinHeightForSlot } from "@/features/calendars/utils/calendar-event-density";
+import { FILTER_ALL_LABELS } from "@/lib/ui/filter-labels";
 
 export type CalendarViewMode = "day" | "week" | "month" | "list";
 
-export const CALENDAR_SLOT_MINUTES = 30;
+export const CALENDAR_SLOT_MINUTES = 15;
 /** Midnight — first slot label 12 AM */
 export const CALENDAR_DAY_START_HOUR = 0;
 /** End of day — last slot 11:00–11:30 PM (exclusive 24:00 bound) */
 export const CALENDAR_DAY_END_HOUR = 24;
-export const CALENDAR_SLOT_HEIGHT_PX = 40;
+/** Figma: 120px/hour → 30px per 15-minute slot */
+export const CALENDAR_SLOT_HEIGHT_PX = 30;
 /** Minimum rendered height for an appointment block in day/week views. */
-export const CALENDAR_EVENT_MIN_HEIGHT_PX = 36;
+export const CALENDAR_EVENT_MIN_HEIGHT_PX = 28;
 export const MONTH_MAX_VISIBLE_EVENTS = 3;
 
 export interface DateRange {
@@ -68,14 +71,24 @@ export function isToday(date: Date): boolean {
 }
 
 export function getDayRange(date: Date): DateRange {
-  return { start: startOfDay(date), end: endOfDay(date) };
+  return { start: startOfDay(date), end: endOfDay(date),
+};
 }
 
-/** Week starts Sunday (US-style scheduling). */
-export function getWeekRange(date: Date): DateRange {
+/** Week range; defaults to Sunday start. */
+export function getWeekRange(
+  date: Date,
+  weekStartsOn: "SUNDAY" | "MONDAY" = "SUNDAY",
+): DateRange {
   const start = startOfDay(date);
   const dayOfWeek = start.getDay();
-  const weekStart = addDays(start, -dayOfWeek);
+  const offset =
+    weekStartsOn === "MONDAY"
+      ? dayOfWeek === 0
+        ? 6
+        : dayOfWeek - 1
+      : dayOfWeek;
+  const weekStart = addDays(start, -offset);
   const weekEnd = endOfDay(addDays(weekStart, 6));
   return { start: weekStart, end: weekEnd };
 }
@@ -86,7 +99,8 @@ export function getWeekDays(date: Date): Date[] {
 }
 
 export function getMonthRange(date: Date): { year: number; month: number } {
-  return { year: date.getFullYear(), month: date.getMonth() };
+  return { year: date.getFullYear(), month: date.getMonth(),
+};
 }
 
 /** Includes leading/trailing days visible in a month grid. */
@@ -99,7 +113,8 @@ export function getMonthVisibleRange(date: Date): DateRange {
   const gridEnd = endOfDay(
     addDays(startOfDay(lastOfMonth), 6 - lastOfMonth.getDay()),
   );
-  return { start: gridStart, end: gridEnd };
+  return { start: gridStart, end: gridEnd,
+};
 }
 
 export function getMonthGridDays(date: Date): Date[] {
@@ -194,7 +209,7 @@ export function formatDateRangeLabel(
       timeZone,
     });
   }
-  return "All appointments";
+  return FILTER_ALL_LABELS.appointments;
 }
 
 export function groupAppointmentsByDay<T extends { startAt: string }>(
@@ -276,7 +291,7 @@ export function calculateEventPosition(
     ((clampedStart - gridStartMinutes) / slotMinutes) * slotHeightPx;
   const height = Math.max(
     ((clampedEnd - clampedStart) / slotMinutes) * slotHeightPx,
-    CALENDAR_EVENT_MIN_HEIGHT_PX,
+    eventMinHeightForSlot(slotHeightPx),
   );
 
   return { top, height };

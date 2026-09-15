@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { IntegrationEmptyStateCopy } from "@/features/integrations/utils/integration-manage-copy";
 
@@ -32,8 +32,8 @@ export function IntegrationEmptyState({
               key={item}
               className="flex gap-2 text-sm text-muted-foreground"
             >
-              <Check
-                className="mt-0.5 size-4 shrink-0 text-primary"
+              <Circle
+                className="mt-1 size-2.5 shrink-0 fill-muted-foreground/40 text-muted-foreground/40"
                 aria-hidden
               />
               <span>{item}</span>

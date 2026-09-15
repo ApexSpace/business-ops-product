@@ -10,7 +10,6 @@ import {
   useState,
 } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Accordion } from "@/components/ui/accordion";
@@ -147,7 +146,7 @@ export const PlanGroupTiersTab = forwardRef<
       for (const tier of tiers) {
         const editor = existingRefs.current.get(tier.id);
         if (!editor) continue;
-        const { values, capabilityIds, originalCapabilities, features, designSettings } =
+        const { values, capabilityIds, originalCapabilities, features, designSettings, stripeMetadata } =
           editor.getPayload();
         if (
           features.some((feature) => !feature.label.trim()) ||
@@ -163,7 +162,10 @@ export const PlanGroupTiersTab = forwardRef<
         await updatePlatformPlanTier(
           planGroupId,
           tier.id,
-          valuesToTierBody(values, features, designSettings),
+          valuesToTierBody(values, features, designSettings, {
+            ...(tier.metadata ?? {}),
+            ...stripeMetadata,
+          }),
         );
         await syncTierCapabilities(
           planGroupId,
@@ -176,7 +178,7 @@ export const PlanGroupTiersTab = forwardRef<
       for (const draftId of draftIds) {
         const editor = draftRefs.current.get(draftId);
         if (!editor) continue;
-        const { values, capabilityIds, features, designSettings } = editor.getPayload();
+        const { values, capabilityIds, features, designSettings, stripeMetadata } = editor.getPayload();
         if (features.some((feature) => !feature.label.trim())) {
           throw new Error("Feature label is required in the new tier");
         }
@@ -186,7 +188,7 @@ export const PlanGroupTiersTab = forwardRef<
         }
         const created = await createPlatformPlanTier(
           planGroupId,
-          valuesToTierBody(values, features, designSettings),
+          valuesToTierBody(values, features, designSettings, stripeMetadata),
         );
         if (capabilityIds.length > 0) {
           await assignPlatformPlanTierCapabilities(
@@ -284,7 +286,6 @@ export const PlanGroupTiersTab = forwardRef<
             className="shrink-0"
             disabled={isSaving}
           >
-            <Plus className="mr-2 size-4" />
             Add tier
           </Button>
         ) : null}

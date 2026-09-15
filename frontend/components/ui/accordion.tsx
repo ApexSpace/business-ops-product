@@ -1,7 +1,7 @@
 import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion"
 
 import { cn } from "@/lib/utils"
-import { ChevronDownIcon, ChevronUpIcon } from "lucide-react"
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon"
 
 function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
   return (
@@ -23,24 +23,59 @@ function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
   )
 }
 
+type AccordionTriggerProps = AccordionPrimitive.Trigger.Props & {
+  /** `section`: right when collapsed, down when expanded (settings workspace nav). */
+  chevronMode?: "default" | "section";
+};
+
 function AccordionTrigger({
   className,
   children,
+  chevronMode = "default",
   ...props
-}: AccordionPrimitive.Trigger.Props) {
+}: AccordionTriggerProps) {
   return (
     <AccordionPrimitive.Header className="flex">
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
-          "group/accordion-trigger relative flex flex-1 items-start justify-between rounded-lg border border-transparent py-2.5 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:after:border-ring aria-disabled:pointer-events-none aria-disabled:opacity-50 **:data-[slot=accordion-trigger-icon]:ml-auto **:data-[slot=accordion-trigger-icon]:size-4 **:data-[slot=accordion-trigger-icon]:text-muted-foreground",
+          "group/accordion-trigger relative flex flex-1 cursor-pointer items-start justify-between rounded-lg border border-transparent py-2.5 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:after:border-ring aria-disabled:pointer-events-none aria-disabled:opacity-50 **:data-[slot=accordion-trigger-icon]:ml-auto **:data-[slot=accordion-trigger-icon]:text-muted-foreground",
           className
         )}
         {...props}
       >
         {children}
-        <ChevronDownIcon data-slot="accordion-trigger-icon" className="pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden" />
-        <ChevronUpIcon data-slot="accordion-trigger-icon" className="pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline" />
+        {chevronMode === "section" ? (
+          <>
+            <NavArrowIcon
+              direction="right"
+              size="sm"
+              data-slot="accordion-trigger-icon"
+              className="pointer-events-none group-aria-expanded/accordion-trigger:hidden"
+            />
+            <NavArrowIcon
+              direction="down"
+              size="sm"
+              data-slot="accordion-trigger-icon"
+              className="pointer-events-none hidden group-aria-expanded/accordion-trigger:inline"
+            />
+          </>
+        ) : (
+          <>
+            <NavArrowIcon
+              direction="down"
+              size="sm"
+              data-slot="accordion-trigger-icon"
+              className="pointer-events-none group-aria-expanded/accordion-trigger:hidden"
+            />
+            <NavArrowIcon
+              direction="up"
+              size="sm"
+              data-slot="accordion-trigger-icon"
+              className="pointer-events-none hidden group-aria-expanded/accordion-trigger:inline"
+            />
+          </>
+        )}
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   )

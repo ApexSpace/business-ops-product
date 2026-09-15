@@ -25,7 +25,8 @@ export async function listLeads(
       contactId: filters.contactId,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getLead(id: string) {

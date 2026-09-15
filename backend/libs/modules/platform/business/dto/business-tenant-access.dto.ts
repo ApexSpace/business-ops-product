@@ -4,6 +4,7 @@ import {
   BusinessSubscriptionBillingCycle,
   SubscriptionPaymentMethod,
   SubscriptionPaymentStatus,
+  SubscriptionBillingSource,
   SubscriptionStatus,
 } from '@prisma/client';
 import type {
@@ -50,6 +51,9 @@ export class TenantAccessSubscriptionDto {
   @ApiProperty({ enum: SubscriptionPaymentStatus })
   paymentStatus!: SubscriptionPaymentStatus;
 
+  @ApiProperty({ enum: SubscriptionBillingSource })
+  billingSource!: SubscriptionBillingSource;
+
   @ApiPropertyOptional({ enum: BusinessSubscriptionBillingCycle })
   billingCycle?: BusinessSubscriptionBillingCycle | null;
 
@@ -64,6 +68,11 @@ export class TenantAccessSubscriptionDto {
 
   @ApiPropertyOptional()
   currency?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Mirrored from Stripe cancel_at_period_end',
+  })
+  cancelAtPeriodEnd?: boolean;
 }
 
 export class BusinessTenantAccessDto {

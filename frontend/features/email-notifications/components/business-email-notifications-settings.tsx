@@ -1,41 +1,99 @@
 "use client";
 
-import { useState } from "react";
-import { PageHeader } from "@/components/layout/page-header";
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { PageTabs, PageTabsPanel } from "@/components/layout/page-tabs";
-import { EmailLogsTab } from "@/features/email-notifications/components/email-logs-tab";
 import { EmailNotificationsTab } from "@/features/email-notifications/components/email-notifications-tab";
-import { EmailTemplatesTab } from "@/features/email-notifications/components/email-templates-tab";
+import { listEmailLogs } from "@/features/email-notifications/api/email-notifications.api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { queryKeys } from "@/lib/query/keys";
+
+const EmailTemplatesTab = dynamic(
+  () =>
+    import("@/features/email-notifications/components/email-templates-tab").then(
+      (m) => m.EmailTemplatesTab,
+    ),
+  {
+    loading: () => <Skeleton className="min-h-[16rem] w-full" />,
+    ssr: false,
+  },
+);
+
+const EmailLogsTab = dynamic(
+  () =>
+    import("@/features/email-notifications/components/email-logs-tab").then(
+      (m) => m.EmailLogsTab,
+    ),
+  {
+    loading: () => <Skeleton className="min-h-[16rem] w-full" />,
+    ssr: false,
+  },
+);
+
+const DEFAULT_LOGS_FILTERS = {
+  search: "",
+  emailType: "",
+  status: "",
+  dateFrom: "",
+  dateTo: "",
+  page: 1,
+  limit: 25,
+} as const;
 
 export function BusinessEmailNotificationsSettings() {
-  const [tab, setTab] = useState("notifications");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const focusEmailType = searchParams.get("type");
+  const [tab, setTab] = useState(
+    initialTab === "templates" || initialTab === "logs"
+      ? initialTab
+      : "notifications",
+  );
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (initialTab === "templates" || initialTab === "logs") {
+      setTab(initialTab);
+    }
+  }, [initialTab]);
+
+  const prefetchLogs = () => {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.emailNotifications.logs({ ...DEFAULT_LOGS_FILTERS }),
+      queryFn: () =>
+        listEmailLogs({
+          page: DEFAULT_LOGS_FILTERS.page,
+          limit: DEFAULT_LOGS_FILTERS.limit,
+        }),
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Notifications"
-        description="Control transactional emails, customize templates, and review delivery logs."
-      />
-
-      <PageTabs
-        value={tab}
-        onValueChange={setTab}
-        tabs={[
-          { value: "notifications", label: "Email Notifications" },
-          { value: "templates", label: "Templates" },
-          { value: "logs", label: "Logs" },
-        ]}
-      >
-        <PageTabsPanel value="notifications">
-          <EmailNotificationsTab />
-        </PageTabsPanel>
-        <PageTabsPanel value="templates">
-          <EmailTemplatesTab />
-        </PageTabsPanel>
-        <PageTabsPanel value="logs">
-          <EmailLogsTab />
-        </PageTabsPanel>
-      </PageTabs>
-    </div>
+    <PageTabs
+      value={tab}
+      onValueChange={setTab}
+      onTabHover={(value) => {
+        if (value === "logs") prefetchLogs();
+      }}
+      tabs={[
+        { value: "notifications", label: "Notifications" },
+        { value: "templates", label: "Email Templates" },
+        { value: "logs", label: "Email Logs" },
+      ]}
+    >
+      <PageTabsPanel value="notifications">
+        <EmailNotificationsTab />
+      </PageTabsPanel>
+      <PageTabsPanel value="templates">
+        {tab === "templates" ? (
+          <EmailTemplatesTab focusEmailType={focusEmailType} />
+        ) : null}
+      </PageTabsPanel>
+      <PageTabsPanel value="logs">
+        {tab === "logs" ? <EmailLogsTab /> : null}
+      </PageTabsPanel>
+    </PageTabs>
   );
 }

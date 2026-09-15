@@ -1,94 +1,43 @@
-import {
-  Building2,
-  Camera,
-  Factory,
-  FileText,
-  Layers,
-  LayoutDashboard,
-  Plug,
-  Settings,
-  Shield,
-  TableProperties,
-  Users,
-} from "lucide-react";
+import { Shield } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import {
+  PLATFORM_NAV_CATALOG,
+  platformCatalogToShellNavItem,
+  resolvePlatformAppsItems,
+} from "./platform-nav-catalog";
+import { NAVBAR_CORE_PRIORITY_MAX } from "./navbar-overflow";
 
-export interface PlatformMenuItem extends ShellNavItem {}
+export {
+  PLATFORM_NAV_CATALOG,
+  PLATFORM_APPS_MANAGE_HREF,
+  PLATFORM_HOME_HREF,
+  resolvePlatformAppsItems,
+} from "./platform-nav-catalog";
 
 export const platformBrand = {
-  title: "CodeSol Platform",
+  title: "PandaCue Platform",
   subtitle: "Platform Admin",
   icon: Shield,
 };
 
+const platformItems = resolvePlatformAppsItems();
+
 export const platformOperationalSections: ShellNavSection[] = [
   {
-    id: "overview",
-    label: "Overview",
-    items: [
-      {
-        title: "Dashboard",
-        href: "/platform/dashboard",
-        icon: LayoutDashboard,
-      },
-    ],
-  },
-  {
-    id: "directory",
-    label: "Directory",
-    items: [
-      {
-        title: "Businesses",
-        href: "/platform/businesses",
-        icon: Building2,
-      },
-      {
-        title: "Snapshots",
-        href: "/platform/snapshots",
-        icon: Camera,
-      },
-      {
-        title: "Capabilities",
-        href: "/platform/capabilities",
-        icon: Layers,
-      },
-      {
-        title: "Plan Groups",
-        href: "/platform/plan-groups",
-        icon: TableProperties,
-      },
-      {
-        title: "Industries",
-        href: "/platform/industries",
-        icon: Factory,
-      },
-      { title: "Users", href: "/platform/users", icon: Users },
-    ],
-  },
-  {
-    id: "system",
-    label: "System",
-    items: [
-      {
-        title: "Integrations",
-        href: "/platform/settings/integrations",
-        icon: Plug,
-      },
-      {
-        title: "Audit Logs",
-        href: "/platform/audit-logs",
-        icon: FileText,
-      },
-    ],
+    id: "primary",
+    label: "",
+    hideLabel: true,
+    items: platformItems.filter(
+      (item) =>
+        item.navbarPriority != null &&
+        item.navbarPriority <= NAVBAR_CORE_PRIORITY_MAX,
+    ),
   },
 ];
 
-export const platformSettingsEntry = {
-  title: "Settings",
-  href: "/platform/settings",
-  icon: Settings,
-} as const satisfies ShellNavItem;
+export const platformSettingsEntry = platformCatalogToShellNavItem(
+  PLATFORM_NAV_CATALOG.find((entry) => entry.navKey === "settings")!,
+);
 
 /** @deprecated Use platformOperationalSections */
-export const platformMenu: PlatformMenuItem[] =
-  platformOperationalSections.flatMap((s) => s.items);
+export const platformMenu: ShellNavItem[] = platformItems;

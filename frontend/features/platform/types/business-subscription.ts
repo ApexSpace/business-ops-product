@@ -172,7 +172,7 @@ export interface RecordPaymentInput {
 }
 
 export interface ChangePackageActionInput {
-  planGroupId: string;
+  planGroupId?: string;
   planTierId: string;
   billingCycle?: BusinessSubscriptionBillingCycle;
   amount?: number;

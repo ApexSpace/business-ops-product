@@ -34,6 +34,9 @@ export interface UserMe {
   status: string;
   lastLoginAt: string | null;
   contexts: AuthContextItem[];
+  businessId?: string | null;
+  businessRole?: BusinessMemberRole | null;
+  staffPermissions?: Record<string, boolean> | null;
 }
 
 export interface JwtAccessPayload {
@@ -43,4 +46,5 @@ export interface JwtAccessPayload {
   platformRole?: PlatformMemberRole;
   businessId?: string;
   businessRole?: BusinessMemberRole;
+  staffPermissions?: Record<string, boolean>;
 }

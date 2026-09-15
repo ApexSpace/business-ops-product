@@ -40,7 +40,8 @@ import { previewEmailTemplateContent } from "@/features/email-notifications/util
 import type { SnapshotEmailTemplateAsset } from "@/features/platform/types/snapshot";
 
 type OpenSection =
-  | { kind: "category"; category: EmailTypeDefinition["category"] }
+  | { kind: "category"; category: EmailTypeDefinition["category"],
+}
   | {
       kind: "template";
       category: EmailTypeDefinition["category"];

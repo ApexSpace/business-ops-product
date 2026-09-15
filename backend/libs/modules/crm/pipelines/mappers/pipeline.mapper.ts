@@ -1,4 +1,4 @@
-import { PipelineStageType } from '@prisma/client';
+import { BusinessLifecycleStage, PipelineStageType } from '@prisma/client';
 import { PipelineStageResponseDto } from '../dto/pipeline-stage-response.dto';
 import { PipelineResponseDto } from '../dto/pipeline-response.dto';
 import { PipelineWithStages } from '../repositories/pipeline.repository';
@@ -9,6 +9,7 @@ export function toPipelineStageResponse(stage: {
   name: string;
   position: number;
   type: PipelineStageType | null;
+  mapsToLifecycleStage?: BusinessLifecycleStage | null;
   createdAt: Date;
   updatedAt: Date;
 }): PipelineStageResponseDto {
@@ -18,6 +19,7 @@ export function toPipelineStageResponse(stage: {
     name: stage.name,
     position: stage.position,
     type: stage.type,
+    mapsToLifecycleStage: stage.mapsToLifecycleStage ?? null,
     createdAt: stage.createdAt,
     updatedAt: stage.updatedAt,
   };

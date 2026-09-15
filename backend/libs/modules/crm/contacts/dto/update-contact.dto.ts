@@ -12,6 +12,12 @@ export class UpdateContactDto extends ContactProfileDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(10000)
+  clientNotes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   @MaxLength(100)
   source?: string;
 

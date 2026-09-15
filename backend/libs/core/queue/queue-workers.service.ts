@@ -8,6 +8,7 @@ import { Job, Worker } from 'bullmq';
 import { MetaWebhookProcessor } from '@app/modules/communications/webhooks/workers/processors/meta-webhook.processor';
 import { StripeWebhookProcessor } from '@app/modules/communications/webhooks/workers/processors/stripe-webhook.processor';
 import { SendMessageProcessor } from '@app/modules/communications/messages/workers/processors/send-message.processor';
+import { TwilioSmsWebhookProcessor } from '@app/modules/communications/sms/workers/processors/twilio-sms-webhook.processor';
 import { ResendWebhookProcessor } from '@app/modules/communications/email/workers/processors/resend-webhook.processor';
 import { SendEmailProcessor } from '@app/modules/communications/email/workers/processors/send-email.processor';
 import { RedisService } from '../redis/redis.service';
@@ -18,22 +19,32 @@ import { CleanupOrphanFilesProcessor } from './processors/cleanup-orphan-files.p
 import { CleanupWebhookEventsProcessor } from './processors/cleanup-webhook-events.processor';
 import { IntegrationResourceSyncProcessor } from './processors/integration-resource-sync.processor';
 import { MetaResourceSyncProcessor } from './processors/meta-resource-sync.processor';
+import { AutomationStepProcessor } from '@app/modules/communications/automations/workers/processors/automation-step.processor';
+import { GenerateReportProcessor } from '@app/modules/reports/workers/processors/generate-report.processor';
+import { ProcessDataImportProcessor } from '@app/modules/platform/data-io/workers/processors/process-data-import.processor';
+import { SocialPublishProcessor } from '@app/modules/communications/social-planner/workers/processors/social-publish.processor';
 import {
   EMAIL_QUEUE,
   FILE_QUEUE,
   JOB_APPOINTMENT_GOOGLE_SYNC,
+  JOB_AUTOMATION_STEP,
   JOB_CALENDAR_SYNC,
   JOB_CLEANUP_ASYNC_JOBS,
   JOB_CLEANUP_ORPHAN_FILES,
   JOB_CLEANUP_WEBHOOK_EVENTS,
+  JOB_GENERATE_REPORT,
+  JOB_PROCESS_DATA_IMPORT,
   JOB_INTEGRATION_RESOURCE_SYNC,
   JOB_META_RESOURCE_SYNC,
   JOB_PROCESS_META_WEBHOOK,
   JOB_PROCESS_RESEND_WEBHOOK,
+  JOB_PROCESS_TWILIO_SMS_WEBHOOK,
   JOB_PROCESS_STRIPE_WEBHOOK,
   JOB_SEND_EMAIL,
   JOB_SEND_OUTBOUND_MESSAGE,
+  JOB_SOCIAL_PUBLISH,
   MESSAGE_QUEUE,
+  SOCIAL_PUBLISH_QUEUE,
   SYNC_QUEUE,
   WEBHOOK_QUEUE,
   WEBHOOK_QUEUE_CONCURRENCY,
@@ -45,13 +56,18 @@ import type {
   CleanupAsyncJobsJobPayload,
   CleanupOrphanFilesJobPayload,
   CleanupWebhookEventsJobPayload,
+  GenerateReportJobPayload,
+  DataImportJobPayload,
   IntegrationResourceSyncJobPayload,
   MetaResourceSyncJobPayload,
+  AutomationStepJobPayload,
   ProcessMetaWebhookPayload,
   ProcessResendWebhookPayload,
   ProcessStripeWebhookPayload,
+  ProcessTwilioSmsWebhookPayload,
   SendEmailJobPayload,
   SendOutboundMessagePayload,
+  SocialPublishJobPayload,
 } from './queue.types';
 
 @Injectable()
@@ -73,6 +89,11 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
     private readonly cleanupOrphanFilesProcessor: CleanupOrphanFilesProcessor,
     private readonly sendEmailProcessor: SendEmailProcessor,
     private readonly resendWebhookProcessor: ResendWebhookProcessor,
+    private readonly twilioSmsWebhookProcessor: TwilioSmsWebhookProcessor,
+    private readonly automationStepProcessor: AutomationStepProcessor,
+    private readonly generateReportProcessor: GenerateReportProcessor,
+    private readonly processDataImportProcessor: ProcessDataImportProcessor,
+    private readonly socialPublishProcessor: SocialPublishProcessor,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -108,6 +129,14 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
         connection,
         concurrency: 2,
       }),
+      new Worker(
+        SOCIAL_PUBLISH_QUEUE,
+        (job) => this.handleSocialPublishJob(job),
+        {
+          connection,
+          concurrency: 3,
+        },
+      ),
     );
 
     for (const worker of this.workers) {
@@ -128,7 +157,7 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.logger.log(
-      'BullMQ workers started (webhook, message, email, sync, file queues)',
+      'BullMQ workers started (webhook, message, email, sync, file, social-publish queues)',
     );
   }
 
@@ -157,6 +186,11 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
       case JOB_PROCESS_STRIPE_WEBHOOK:
         await this.stripeWebhookProcessor.process(
           job.data as ProcessStripeWebhookPayload,
+        );
+        return;
+      case JOB_PROCESS_TWILIO_SMS_WEBHOOK:
+        await this.twilioSmsWebhookProcessor.process(
+          job.data as ProcessTwilioSmsWebhookPayload,
         );
         return;
       default:
@@ -196,6 +230,11 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
           job.data as MetaResourceSyncJobPayload,
         );
         return;
+      case JOB_AUTOMATION_STEP:
+        await this.automationStepProcessor.process(
+          job.data as AutomationStepJobPayload,
+        );
+        return;
       default:
         this.logger.warn(`Unknown sync job: ${job.name}`);
     }
@@ -218,9 +257,29 @@ export class QueueWorkersService implements OnModuleInit, OnModuleDestroy {
           job.data as CleanupOrphanFilesJobPayload,
         );
         return;
+      case JOB_GENERATE_REPORT:
+        await this.generateReportProcessor.process(
+          job.data as GenerateReportJobPayload,
+        );
+        return;
+      case JOB_PROCESS_DATA_IMPORT:
+        await this.processDataImportProcessor.process(
+          job.data as DataImportJobPayload,
+        );
+        return;
       default:
         this.logger.warn(`Unknown file/cleanup job: ${job.name}`);
     }
+  }
+
+  private async handleSocialPublishJob(job: Job): Promise<void> {
+    if (job.name === JOB_SOCIAL_PUBLISH) {
+      await this.socialPublishProcessor.process(
+        job.data as SocialPublishJobPayload,
+      );
+      return;
+    }
+    this.logger.warn(`Unknown social publish job: ${job.name}`);
   }
 
   async onModuleDestroy(): Promise<void> {

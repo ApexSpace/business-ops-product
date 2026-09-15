@@ -2,6 +2,7 @@
 
 import { AlertCircle } from "lucide-react";
 import { useAppRouter } from "@/lib/hooks/use-app-router";
+import { useAuth } from "@/lib/auth/provider";
 import { Button } from "@/components/ui/button";
 import { getSupportHref } from "@/lib/config/support";
 import type { BusinessTenantAccess } from "@/lib/business-access/types";
@@ -16,8 +17,17 @@ export function BusinessAccessBlockedScreen({
   reasonCode?: string;
 }) {
   const router = useAppRouter();
-  const code = reasonCode ?? access?.reasonCode ?? "BUSINESS_NOT_ACTIVE";
+  const { logout } = useAuth();
+  const rawCode = reasonCode ?? access?.reasonCode ?? "BUSINESS_NOT_ACTIVE";
+  const code =
+    rawCode === "BUSINESS_NOT_ACTIVE" &&
+    access?.subscription?.status?.toUpperCase() === "CANCELED"
+      ? "SUBSCRIPTION_CANCELED"
+      : rawCode;
   const copy = getAccessBlockedMessage(code);
+  const isCanceledSubscription =
+    code === "SUBSCRIPTION_CANCELED" ||
+    code === "BUSINESS_SUBSCRIPTION_CANCELED";
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center bg-muted/30 p-6">
@@ -37,7 +47,7 @@ export function BusinessAccessBlockedScreen({
         ) : null}
 
         <div className="flex flex-wrap justify-center gap-2 border-t pt-4">
-          <Button nativeButton={false} render={<a href={getSupportHref()} />}>
+          <Button variant="brand" nativeButton={false} render={<a href={getSupportHref()} />}>
             {copy.primaryCta}
           </Button>
           {copy.secondaryCtas.includes("Switch workspace") ? (
@@ -49,8 +59,18 @@ export function BusinessAccessBlockedScreen({
             </Button>
           ) : null}
           {copy.secondaryCtas.includes("Go to login") ? (
-            <Button variant="ghost" onClick={() => router.push("/login")}>
-              Go to login
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                await logout();
+                router.push(
+                  isCanceledSubscription
+                    ? "/login?reason=subscription-canceled"
+                    : "/login",
+                );
+              }}
+            >
+              Sign out
             </Button>
           ) : null}
         </div>

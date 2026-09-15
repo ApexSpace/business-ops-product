@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { NoteFormDialog } from "@/features/notes/components/note-form-dialog";
 import { TaskFormDialog } from "@/features/tasks/components/task-form-dialog";
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,6 @@ export function LeadRelatedRecords({ lead }: LeadRelatedRecordsProps) {
             className="h-7 px-2 text-xs"
             onClick={() => setNoteOpen(true)}
           >
-            <Plus className="mr-1 size-3.5" />
             Add
           </Button>
         </div>
@@ -98,7 +96,6 @@ export function LeadRelatedRecords({ lead }: LeadRelatedRecordsProps) {
             className="h-7 px-2 text-xs"
             onClick={() => setTaskOpen(true)}
           >
-            <Plus className="mr-1 size-3.5" />
             Add
           </Button>
         </div>

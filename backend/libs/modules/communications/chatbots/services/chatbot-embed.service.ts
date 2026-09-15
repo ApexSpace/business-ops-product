@@ -8,10 +8,18 @@ import { toChatbotEmbed } from '../mappers/chatbot.mapper';
 export class ChatbotEmbedService {
   constructor(private readonly config: ConfigService<RootConfig, true>) {}
 
-  buildEmbed(publicKey: string): ChatbotEmbedResponseDto {
+  buildEmbed(
+    publicKey: string,
+    options?: {
+      position?: 'BOTTOM_RIGHT' | 'BOTTOM_LEFT';
+      launcherIcon?: 'message' | 'chat' | 'help';
+      primaryColor?: string;
+    },
+  ): ChatbotEmbedResponseDto {
     const backendPublicUrl = this.config.get('app.backendPublicUrl', {
       infer: true,
     });
-    return toChatbotEmbed(backendPublicUrl, publicKey);
+    const frontendUrl = this.config.get('app.frontendUrl', { infer: true });
+    return toChatbotEmbed(backendPublicUrl, frontendUrl, publicKey, options);
   }
 }

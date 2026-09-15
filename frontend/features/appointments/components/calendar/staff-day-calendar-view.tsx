@@ -1,0 +1,275 @@
+"use client";
+
+import { useMemo, useRef } from "react";
+import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
+import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
+import { CalendarCurrentTimeIndicator } from "@/features/appointments/components/calendar/calendar-current-time-indicator";
+import {
+  TimeGridColumn,
+  TimeGridGutter,
+  useTimeGridHeight,
+} from "@/features/appointments/components/calendar/time-grid-shared";
+import type { StaffMemberOption } from "@/features/appointments/components/calendar/staff-selector";
+import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
+import { useScrollTimeGridToNow } from "@/features/appointments/hooks/use-scroll-time-grid-to-now";
+import { isTodayDateKey } from "@/features/calendars/utils/timezone";
+import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { calendarTimeGridLayout } from "@/features/calendars/utils/calendar-time-grid-layout";
+import { LoadingState } from "@/components/data-display/loading-state";
+import {
+  CALENDAR_FIGMA_STAFF_COL_IDEAL_PX,
+  CALENDAR_FIGMA_STAFF_COL_MIN_PX,
+  CALENDAR_FIGMA_STAFF_HEADER_HEIGHT_PX,
+  CALENDAR_FIGMA_TIME_GUTTER_PX,
+} from "@/features/calendars/styles/calendar-figma";
+import {
+  MOBILE_CAL_STAFF_HEADER_HEIGHT_PX,
+  MOBILE_CAL_TIME_GUTTER_PX,
+} from "@/features/appointments/styles/mobile-calendar-tokens";
+import type { BusinessHoursSlot } from "@/features/business-hours/types";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { cn } from "@/lib/utils";
+
+/** Figma staff header % badge — booked share of an 8h day (clamped 0–100). */
+function staffUtilizationPercent(
+  appointments: Appointment[],
+  staffUserId: string,
+): number {
+  const dayMinutes = 8 * 60;
+  let booked = 0;
+  for (const appointment of appointments) {
+    if (appointment.assignedToId !== staffUserId) continue;
+    const start = Date.parse(appointment.startAt);
+    const end = Date.parse(appointment.endAt);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+      continue;
+    }
+    booked += (end - start) / 60_000;
+  }
+  return Math.min(100, Math.max(0, Math.round((booked / dayMinutes) * 100)));
+}
+
+interface StaffDayCalendarViewProps {
+  dateKey: string;
+  timezone: string;
+  calendars?: Calendar[];
+  businessTimezone?: string | null;
+  staffMembers: StaffMemberOption[];
+  appointments: Appointment[];
+  isLoading?: boolean;
+  className?: string;
+  showBufferOnCalendar?: boolean;
+  bufferTimeEnabled?: boolean;
+  onAppointmentClick: (appointment: Appointment) => void;
+  onAppointmentMoveStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  onAppointmentResizeStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  draggingAppointmentId?: string | null;
+  businessHoursSlots?: BusinessHoursSlot[];
+  staffSlotsByUserId?: Map<string, BusinessHoursSlot[] | null>;
+  onSlotClick: (
+    dateKey: string,
+    hour: number,
+    minute: number,
+    assignedToId?: string,
+  ) => void;
+  /** Figma phone layout — fluid staff columns, avatar above name, no % badge. */
+  density?: "desktop" | "mobile";
+}
+
+export function StaffDayCalendarView({
+  dateKey,
+  timezone,
+  calendars,
+  businessTimezone,
+  staffMembers,
+  appointments,
+  isLoading,
+  className,
+  showBufferOnCalendar,
+  bufferTimeEnabled,
+  onAppointmentClick,
+  onAppointmentMoveStart,
+  onAppointmentResizeStart,
+  draggingAppointmentId,
+  businessHoursSlots,
+  staffSlotsByUserId,
+  onSlotClick,
+  density = "desktop",
+}: StaffDayCalendarViewProps) {
+  const isMobile = density === "mobile";
+  const gridHeight = useTimeGridHeight();
+  const isToday = isTodayDateKey(dateKey, timezone);
+  const currentTimeTop = useCalendarCurrentTimeTop(timezone, [dateKey]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const stickyHeaderHeight = isMobile
+    ? MOBILE_CAL_STAFF_HEADER_HEIGHT_PX
+    : CALENDAR_FIGMA_STAFF_HEADER_HEIGHT_PX;
+  useScrollTimeGridToNow(scrollRef, {
+    currentTimeTopPx: currentTimeTop,
+    stickyHeaderHeight,
+    enabled: !isLoading,
+    resetKey: `${density}:${dateKey}`,
+  });
+  const timeGutterPx = isMobile
+    ? MOBILE_CAL_TIME_GUTTER_PX
+    : CALENDAR_FIGMA_TIME_GUTTER_PX;
+  const columnCount = Math.max(staffMembers.length, 1);
+  const colMin = Math.min(
+    CALENDAR_FIGMA_STAFF_COL_IDEAL_PX,
+    Math.max(CALENDAR_FIGMA_STAFF_COL_MIN_PX, 200),
+  );
+  const { gridTemplateColumns, frameStyle } = calendarTimeGridLayout({
+    gutterPx: timeGutterPx,
+    columnCount,
+    columnMinPx: colMin,
+    mode: isMobile ? "fluid" : "fill",
+  });
+
+  const utilizationByStaff = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const member of staffMembers) {
+      map.set(
+        member.userId,
+        staffUtilizationPercent(appointments, member.userId),
+      );
+    }
+    return map;
+  }, [appointments, staffMembers]);
+
+  return (
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col bg-white",
+        CALENDAR_GRID.card,
+        isMobile &&
+          "[&_[data-calendar-appointment]]:rounded-[3px] [&_[data-calendar-appointment]]:gap-1 [&_[data-calendar-appointment]]:p-[5px]",
+        className,
+      )}
+      data-calendar-density={density}
+    >
+      {/* Single scroll host — avoids stacked horizontal scrollbars */}
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-auto overscroll-contain bg-white"
+      >
+        <div
+          className={cn("bg-white", isMobile ? "w-full min-w-0" : "min-w-0")}
+          style={frameStyle}
+        >
+          <div
+            className={cn(
+              "sticky top-0 z-30 grid w-full bg-white",
+              CALENDAR_GRID.headerRow,
+            )}
+            style={{ gridTemplateColumns }}
+          >
+            <div
+              className="sticky left-0 z-40 shrink-0 border-b border-r border-[color:rgba(126,59,237,0.6)] bg-white"
+              style={{ width: timeGutterPx, height: isMobile ? MOBILE_CAL_STAFF_HEADER_HEIGHT_PX : undefined }}
+              aria-hidden
+            />
+            {staffMembers.map((member) => {
+              const utilization = utilizationByStaff.get(member.userId) ?? 0;
+              if (isMobile) {
+                return (
+                  <div
+                    key={member.userId}
+                    className="flex min-w-0 flex-col items-center justify-center gap-1 border-b border-l border-[color:rgba(126,59,237,0.6)] bg-white px-1"
+                    style={{ height: MOBILE_CAL_STAFF_HEADER_HEIGHT_PX }}
+                  >
+                    <ProfileAvatar
+                      name={member.label}
+                      avatarUrl={member.avatarUrl}
+                      className="size-6 shrink-0"
+                      fallbackClassName="bg-[var(--drawer-client-avatar-bg)] text-[9px] font-semibold text-[var(--drawer-client-avatar-fg)]"
+                    />
+                    <span className="line-clamp-2 max-w-full text-center text-[11px] font-semibold leading-tight text-violet-primary-darker">
+                      {member.label}
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <div
+                  key={member.userId}
+                  className={cn(
+                    CALENDAR_GRID.staffHeaderCell,
+                    CALENDAR_GRID.column,
+                  )}
+                >
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <ProfileAvatar
+                      name={member.label}
+                      avatarUrl={member.avatarUrl}
+                      className="size-8 shrink-0"
+                      fallbackClassName="bg-grey-tertiary-light-active text-[10px] font-semibold text-grey-tertiary-normal"
+                    />
+                    <span className="min-w-0 truncate text-sm font-semibold text-violet-primary-darker">
+                      {member.label}
+                    </span>
+                  </div>
+                  <span className="inline-flex h-6 shrink-0 items-center justify-center rounded-full bg-violet-primary-normal px-2 text-[11px] font-semibold leading-none text-white">
+                    {utilization}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {isLoading ? (
+            <div className="flex h-48 items-center justify-center">
+              <LoadingState variant="inline" label="Loading appointments…" />
+            </div>
+          ) : (
+            <div
+              className="relative bg-white"
+              style={{ minHeight: gridHeight }}
+            >
+              {currentTimeTop !== null ? (
+                <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
+              ) : null}
+              <div
+                className="grid w-full bg-white"
+                style={{
+                  gridTemplateColumns,
+                  minHeight: gridHeight,
+                }}
+              >
+                <TimeGridGutter className={isMobile ? "w-[52px]" : undefined} />
+                {staffMembers.map((member) => (
+                  <TimeGridColumn
+                    key={member.userId}
+                    dateKey={dateKey}
+                    appointments={appointments}
+                    viewTimezone={timezone}
+                    calendars={calendars}
+                    businessTimezone={businessTimezone}
+                    staffUserId={member.userId}
+                    highlightToday={isToday}
+                    onAppointmentClick={onAppointmentClick}
+                    onAppointmentMoveStart={onAppointmentMoveStart}
+                    onAppointmentResizeStart={onAppointmentResizeStart}
+                    draggingAppointmentId={draggingAppointmentId}
+                    businessHoursSlots={businessHoursSlots}
+                    staffHoursSlots={
+                      staffSlotsByUserId?.get(member.userId) ?? null
+                    }
+                    showBufferOnCalendar={showBufferOnCalendar}
+                    bufferTimeEnabled={bufferTimeEnabled}
+                    onSlotClick={onSlotClick}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

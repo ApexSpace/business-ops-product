@@ -43,6 +43,24 @@ const businessRoutes: Record<string, RouteEntry> = {
     description:
       "Record customer, service, and work done — visits, jobs, sessions, or cases.",
   },
+  "/business/social-planner": {
+    title: "Social Planner",
+    description: "Compose, schedule, and publish posts across social channels.",
+  },
+  "/business/social-planner/posts": {
+    title: "Social Posts",
+    description: "List and manage scheduled and published social posts.",
+  },
+  "/business/social-planner/new": {
+    title: "Compose post",
+    description: "Create a multi-destination social post.",
+  },
+  "/business/social-planner/comments": {
+    title: "Engagement",
+    description:
+      "Comments and likes on Facebook, Instagram, and YouTube posts published from Social Planner. TikTok comments are not supported via Login Kit / Content Posting API.",
+  },
+
   "/business/notes": {
     title: "Notes",
     description: "Free-form notes linked to contacts and leads.",
@@ -70,15 +88,87 @@ const businessRoutes: Record<string, RouteEntry> = {
   },
   "/business/appointments": {
     title: "Appointments",
-    description: "Booking calendar.",
+    description: "Schedule and manage appointments across your business calendars.",
+  },
+  "/business/time-clock": {
+    title: "Time Clock",
+    description: "Clock in and out with your PIN.",
+  },
+  "/business/time-cards": {
+    title: "Time Cards",
+    description: "Manage staff time card records.",
+  },
+  "/business/sales": {
+    title: "Sales",
+    description: "Point-of-sale checkouts — open sales, add items, and collect payment.",
+  },
+  "/business/gift-cards": {
+    title: "Gift Cards",
+    description: "Manage prepaid gift cards, balances, and online sales.",
+  },
+  "/business/gift-cards/settings": {
+    title: "Gift Card Settings",
+    description: "Online sales, artwork, numbering preferences, and promotions.",
+    breadcrumbs: [
+      { label: "Gift Cards", href: "/business/gift-cards" },
+      { label: "Settings" },
+    ],
+  },
+  "/business/packages": {
+    title: "Packages",
+    description: "Manage prepaid service packages assigned to clients.",
+  },
+  "/business/packages/setup": {
+    title: "Package Setup",
+    description: "Configure package templates, services, and online sales.",
+    breadcrumbs: [
+      { label: "Packages", href: "/business/packages" },
+      { label: "Setup" },
+    ],
+  },
+  "/business/packages/settings": {
+    title: "Package Settings",
+    description: "Online sales, shareable links, and embed options.",
+    breadcrumbs: [
+      { label: "Packages", href: "/business/packages" },
+      { label: "Settings" },
+    ],
+  },
+  "/business/memberships": {
+    title: "Memberships",
+    description: "Manage client memberships and subscriptions.",
+  },
+  "/business/memberships/plans": {
+    title: "Membership Plans",
+    description: "Configure plans, pricing, services, and online sales.",
+    breadcrumbs: [
+      { label: "Memberships", href: "/business/memberships" },
+      { label: "Plans" },
+    ],
+  },
+  "/business/memberships/settings": {
+    title: "Membership Settings",
+    description: "Online sales, shareable links, and embed options.",
+    breadcrumbs: [
+      { label: "Memberships", href: "/business/memberships" },
+      { label: "Settings" },
+    ],
+  },
+  "/business/offers": {
+    title: "Offers",
+    description: "Create and manage promotional offers, discount rules, and eligibility.",
+  },
+  "/business/products": {
+    title: "Products",
+    description: "Product catalog, inventory, variants, and bundles.",
   },
   "/business/settings/profile": {
-    title: "Business Profile",
+    title: "Business Details",
     description:
-      "Business details, logo, address, timezone, and default tax and currency settings.",
+      "Edit legal name, industry, and branding for this workspace.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
-      { label: "Business Profile" },
+      { label: "Business Details" },
     ],
   },
   "/business/settings/team": {
@@ -97,11 +187,49 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Calendars" },
     ],
   },
+  "/business/settings/online-booking": {
+    title: "Setup & Integration",
+    description:
+      "Online booking setup, booking links, and website integration.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Online Booking", href: "/business/settings/online-booking" },
+      { label: "Setup & Integration" },
+    ],
+  },
+  "/business/settings/online-booking/preferences": {
+    title: "Preferences",
+    description:
+      "Set booking windows, gap avoidance, service rules, photos, and waitlist options for online booking.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Online Booking", href: "/business/settings/online-booking" },
+      { label: "Preferences" },
+    ],
+  },
+  "/business/settings/online-booking/staff-selection": {
+    title: "Staff Selection",
+    description: "Adjust staff selection options in online booking.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Online Booking", href: "/business/settings/online-booking" },
+      { label: "Staff Selection" },
+    ],
+  },
   "/business/settings/services": {
     title: "Services",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Services" },
+    ],
+  },
+  "/business/settings/resources": {
+    title: "Resources",
+    description:
+      "Manage rooms, equipment, and consumables. Configure schedules and see which services use each resource.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Resources" },
     ],
   },
   "/business/settings/pipelines": {
@@ -122,8 +250,27 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Financial Settings" },
     ],
   },
+  "/business/settings/custom-fees": {
+    title: "Custom Fees",
+    description:
+      "Custom fees are extra charges that get applied at checkout, such as convenience fees or eco fees.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Custom Fees" },
+    ],
+  },
+  "/business/settings/checkout-advanced": {
+    title: "Advanced Settings",
+    description:
+      "Tips, custom payment labels, check payments, staff requirements, and receipt options for staff checkout.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Advanced Settings" },
+    ],
+  },
   "/business/settings/templates": {
     title: "Templates",
+    description: "Reusable messages for follow-ups and campaigns.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Templates" },
@@ -136,6 +283,22 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Automations" },
     ],
   },
+  "/business/settings/automation-workflows/new": {
+    title: "Create workflow",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Automations", href: "/business/settings/automations" },
+      { label: "Create workflow" },
+    ],
+  },
+  "/business/settings/automation-registry": {
+    title: "Automation registry",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Automations", href: "/business/settings/automations" },
+      { label: "Registry" },
+    ],
+  },
   "/business/settings/chatbots": {
     title: "Chatbots",
     description:
@@ -145,10 +308,28 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Chatbots" },
     ],
   },
+  "/business/settings/forms": {
+    title: "Forms",
+    description:
+      "Build and manage lead capture forms for your website and landing pages.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Forms" },
+    ],
+  },
+  "/business/settings/forms/new": {
+    title: "New form",
+    description: "Design a new lead capture form.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Forms", href: "/business/settings/forms" },
+      { label: "New" },
+    ],
+  },
   "/business/settings/billing": {
     title: "Plan & Billing",
     description:
-      "Your subscription, plan tier, payment status, and included capabilities.",
+      "Your subscription, plan tier, and payment status.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Plan & Billing" },
@@ -163,11 +344,39 @@ const businessRoutes: Record<string, RouteEntry> = {
       { label: "Integrations" },
     ],
   },
+  "/business/settings/data": {
+    title: "Data import & export",
+    description: "Import CSV/Excel migrations and export business data.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Data import & export" },
+    ],
+  },
+  "/business/settings/whatsapp": {
+    title: "WhatsApp",
+    description:
+      "View your connected number, manage message templates, and configure WhatsApp settings.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "WhatsApp" },
+    ],
+  },
   "/business/settings/notifications": {
     title: "Notifications",
+    description:
+      "Control which notifications send and whether they go by email or SMS. Customize email templates and review delivery logs.",
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Notifications" },
+    ],
+  },
+  "/business/settings/appointment-booked": {
+    title: "Appointment Booked",
+    description:
+      "Configure which automated messages are sent after an appointment is booked.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Appointment Booked" },
     ],
   },
   "/business/settings/appearance": {
@@ -176,6 +385,82 @@ const businessRoutes: Record<string, RouteEntry> = {
     breadcrumbs: [
       { label: "Settings", href: "/business/settings/profile" },
       { label: "Appearance" },
+    ],
+  },
+  "/business/settings/business-hours": {
+    title: "Business Hours",
+    description: "Manage your business hours.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Business Hours" },
+    ],
+  },
+  "/business/settings/web-chat": {
+    title: "Web Chat",
+    description: "Configure the chat widget on your website.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Web Chat" },
+    ],
+  },
+  "/business/settings/scheduling-options": {
+    title: "Scheduling Options",
+    description: "Configure appointment increments, buffer time, processing, and rebooking shortcuts.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Scheduling Options" },
+    ],
+  },
+  "/business/settings/express-booking": {
+    title: "Express Booking™",
+    description:
+      "Configure staff-started bookings that clients complete via a secure link — time limits, payment, and photo collection.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Express Booking" },
+    ],
+  },
+  "/business/settings/display-preferences": {
+    title: "Display Preferences",
+    description: "Configure how appointments appear on your calendar.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Display Preferences" },
+    ],
+  },
+  "/business/settings/waiting-room": {
+    title: "Waiting Room",
+    description: "Manage the waiting status and client check-in notifications.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Waiting Room" },
+    ],
+  },
+  "/business/settings/cancel-reschedule": {
+    title: "Cancel & Reschedule",
+    description:
+      "Configure cancellation policy, client self-service, and late cancellation reporting.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Cancel & Reschedule" },
+    ],
+  },
+  "/business/settings/payment-account": {
+    title: "Payment Accounts",
+    description:
+      "Manage your Stripe payment account and calendar display preferences for reports and scheduling.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Payment Accounts" },
+    ],
+  },
+  "/business/settings/quick-tools": {
+    title: "Quick Tools",
+    description:
+      "Bulk actions for staff availability — mark days as not working or clear full-day off blocks.",
+    breadcrumbs: [
+      { label: "Settings", href: "/business/settings/profile" },
+      { label: "Quick Tools" },
     ],
   },
 };
@@ -221,16 +506,39 @@ const platformRoutes: Record<string, RouteEntry> = {
   },
   "/platform/settings/integrations": {
     title: "Platform Integrations",
-    description: "Configure platform-wide AI, messaging, storage, and OAuth providers.",
+    description:
+      "Connect messaging channels for the platform Unified Inbox, plus platform-wide providers.",
+  },
+  "/platform/forms": {
+    title: "Forms",
+    description: "Build and publish platform marketing and ops forms.",
+  },
+  "/platform/payments": {
+    title: "Payments",
+    description:
+      "Platform payments hub for SaaS subscriptions and form Collect Payment charges.",
+  },
+  "/platform/chatbots": {
+    title: "Chatbots",
+    description:
+      "Configure AI chatbots for the PandaCue marketing site and ops surfaces.",
+  },
+  "/platform/work-items": {
+    title: "Work Items",
+    description:
+      "Track ops work for platform support — assign to support users on the INTERNAL workspace.",
   },
 };
 
 const businessTerminologyKeys: Partial<Record<string, string>> = {
   "/business/contacts": "nav.contacts",
   "/business/work-items": "nav.workItems",
+  "/business/social-planner": "nav.socialPlanner",
   "/business/pipelines": "nav.pipelines",
   "/business/conversations": "nav.conversations",
   "/business/appointments": "nav.appointments",
+  "/business/time-clock": "nav.timeClock",
+  "/business/time-cards": "nav.timeCards",
 };
 
 function applyRouteTerminology(
@@ -358,6 +666,42 @@ export function resolvePageMetadata(
     };
   }
 
+  if (pathname.match(/^\/platform\/chatbots\/[^/]+\/edit$/)) {
+    return {
+      title: "Edit chatbot",
+      description:
+        "Configure the platform chat widget, replies, and embed code.",
+      breadcrumbs: [
+        { label: "Chatbots", href: "/platform/chatbots" },
+        { label: "Edit" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/business\/settings\/forms\/[^/]+\/edit$/)) {
+    return {
+      title: "Edit form",
+      description: "Design fields, validation, and submission settings.",
+      breadcrumbs: [
+        { label: "Settings", href: "/business/settings/profile" },
+        { label: "Forms", href: "/business/settings/forms" },
+        { label: "Edit" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/business\/settings\/forms\/[^/]+\/submissions$/)) {
+    return {
+      title: "Form submissions",
+      description: "Review and manage responses collected from this form.",
+      breadcrumbs: [
+        { label: "Settings", href: "/business/settings/profile" },
+        { label: "Forms", href: "/business/settings/forms" },
+        { label: "Submissions" },
+      ],
+    };
+  }
+
   if (pathname.match(/^\/business\/settings\/pipelines\/[^/]+\/edit$/)) {
     return {
       title: "Edit pipeline",
@@ -365,6 +709,18 @@ export function resolvePageMetadata(
         { label: "Settings", href: "/business/settings/profile" },
         { label: "Pipelines", href: "/business/settings/pipelines" },
         { label: "Edit" },
+      ],
+    };
+  }
+
+  if (pathname.match(/^\/business\/settings\/automation-workflows\/[^/]+$/)) {
+    return {
+      title: "Edit workflow",
+      description: "Configure trigger, filters, and linear steps.",
+      breadcrumbs: [
+        { label: "Settings", href: "/business/settings/profile" },
+        { label: "Automations", href: "/business/settings/automations" },
+        { label: "Edit workflow" },
       ],
     };
   }

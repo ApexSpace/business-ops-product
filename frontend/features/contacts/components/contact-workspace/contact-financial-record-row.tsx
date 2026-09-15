@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 interface ContactFinancialRecordRowProps {
   title: string;
   lines: string[];
-  status?: { domain: "estimate" | "invoice" | "transaction"; value: string; label?: string };
+  status?: { domain: "estimate" | "invoice" | "transaction"; value: string; label?: string,
+};
   onOpen?: () => void;
   actions?: React.ReactNode;
   className?: string;

@@ -1,0 +1,140 @@
+"use client";
+
+import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { SquarePen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "@/components/layout/settings-form-actions";
+import { useSettingsFormHeader } from "@/components/layout/settings-page-layout";
+import {
+  SETTINGS_FORM_DESCRIPTION_CLASS,
+  SETTINGS_FORM_SECTION_STACK_CLASS,
+  SETTINGS_INLINE_SECTION_TITLE_CLASS,
+} from "@/lib/design/settings-form-tokens";
+import { cn } from "@/lib/utils";
+
+export interface SettingsInlineEditSectionProps {
+  title: string;
+  description?: ReactNode;
+  summary: ReactNode;
+  isEditing: boolean;
+  onEdit: () => void;
+  onDiscard?: () => void;
+  onSave?: () => void;
+  isDirty?: boolean;
+  isSaving?: boolean;
+  disabled?: boolean;
+  editLabel?: string;
+  saveLabel?: string;
+  children?: ReactNode;
+  className?: string;
+  /**
+   * Opt-in: attach this section's edit control to the SettingsFormPage header
+   * and suppress the local section heading (avoids double titles on single-section pages).
+   * Do not enable on multi-section pages — use a distinct section title instead.
+   */
+  promoteEditToPageHeader?: boolean;
+}
+
+export function SettingsInlineEditSection({
+  title,
+  description,
+  summary,
+  isEditing,
+  onEdit,
+  onDiscard,
+  onSave,
+  isDirty = false,
+  isSaving = false,
+  disabled = false,
+  editLabel = "Edit",
+  saveLabel = "Save",
+  children,
+  className,
+  promoteEditToPageHeader = false,
+}: SettingsInlineEditSectionProps) {
+  const formHeader = useSettingsFormHeader();
+  const promoteToPageHeader = Boolean(
+    promoteEditToPageHeader && formHeader?.pageTitle,
+  );
+  const showActions = Boolean(onDiscard && onSave);
+  const onEditRef = useRef(onEdit);
+  onEditRef.current = onEdit;
+
+  useLayoutEffect(() => {
+    if (!promoteToPageHeader || !formHeader) return;
+
+    formHeader.setHeaderAction(
+      !isEditing ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="shrink-0 text-primary"
+          onClick={() => onEditRef.current()}
+          disabled={disabled || isSaving}
+          aria-label={editLabel}
+        >
+          <SquarePen className="size-4" aria-hidden />
+        </Button>
+      ) : null,
+    );
+
+    return () => {
+      formHeader.setHeaderAction(null);
+    };
+  }, [
+    promoteToPageHeader,
+    formHeader,
+    isEditing,
+    disabled,
+    isSaving,
+    editLabel,
+  ]);
+
+  const localEditButton = !isEditing ? (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      className="shrink-0 text-primary"
+      onClick={onEdit}
+      disabled={disabled || isSaving}
+      aria-label={editLabel}
+    >
+      <SquarePen className="size-4" aria-hidden />
+    </Button>
+  ) : null;
+
+  return (
+    <section className={cn(SETTINGS_FORM_SECTION_STACK_CLASS, className)}>
+      {!promoteToPageHeader ? (
+        <div className="flex items-start justify-between gap-[var(--spacing-4)]">
+          <div className="min-w-0 space-y-[var(--spacing-1)]">
+            <h3 className={SETTINGS_INLINE_SECTION_TITLE_CLASS}>{title}</h3>
+            {description ? (
+              <p className={SETTINGS_FORM_DESCRIPTION_CLASS}>{description}</p>
+            ) : null}
+          </div>
+          {localEditButton}
+        </div>
+      ) : null}
+
+      {!isEditing ? (
+        <div className="min-w-0 text-sm text-foreground">{summary}</div>
+      ) : (
+        <div className="space-y-[var(--spacing-4)]">{children}</div>
+      )}
+
+      {isEditing && showActions ? (
+        <SettingsFormActions
+          onDiscard={onDiscard!}
+          onSave={onSave}
+          isDirty={isDirty}
+          isSubmitting={isSaving}
+          disabled={disabled}
+          saveLabel={saveLabel}
+        />
+      ) : null}
+    </section>
+  );
+}

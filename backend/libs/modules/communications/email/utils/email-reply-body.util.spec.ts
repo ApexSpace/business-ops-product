@@ -70,8 +70,7 @@ Sent: Monday`;
   });
 
   it('falls back to html and removes blockquotes', () => {
-    const html =
-      '<p>Thanks!</p><blockquote><p>Old message</p></blockquote>';
+    const html = '<p>Thanks!</p><blockquote><p>Old message</p></blockquote>';
 
     expect(extractInboundEmailBody(null, html)).toBe('Thanks!');
   });

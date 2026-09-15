@@ -51,5 +51,37 @@ describe('meta-oauth-state.util', () => {
     const payload = verifyMetaOAuthState(state, SECRET);
     expect(payload.providerKey).toBe('instagram');
     expect(payload.flowType).toBe('META_OAUTH');
+    expect(payload.authFlow).toBe('FACEBOOK_LOGIN');
+  });
+
+  it('round-trips Instagram Direct authFlow in state', () => {
+    const state = createMetaOAuthState(
+      {
+        businessId: 'biz-1',
+        userId: 'user-1',
+        providerKey: 'instagram',
+        authFlow: 'INSTAGRAM_LOGIN',
+      },
+      SECRET,
+    );
+
+    const payload = verifyMetaOAuthState(state, SECRET);
+    expect(payload.providerKey).toBe('instagram');
+    expect(payload.authFlow).toBe('INSTAGRAM_LOGIN');
+  });
+
+  it('parses facebook_login authFlow query into FACEBOOK_LOGIN', () => {
+    const state = createMetaOAuthState(
+      {
+        businessId: 'biz-1',
+        userId: 'user-1',
+        providerKey: 'instagram',
+        authFlow: 'facebook_login',
+      },
+      SECRET,
+    );
+
+    const payload = verifyMetaOAuthState(state, SECRET);
+    expect(payload.authFlow).toBe('FACEBOOK_LOGIN');
   });
 });

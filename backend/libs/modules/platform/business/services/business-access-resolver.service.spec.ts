@@ -1,4 +1,8 @@
-import { BusinessStatus, SubscriptionPaymentStatus, SubscriptionStatus } from '@prisma/client';
+import {
+  BusinessStatus,
+  SubscriptionPaymentStatus,
+  SubscriptionStatus,
+} from '@prisma/client';
 import { BusinessAccessResolverService } from './business-access-resolver.service';
 import { BusinessEffectiveCapabilitiesService } from './business-effective-capabilities.service';
 
@@ -6,7 +10,9 @@ describe('BusinessAccessResolverService', () => {
   const prisma = {
     business: { findFirst: jest.fn() },
     businessMembership: { findFirst: jest.fn() },
-  } as unknown as ConstructorParameters<typeof BusinessAccessResolverService>[0];
+  } as unknown as ConstructorParameters<
+    typeof BusinessAccessResolverService
+  >[0];
 
   const effectiveCapabilitiesService = {
     resolveEffectiveCapabilities: jest.fn().mockResolvedValue([]),

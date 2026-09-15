@@ -113,4 +113,107 @@ describe('MetaApiClient Instagram discovery', () => {
     expect(pages).toHaveLength(2);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it('falls back to debug_token granular_scopes when /me/accounts is empty', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            scopes: ['pages_show_list', 'pages_messaging'],
+            granular_scopes: [
+              {
+                scope: 'pages_show_list',
+                target_ids: ['108358145323769'],
+              },
+            ],
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: '108358145323769',
+          name: 'Beauty of Gothic Lady',
+          access_token: 'page-token',
+        }),
+      });
+    global.fetch = fetchMock as typeof fetch;
+
+    const client = new MetaApiClient({
+      getMetaAppConfig: () => ({
+        appId: 'app-id',
+        appSecret: 'app-secret',
+      }),
+    } as unknown as MetaConfigService);
+
+    const pages = await client.listPages('user-token');
+
+    expect(pages).toHaveLength(1);
+    expect(pages[0].id).toBe('108358145323769');
+    expect(pages[0].name).toBe('Beauty of Gothic Lady');
+    expect(pages[0].access_token).toBe('page-token');
+    expect((fetchMock.mock.calls[1][0] as string).toString()).toContain(
+      '/debug_token',
+    );
+    const pageLookupUrl = (fetchMock.mock.calls[2][0] as string).toString();
+    expect(pageLookupUrl).toContain('/108358145323769');
+    expect(pageLookupUrl).not.toContain('tasks');
+  });
+
+  it('ignores business_management target_ids when recovering pages', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            scopes: ['pages_show_list', 'business_management'],
+            granular_scopes: [
+              {
+                scope: 'pages_show_list',
+                target_ids: ['108358145323769'],
+              },
+              {
+                scope: 'business_management',
+                target_ids: ['1712991683169536'],
+              },
+            ],
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: '108358145323769',
+          name: 'Beauty of Gothic Lady',
+          access_token: 'page-token',
+        }),
+      });
+    global.fetch = fetchMock as typeof fetch;
+
+    const client = new MetaApiClient({
+      getMetaAppConfig: () => ({
+        appId: 'app-id',
+        appSecret: 'app-secret',
+      }),
+    } as unknown as MetaConfigService);
+
+    const pages = await client.listPages('user-token');
+
+    expect(pages).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect((fetchMock.mock.calls[2][0] as string).toString()).toContain(
+      '/108358145323769',
+    );
+  });
 });

@@ -64,7 +64,8 @@ export function EntityLabelsBuilder() {
   ) => {
     if (!assets) return;
     const expanded = expandEntityLabels(assets.terminology);
-    expanded[entityId] = { ...expanded[entityId], [field]: value };
+    expanded[entityId] = { ...expanded[entityId], [field]: value,
+};
     updateAssets({
       terminology: flattenEntityLabels(expanded, assets.terminology),
     });
@@ -143,7 +144,7 @@ export function EntityLabelsBuilder() {
                       onChange={(e) => updateFlatKey(key, e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Default: {resolveDefault(key) || "—"}
+                      Default: {resolveDefault(key) || ""}
                     </p>
                   </div>
                 ))}
@@ -209,7 +210,7 @@ export function EntityLabelsBuilder() {
                           }
                         />
                         <p className="text-xs text-muted-foreground">
-                          Default: {defaultValue || "—"}
+                          Default: {defaultValue || ""}
                         </p>
                       </div>
                     );
@@ -241,7 +242,7 @@ export function EntityLabelsBuilder() {
                     onChange={(e) => updateFlatKey(key, e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Default: {resolveDefault(key) || "—"}
+                    Default: {resolveDefault(key) || ""}
                   </p>
                 </div>
               ))}

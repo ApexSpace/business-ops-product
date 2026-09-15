@@ -1,4 +1,4 @@
-import { BusinessStatus, Prisma } from '@prisma/client';
+import { BusinessLifecycleStage, BusinessStatus, BusinessType, Prisma } from '@prisma/client';
 import { BusinessProfileDto } from '../dto/business-profile.dto';
 import { sanitizePhoneFields } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import { buildDisplayName, emptyToUndefined } from './business-profile.util';
@@ -21,6 +21,8 @@ export function toBusinessCreateData(
     name: dto.name,
     industry: { connect: { id: dto.industryId } },
     status: dto.status ?? BusinessStatus.ACTIVE,
+    type: BusinessType.TENANT,
+    lifecycleStage: BusinessLifecycleStage.ACTIVE,
     firstName: emptyToUndefined(dto.firstName),
     lastName: emptyToUndefined(dto.lastName),
     displayName,

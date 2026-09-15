@@ -27,7 +27,7 @@ export function FeatureUnavailableScreen({ moduleKey }: { moduleKey: string }) {
           <CardDescription>{message.message}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Button nativeButton={false} render={<a href={getSupportHref()} />}>
+          <Button variant="brand" nativeButton={false} render={<a href={getSupportHref()} />}>
             {message.primaryCta}
           </Button>
           {message.secondaryCtas.includes("Go to dashboard") ? (

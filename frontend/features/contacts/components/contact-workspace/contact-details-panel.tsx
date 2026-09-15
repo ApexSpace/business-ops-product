@@ -2,17 +2,14 @@
 
 import {
   ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
   Pencil,
   Trash2,
-  Users,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,7 +50,7 @@ function DetailField({
   label,
   value,
   multiline = false,
-  placeholder = "—",
+  placeholder = "",
 }: DetailFieldProps) {
   const display = value?.trim() ? value.trim() : "";
 
@@ -142,13 +139,13 @@ export function ContactDetailsPanel({
         {contactTotal != null && contactTotal > 0 ? (
           <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
             <IconButton aria-label="Previous contact" className="size-7" disabled>
-              <ChevronLeft className="size-4" />
+              <NavArrowIcon direction="left" size="lg" />
             </IconButton>
             <span className="tabular-nums">
-              {contactIndex != null ? contactIndex + 1 : "—"} / {contactTotal}
+              {contactIndex != null ? contactIndex + 1 : ""} / {contactTotal}
             </span>
             <IconButton aria-label="Next contact" className="size-7" disabled>
-              <ChevronRight className="size-4" />
+              <NavArrowIcon direction="right" size="lg" />
             </IconButton>
           </div>
         ) : null}
@@ -157,22 +154,21 @@ export function ContactDetailsPanel({
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         <div className="border-b border-border/60 px-4 py-4">
           <div className="flex items-start gap-3">
-            <Avatar className="size-14 shrink-0">
-              {contact.avatarUrl ? (
-                <AvatarImage src={contact.avatarUrl} alt="" />
-              ) : null}
-              <AvatarFallback className="text-base">
-                {contact.label.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <ProfileAvatar
+              name={contact.label}
+              avatarUrl={contact.avatarUrl}
+              className="size-14"
+              fallbackClassName="text-base"
+            />
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-base font-semibold">{contact.label}</h2>
               <div className="mt-2 flex gap-1">
-                <IconButton aria-label="Edit contact" onClick={onEdit}>
+                <IconButton aria-label="Edit contact" size="header" onClick={onEdit}>
                   <Pencil className="size-4" />
                 </IconButton>
                 <IconButton
                   aria-label="Delete contact"
+                  size="header"
                   className="text-destructive hover:text-destructive"
                   onClick={onDelete}
                 >
@@ -181,23 +177,6 @@ export function ContactDetailsPanel({
               </div>
             </div>
           </div>
-
-          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-            <Users className="size-3.5 shrink-0" />
-            <span>Followers — coming soon</span>
-          </div>
-
-          {contact.tags.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-1">
-              {contact.tags.map((tag) => (
-                <Badge key={tag.id} variant="secondary" className="text-xs">
-                  {tag.name}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-3 text-xs text-muted-foreground">No tags</p>
-          )}
         </div>
 
         <section className="space-y-3 px-4 pb-4 pt-1">
@@ -223,12 +202,6 @@ export function ContactDetailsPanel({
           {additionalFields.map((f) => (
             <DetailField key={f.label} label={f.label} value={f.value} />
           ))}
-
-          <DetailField
-            label="Followers"
-            value={null}
-            placeholder="Coming soon"
-          />
         </section>
 
         <Separator />

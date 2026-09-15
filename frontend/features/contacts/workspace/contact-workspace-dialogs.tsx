@@ -2,14 +2,106 @@
 
 import dynamic from "next/dynamic";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { ContactFormDialog } from "@/features/contacts/components/contact-form-dialog";
-import { CreateLeadDialog } from "@/features/leads/components/create-lead-dialog";
-import { LeadFormDialog } from "@/features/leads/components/lead-form-dialog";
-import { NoteFormDialog } from "@/features/notes/components/note-form-dialog";
-import { TaskFormDialog } from "@/features/tasks/components/task-form-dialog";
-import { WorkItemFormDialog } from "@/features/work-items/components/work-item-form-dialog";
+import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
 import type { Contact } from "@/features/contacts/types";
-import type { ContactWorkspaceState } from "@/features/contacts/workspace/use-contact-workspace";
+import type { Lead, Note, Task, WorkItem } from "@/features/contacts/types";
+
+const ContactFormDialog = dynamic(
+  () =>
+    import("@/features/contacts/components/contact-form-dialog").then(
+      (m) => m.ContactFormDialog,
+    ),
+  { ssr: false },
+);
+const CreateLeadDialog = dynamic(
+  () =>
+    import("@/features/leads/components/create-lead-dialog").then(
+      (m) => m.CreateLeadDialog,
+    ),
+  { ssr: false },
+);
+const LeadFormDialog = dynamic(
+  () =>
+    import("@/features/leads/components/lead-form-dialog").then(
+      (m) => m.LeadFormDialog,
+    ),
+  { ssr: false },
+);
+const NoteFormDialog = dynamic(
+  () =>
+    import("@/features/notes/components/note-form-dialog").then(
+      (m) => m.NoteFormDialog,
+    ),
+  { ssr: false },
+);
+const TaskFormDialog = dynamic(
+  () =>
+    import("@/features/tasks/components/task-form-dialog").then(
+      (m) => m.TaskFormDialog,
+    ),
+  { ssr: false },
+);
+const WorkItemFormDialog = dynamic(
+  () =>
+    import("@/features/work-items/components/work-item-form-dialog").then(
+      (m) => m.WorkItemFormDialog,
+    ),
+  { ssr: false },
+);
+
+export interface ContactWorkspaceDialogState {
+  contactId: string;
+  business?: { timezone?: string | null } | null;
+  editOpen: boolean;
+  setEditOpen: (open: boolean) => void;
+  deleteContactOpen: boolean;
+  setDeleteContactOpen: (open: boolean) => void;
+  createLeadOpen: boolean;
+  setCreateLeadOpen: (open: boolean) => void;
+  createWorkItemOpen: boolean;
+  setCreateWorkItemOpen: (open: boolean) => void;
+  editingLead: Lead | null;
+  setEditingLead: (lead: Lead | null) => void;
+  editingWorkItem: WorkItem | null;
+  setEditingWorkItem: (item: WorkItem | null) => void;
+  deleteLeadId: string | null;
+  setDeleteLeadId: (id: string | null) => void;
+  deleteWorkItemId: string | null;
+  setDeleteWorkItemId: (id: string | null) => void;
+  createNoteOpen: boolean;
+  setCreateNoteOpen: (open: boolean) => void;
+  createTaskOpen: boolean;
+  setCreateTaskOpen: (open: boolean) => void;
+  editingNote: Note | null;
+  setEditingNote: (note: Note | null) => void;
+  editingTask: Task | null;
+  setEditingTask: (task: Task | null) => void;
+  deleteNoteId: string | null;
+  setDeleteNoteId: (id: string | null) => void;
+  deleteTaskId: string | null;
+  setDeleteTaskId: (id: string | null) => void;
+  createAppointmentOpen: boolean;
+  setCreateAppointmentOpen: (open: boolean) => void;
+  editingAppointment: Appointment | null;
+  setEditingAppointment: (appointment: Appointment | null) => void;
+  deleteAppointmentId: string | null;
+  setDeleteAppointmentId: (id: string | null) => void;
+  refreshContactData: () => void;
+  deleteContactMutation: { isPending: boolean; mutate: (value: undefined, options?: { onSuccess?: () => void }) => void,
+};
+  deleteLeadMutation: { isPending: boolean; mutate: (id: string) => void,
+};
+  deleteWorkItemMutation: { isPending: boolean; mutate: (id: string) => void,
+};
+  deleteNoteMutation: {
+    isPending: boolean;
+    mutate: (id: string, options?: { onSuccess?: () => void }) => void;
+  };
+  deleteTaskMutation: { isPending: boolean; mutate: (id: string) => void,
+};
+  deleteAppointmentMutation: { isPending: boolean; mutate: (id: string) => void,
+};
+}
 
 const AppointmentFormDialog = dynamic(
   () =>
@@ -20,11 +112,16 @@ const AppointmentFormDialog = dynamic(
 );
 
 interface ContactWorkspaceDialogsProps {
-  state: ContactWorkspaceState;
+  state: ContactWorkspaceDialogState;
   contact: Contact;
-  lockedContact: { id: string; label: string };
+  lockedContact: { id: string; label: string,
+};
   onContactDeleted: () => void;
   onContactEditSuccess: () => void;
+  /** Drawer embed: create notes inline instead of NoteFormDialog. */
+  useInlineNoteCreate?: boolean;
+  /** Edit profile in the detail panel instead of ContactFormDialog. */
+  useInlineContactEdit?: boolean;
 }
 
 export function ContactWorkspaceDialogs({
@@ -33,9 +130,10 @@ export function ContactWorkspaceDialogs({
   lockedContact,
   onContactDeleted,
   onContactEditSuccess,
+  useInlineNoteCreate = false,
+  useInlineContactEdit = false,
 }: ContactWorkspaceDialogsProps) {
   const {
-    contactId,
     business,
     editOpen,
     setEditOpen,
@@ -82,12 +180,14 @@ export function ContactWorkspaceDialogs({
 
   return (
     <>
-      <ContactFormDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        contact={contact}
-        onSuccess={onContactEditSuccess}
-      />
+      {!useInlineContactEdit ? (
+        <ContactFormDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          contact={contact}
+          onSuccess={onContactEditSuccess}
+        />
+      ) : null}
 
       <CreateLeadDialog
         open={createLeadOpen}
@@ -126,7 +226,7 @@ export function ContactWorkspaceDialogs({
       />
 
       <NoteFormDialog
-        open={createNoteOpen || !!editingNote}
+        open={(!useInlineNoteCreate && createNoteOpen) || !!editingNote}
         onOpenChange={(open) => {
           if (!open) {
             setCreateNoteOpen(false);
@@ -244,7 +344,12 @@ export function ContactWorkspaceDialogs({
         title="Delete note?"
         description="This action cannot be undone."
         isPending={deleteNoteMutation.isPending}
-        onConfirm={() => deleteNoteId && deleteNoteMutation.mutate(deleteNoteId)}
+        onConfirm={() => {
+          if (!deleteNoteId) return;
+          deleteNoteMutation.mutate(deleteNoteId, {
+            onSuccess: () => setDeleteNoteId(null),
+          });
+        }}
       />
 
       <ConfirmDeleteDialog

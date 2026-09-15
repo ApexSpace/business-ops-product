@@ -8,6 +8,8 @@ export interface JwtAccessPayload {
   platformRole?: PlatformMemberRole;
   businessId?: string;
   businessRole?: BusinessMemberRole;
+  /** Granted staff permissions (MEMBER role only; omitted for ADMIN/OWNER). */
+  staffPermissions?: Record<string, boolean>;
 }
 
 export interface JwtRefreshPayload {

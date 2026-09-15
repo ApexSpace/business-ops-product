@@ -61,6 +61,8 @@ const SUBSCRIPTION_STATUS_LABELS: Record<SubscriptionStatus, string> = {
   EXPIRED: 'Expired',
   INTERNAL: 'Internal',
   PAST_DUE: 'Past due',
+  UNPAID: 'Unpaid',
+  INCOMPLETE: 'Incomplete',
 };
 
 @Injectable()
@@ -92,13 +94,16 @@ export class BusinessSubscriptionEventService {
 
     if (!business) {
       return {
-        businessStatus: 'NOT_ACTIVE' as SubscriptionStateSnapshot['businessStatus'],
+        businessStatus:
+          'NOT_ACTIVE' as SubscriptionStateSnapshot['businessStatus'],
       };
     }
 
     const [resolution, effectiveCapabilities] = await Promise.all([
       this.accessResolver.resolveForBusiness(businessId),
-      this.effectiveCapabilitiesService.resolveEffectiveCapabilities(businessId),
+      this.effectiveCapabilitiesService.resolveEffectiveCapabilities(
+        businessId,
+      ),
     ]);
 
     const sub = business.subscription;
@@ -200,7 +205,7 @@ export class BusinessSubscriptionEventService {
 
     return {
       items: items.map((row) => this.toListItemDto(row)),
-      nextCursor: hasMore ? items[items.length - 1]?.id ?? null : null,
+      nextCursor: hasMore ? (items[items.length - 1]?.id ?? null) : null,
       hasMore,
     };
   }
@@ -239,12 +244,19 @@ export class BusinessSubscriptionEventService {
       notes: row.notes,
       planTierLabel: derivePlanTierLabel(fromState, toState),
       statusTransition: deriveStatusTransition(fromState, toState),
-      paymentSnippet: derivePaymentSnippet(row.eventType, row.paymentId, fromState, toState),
+      paymentSnippet: derivePaymentSnippet(
+        row.eventType,
+        row.paymentId,
+        fromState,
+        toState,
+      ),
       createdAt: row.createdAt,
     };
   }
 
-  private toDetailDto(row: BusinessSubscriptionEvent): BusinessSubscriptionEventDetailDto {
+  private toDetailDto(
+    row: BusinessSubscriptionEvent,
+  ): BusinessSubscriptionEventDetailDto {
     return {
       id: row.id,
       businessId: row.businessId,

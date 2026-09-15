@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Trash2  } from "lucide-react";
 import { PageSection } from "@/components/layout/page-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -242,8 +242,7 @@ export function PipelineStagesEditor({
     <PageSection
       actions={
         showAddStageAction ? (
-          <Button type="button" onClick={addStage} disabled={disabled}>
-            <Plus className="mr-2 size-4" />
+          <Button type="button" variant="brand" onClick={addStage} disabled={disabled}>
             Add stage
           </Button>
         ) : undefined

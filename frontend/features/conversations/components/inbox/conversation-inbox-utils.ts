@@ -18,13 +18,22 @@ export function channelProviderKey(channel: ConversationChannel): string {
   return "email";
 }
 
-/** Channel-specific composer guidance shown above the message input. */
-export function channelComposerHint(channel: ConversationChannel): string | null {
+/** Short channel guidance shown beside the reply-channel selector. */
+export function channelComposerHint(
+  channel: ConversationChannel,
+  options?: { requiresTemplate?: boolean | null },
+): string | null {
   if (channel === "EMAIL") {
-    return "Replies are sent from your CodeSol business address. Customer replies return to this thread.";
+    return "Sent from your business address.";
   }
   if (channel === "WHATSAPP") {
-    return "Free-form replies work within 24 hours of the customer's last message. Outside that window, use an approved WhatsApp template.";
+    if (options?.requiresTemplate) {
+      return "24h window closed — use an approved template.";
+    }
+    return "24h reply window open.";
+  }
+  if (channel === "SMS") {
+    return "SMS is billed per segment. Stay within 2 segments to control cost.";
   }
   return null;
 }
@@ -37,14 +46,18 @@ export function contactDisplayName(conversation: Conversation): string {
   );
 }
 
-export function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
+export { displayInitials as initials } from "@/lib/ui/display-initials";
 
-export const THREAD_ROW_HEIGHT = 72;
+/** Approximate hug height for avatar + 2-line preview + meta (virtualizer). */
+export const THREAD_ROW_HEIGHT = 104;
 export const VIRTUALIZE_THRESHOLD = 30;
+
+export function formatClientSince(iso?: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return `Client since ${date.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  })}`;
+}

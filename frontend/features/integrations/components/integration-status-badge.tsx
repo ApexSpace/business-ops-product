@@ -17,13 +17,24 @@ const STATUS_CONFIG: Record<
 
 export interface IntegrationStatusBadgeProps {
   status: IntegrationStatus;
+  /** CONNECTED but missing Pages / IG accounts — show Needs setup instead. */
+  needsSetup?: boolean;
   className?: string;
 }
 
 export function IntegrationStatusBadge({
   status,
+  needsSetup = false,
   className,
 }: IntegrationStatusBadgeProps) {
+  if (needsSetup && status === "CONNECTED") {
+    return (
+      <Badge variant="secondary" className={cn(className)}>
+        Needs setup
+      </Badge>
+    );
+  }
+
   const config = STATUS_CONFIG[status];
 
   return (

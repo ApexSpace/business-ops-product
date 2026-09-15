@@ -117,7 +117,7 @@ export function PipelineStageDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={mutation.isPending}>
+              <Button type="submit" variant="brand" disabled={mutation.isPending}>
                 {mutation.isPending ? "Adding…" : "Add stage"}
               </Button>
             </div>

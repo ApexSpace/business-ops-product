@@ -2,6 +2,7 @@
 
 import type { UseFormReturn } from "react-hook-form";
 import { PhoneField } from "@/components/forms/phone-field";
+import { SettingsFormGrid } from "@/components/forms/settings-form-grid";
 import { TextField } from "@/components/forms/text-field";
 import {
   FormControl,
@@ -27,11 +28,11 @@ export function BusinessProfileContactFields({
   twoColumnLayout?: boolean;
 }) {
   return (
-    <section className="space-y-4">
+    <section className="flex w-full min-w-0 flex-col gap-[var(--settings-form-section-gap)]">
       {showSectionTitle ? (
         <BusinessProfileSectionTitle>Primary contact</BusinessProfileSectionTitle>
       ) : null}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <SettingsFormGrid>
         <TextField
           control={form.control}
           name="firstName"
@@ -46,7 +47,7 @@ export function BusinessProfileContactFields({
           placeholder="Smith"
           disabled={disabled}
         />
-      </div>
+      </SettingsFormGrid>
       <FormField
         control={form.control}
         name="displayName"
@@ -54,7 +55,7 @@ export function BusinessProfileContactFields({
           <FormItem>
             <FormLabel>Display name</FormLabel>
             <FormControl>
-              <Input {...field} readOnly disabled className="bg-muted" />
+              <Input {...field} readOnly disabled className="bg-muted/50" />
             </FormControl>
             <FormDescription>
               Auto-filled from first and last name.
@@ -64,28 +65,38 @@ export function BusinessProfileContactFields({
         )}
       />
       {twoColumnLayout ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <PhoneField control={form.control} name="phone" disabled={disabled} />
+        <SettingsFormGrid>
           <TextField
             control={form.control}
             name="email"
-            label="Email"
+            label="Email address"
             type="email"
             placeholder="jane@example.com"
             disabled={disabled}
           />
-        </div>
+          <PhoneField
+            control={form.control}
+            name="phone"
+            label="Phone number"
+            disabled={disabled}
+          />
+        </SettingsFormGrid>
       ) : (
         <>
           <TextField
             control={form.control}
             name="email"
-            label="Email"
+            label="Email address"
             type="email"
             placeholder="jane@example.com"
             disabled={disabled}
           />
-          <PhoneField control={form.control} name="phone" disabled={disabled} />
+          <PhoneField
+            control={form.control}
+            name="phone"
+            label="Phone number"
+            disabled={disabled}
+          />
         </>
       )}
     </section>

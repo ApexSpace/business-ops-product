@@ -41,12 +41,43 @@ export class IntegrationResourceRepository {
     });
   }
 
+  /** Counts ACTIVE resources per providerKey for a business (for catalog badges). */
+  async countByBusinessGroupedByProvider(
+    businessId: string,
+  ): Promise<Map<string, number>> {
+    const rows = await this.prisma.integrationResource.groupBy({
+      by: ['providerKey'],
+      where: {
+        businessId,
+        status: IntegrationResourceStatus.ACTIVE,
+      },
+      _count: { _all: true },
+    });
+    return new Map(rows.map((row) => [row.providerKey, row._count._all]));
+  }
+
   findByIdAndBusiness(
     id: string,
     businessId: string,
   ): Promise<IntegrationResource | null> {
     return this.prisma.integrationResource.findFirst({
       where: { id, businessId },
+    });
+  }
+
+  findActiveByExternalId(
+    externalId: string,
+    providerKey: string,
+    type: IntegrationResourceType,
+  ): Promise<IntegrationResource | null> {
+    return this.prisma.integrationResource.findFirst({
+      where: {
+        externalId,
+        providerKey,
+        type,
+        status: IntegrationResourceStatus.ACTIVE,
+      },
+      orderBy: [{ isDefault: 'desc' }, { updatedAt: 'desc' }],
     });
   }
 
@@ -59,7 +90,9 @@ export class IntegrationResourceRepository {
       where: {
         providerKey,
         type: IntegrationResourceType.EMAIL_ACCOUNT,
-        ...(excludeBusinessId ? { businessId: { not: excludeBusinessId } } : {}),
+        ...(excludeBusinessId
+          ? { businessId: { not: excludeBusinessId } }
+          : {}),
         metadata: {
           path: ['slug'],
           equals: slug,
@@ -151,6 +184,28 @@ export class IntegrationResourceRepository {
     data: Prisma.IntegrationResourceUpdateInput,
   ): Promise<IntegrationResource> {
     return this.prisma.integrationResource.update({ where: { id }, data });
+  }
+
+  /** Soft-deactivate resources whose externalId is not in the keep set (path switch / resync). */
+  async deactivateMissingExternalIds(
+    businessIntegrationId: string,
+    keepExternalIds: string[],
+  ): Promise<number> {
+    const result = await this.prisma.integrationResource.updateMany({
+      where: {
+        businessIntegrationId,
+        status: IntegrationResourceStatus.ACTIVE,
+        ...(keepExternalIds.length > 0
+          ? { externalId: { notIn: keepExternalIds } }
+          : {}),
+      },
+      data: {
+        status: IntegrationResourceStatus.INACTIVE,
+        isDefault: false,
+        isSelected: false,
+      },
+    });
+    return result.count;
   }
 
   clearDefaultForType(

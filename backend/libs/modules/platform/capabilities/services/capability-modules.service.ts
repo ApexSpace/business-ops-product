@@ -19,6 +19,7 @@ import {
 } from '../registries/capability-module.registry';
 import { CapabilityRepository } from '../repositories/capability.repository';
 import { CapabilitiesService } from './capabilities.service';
+import { CapabilityEntitlementImpactService } from './capability-entitlement-impact.service';
 
 @Injectable()
 export class CapabilityModulesService {
@@ -26,6 +27,7 @@ export class CapabilityModulesService {
     private readonly repository: CapabilityRepository,
     private readonly capabilitiesService: CapabilitiesService,
     private readonly auditService: AuditService,
+    private readonly entitlementImpact: CapabilityEntitlementImpactService,
   ) {}
 
   listCatalog(): RegistryModuleCatalogDto[] {
@@ -233,6 +235,16 @@ export class CapabilityModulesService {
 
     if (modulesToAssign.length > 0) {
       await this.repository.assignModules(capabilityId, modulesToAssign);
+    }
+
+    if (featuresToUnassign.length > 0) {
+      await this.entitlementImpact.onFeaturesRemoved(
+        capabilityId,
+        featuresToUnassign,
+        actor,
+      );
+    } else if (featuresToAssign.length > 0) {
+      await this.entitlementImpact.onFeaturesAdded(capabilityId);
     }
 
     await this.auditService.log({

@@ -78,6 +78,7 @@ export function valuesToTierBody(
   values: CreatePlanTierValues,
   features?: TierFeatureInput[],
   designSettings?: PlanTierDesignSettings,
+  metadata?: Record<string, unknown>,
 ) {
   const cleanedDesignSettings = designSettings
     ? stripEmptyDesignSettings(designSettings)
@@ -94,6 +95,7 @@ export function valuesToTierBody(
     highlighted: values.highlighted ?? false,
     ctaLabel: values.ctaLabel || undefined,
     ctaUrl: values.ctaUrl || undefined,
+    ...(metadata && Object.keys(metadata).length ? { metadata } : {}),
     ...(features !== undefined
       ? {
           features: features.map((feature, index) => ({

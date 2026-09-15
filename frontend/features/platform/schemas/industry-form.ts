@@ -48,7 +48,8 @@ function parseStages(text: string): IndustryPipelineTemplate["stages"] {
     if (lower === "won" || lower.includes("closed won")) type = "WON";
     else if (lower === "lost") type = "LOST";
     else if (index === names.length - 1 && type === "OPEN") type = undefined;
-    return { name, type };
+    return { name, type,
+};
   });
 }
 

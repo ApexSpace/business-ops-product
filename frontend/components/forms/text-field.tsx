@@ -3,6 +3,7 @@
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,6 +22,11 @@ export interface TextFieldProps<T extends FieldValues> {
   rows?: number;
   description?: string;
   disabled?: boolean;
+  maxLength?: number;
+  inputClassName?: string;
+  className?: string;
+  /** Parse the input as an integer (financial numbering, counts). */
+  valueAsNumber?: boolean;
 }
 
 export function TextField<T extends FieldValues>({
@@ -31,14 +37,19 @@ export function TextField<T extends FieldValues>({
   type = "text",
   multiline = false,
   rows,
+  description,
   disabled,
+  maxLength,
+  inputClassName,
+  className,
+  valueAsNumber = false,
 }: TextFieldProps<T>) {
   return (
     <FormField
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem>
+        <FormItem className={className}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
             {multiline ? (
@@ -46,6 +57,8 @@ export function TextField<T extends FieldValues>({
                 rows={rows}
                 placeholder={placeholder}
                 disabled={disabled}
+                maxLength={maxLength}
+                className={inputClassName}
                 {...field}
               />
             ) : (
@@ -53,10 +66,24 @@ export function TextField<T extends FieldValues>({
                 type={type}
                 placeholder={placeholder}
                 disabled={disabled}
+                maxLength={maxLength}
+                className={inputClassName}
                 {...field}
+                value={field.value ?? ""}
+                onChange={(e) => {
+                  if (valueAsNumber) {
+                    const parsed = parseInt(e.target.value, 10);
+                    field.onChange(Number.isNaN(parsed) ? 0 : parsed);
+                    return;
+                  }
+                  field.onChange(e);
+                }}
               />
             )}
           </FormControl>
+          {description ? (
+            <FormDescription>{description}</FormDescription>
+          ) : null}
           <FormMessage />
         </FormItem>
       )}

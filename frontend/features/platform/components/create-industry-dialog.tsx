@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IndustryFormDialog } from "@/features/platform/components/industry-form-dialog";
 
@@ -10,8 +9,7 @@ export function CreateIndustryDialog() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
-        <Plus className="mr-2 size-4" />
+      <Button type="button" variant="brand" onClick={() => setOpen(true)}>
         Add industry
       </Button>
       <IndustryFormDialog open={open} onOpenChange={setOpen} />

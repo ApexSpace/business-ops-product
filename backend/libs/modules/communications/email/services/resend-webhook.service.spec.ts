@@ -56,11 +56,13 @@ describe('ResendWebhookService', () => {
       mergeMetadata: jest.fn().mockResolvedValue({}),
     };
     const resendWebhookDispatch = {
-      dispatch: jest.fn().mockResolvedValue(
-        overrides && 'dispatchResult' in overrides
-          ? overrides.dispatchResult
-          : true,
-      ),
+      dispatch: jest
+        .fn()
+        .mockResolvedValue(
+          overrides && 'dispatchResult' in overrides
+            ? overrides.dispatchResult
+            : true,
+        ),
     };
 
     const resendInboundEmailService = {
@@ -98,7 +100,8 @@ describe('ResendWebhookService', () => {
   });
 
   it('persists and dispatches on valid webhook', async () => {
-    const { service, webhookEventsRepository, resendWebhookDispatch } = createService();
+    const { service, webhookEventsRepository, resendWebhookDispatch } =
+      createService();
 
     await service.handleWebhook(Buffer.from('{}'), validHeaders);
 
@@ -125,9 +128,13 @@ describe('ResendWebhookService', () => {
   });
 
   it('reuses RECEIVED webhook and re-dispatches', async () => {
-    const { service, webhookEventsRepository, resendWebhookDispatch } = createService({
-      existingWebhook: { id: 'wh-existing', status: WebhookEventStatus.RECEIVED },
-    });
+    const { service, webhookEventsRepository, resendWebhookDispatch } =
+      createService({
+        existingWebhook: {
+          id: 'wh-existing',
+          status: WebhookEventStatus.RECEIVED,
+        },
+      });
 
     await service.handleWebhook(Buffer.from('{}'), validHeaders);
 

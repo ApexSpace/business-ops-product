@@ -25,6 +25,11 @@ export const META_APP_REVIEW_PERMISSION_NOTES: Record<
   ],
   facebook: [
     {
+      title: 'business_management',
+      purpose:
+        'List Facebook Pages owned or linked through Meta Business Manager via /me/accounts (required since Graph API v17).',
+    },
+    {
       title: 'pages_show_list',
       purpose:
         'List Facebook Pages the customer manages so they can choose which Page to use.',
@@ -40,6 +45,11 @@ export const META_APP_REVIEW_PERMISSION_NOTES: Record<
     },
   ],
   instagram: [
+    {
+      title: 'business_management',
+      purpose:
+        'List Business-linked Pages so Instagram professional accounts attached to those Pages can be discovered.',
+    },
     {
       title: 'instagram_basic',
       purpose:

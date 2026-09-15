@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -48,15 +48,24 @@ const CATEGORY_ORDER: EmailTypeCategory[] = [
   "membership",
   "appointments",
   "invoices",
+  "gift_cards",
+  "packages",
   "auth",
 ];
 
 type OpenSection =
-  | { kind: "category"; category: EmailTypeCategory }
-  | { kind: "template"; category: EmailTypeCategory; emailType: string };
+  | { kind: "category"; category: EmailTypeCategory,
+}
+  | { kind: "template"; category: EmailTypeCategory; emailType: string,
+};
 
-export function EmailTemplatesTab() {
+export function EmailTemplatesTab({
+  focusEmailType = null,
+}: {
+  focusEmailType?: string | null;
+}) {
   const queryClient = useQueryClient();
+  const focusAppliedRef = useRef(false);
   const [activeTemplateType, setActiveTemplateType] = useState<string | null>(
     null,
   );
@@ -195,6 +204,28 @@ export function EmailTemplatesTab() {
     setActiveTemplateType(nextType);
     setOpenSection({ kind: "template", emailType: nextType, category });
   };
+
+  useEffect(() => {
+    if (
+      !focusEmailType ||
+      templatesLoading ||
+      templates.length === 0 ||
+      focusAppliedRef.current
+    ) {
+      return;
+    }
+
+    const match = templates.find((item) => item.emailType === focusEmailType);
+    if (!match) return;
+
+    focusAppliedRef.current = true;
+    applyTemplateChange(match.emailType, match.category);
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`email-template-${match.emailType}`)
+        ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+  }, [focusEmailType, templates, templatesLoading]);
 
   const handleCategoryAccordionChange = (value: string[]) => {
     const nextCategory = value[0] as EmailTypeCategory | undefined;
@@ -344,7 +375,11 @@ export function EmailTemplatesTab() {
                       activeTemplateType === item.emailType;
 
                     return (
-                      <AccordionItem key={item.emailType} value={item.emailType}>
+                      <AccordionItem
+                        key={item.emailType}
+                        value={item.emailType}
+                        id={`email-template-${item.emailType}`}
+                      >
                         <AccordionTrigger className="py-3 hover:no-underline">
                           <div className="flex flex-1 flex-col items-start gap-1 pr-2 text-left">
                             <div className="flex flex-wrap items-center gap-2">

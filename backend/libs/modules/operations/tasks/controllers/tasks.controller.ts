@@ -16,6 +16,8 @@ import { ConfirmDeleteQueryDto } from '@app/common/dto/confirm-delete-query.dto'
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { ListTasksQueryDto } from '../dto/list-tasks-query.dto';
@@ -25,7 +27,8 @@ import { TasksService } from '@app/modules/operations/tasks/services/tasks.servi
 @ApiTags('tasks')
 @ApiBearerAuth()
 @Controller('tasks')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 

@@ -1,0 +1,344 @@
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { FileAssetStatus } from '@prisma/client';
+import { RequestUser } from '@app/common/decorators/current-user.decorator';
+import { AppException } from '@app/common/exceptions/app.exception';
+import { ErrorCode } from '@app/common/exceptions/error-code.enum';
+import { AuditService } from '@app/modules/platform/audit/services/audit.service';
+import { SYSTEM_AUDIT_ACTOR_SENTINEL } from '@app/modules/platform/audit/constants/audit.constants';
+import { CreateUploadDto } from '../dto/create-upload.dto';
+import { FileAssetResponseDto } from '../dto/file-asset-response.dto';
+import { SignedDownloadResponseDto } from '../dto/signed-download-response.dto';
+import { toFileAssetResponse } from '../mappers/file-asset.mapper';
+import { R2StorageProvider } from '../providers/r2-storage.provider';
+import { FileAssetRepository } from '../repositories/file-asset.repository';
+import type { CreateUploadResult } from '../types/storage.types';
+import { FileAssetService } from './file-asset.service';
+
+@Injectable()
+export class StorageService {
+  private readonly logger = new Logger(StorageService.name);
+
+  constructor(
+    private readonly fileAssetRepository: FileAssetRepository,
+    private readonly fileAssetService: FileAssetService,
+    private readonly r2StorageProvider: R2StorageProvider,
+    private readonly auditService: AuditService,
+  ) {}
+
+  async createUpload(
+    businessId: string,
+    dto: CreateUploadDto,
+    actor: RequestUser,
+  ): Promise<CreateUploadResult> {
+    return this.createBusinessUpload(businessId, dto, {
+      uploadedById: actor.id,
+      auditActorUserId: actor.id,
+    });
+  }
+
+  async createBusinessUpload(
+    businessId: string,
+    dto: CreateUploadDto,
+    options: {
+      uploadedById?: string;
+      auditActorUserId?: string;
+    } = {},
+  ): Promise<CreateUploadResult> {
+    this.fileAssetService.validateUploadInput(dto);
+
+    const fileAssetId = randomUUID();
+    const assetData = this.fileAssetService.buildPendingAssetData(
+      businessId,
+      options.uploadedById,
+      dto,
+      fileAssetId,
+    );
+
+    const asset = await this.fileAssetRepository.create(assetData);
+
+    const { uploadUrl, expiresIn } =
+      await this.r2StorageProvider.createSignedUploadUrl({
+        objectKey: asset.objectKey,
+        mimeType: asset.mimeType,
+        size: asset.size,
+      });
+
+    await this.auditService.log({
+      actorUserId: options.auditActorUserId ?? SYSTEM_AUDIT_ACTOR_SENTINEL,
+      businessId,
+      action: 'file_asset.upload_created',
+      entityType: 'FileAsset',
+      entityId: asset.id,
+    });
+
+    return { fileAssetId: asset.id, uploadUrl, expiresIn };
+  }
+
+  async confirmBusinessUpload(
+    businessId: string,
+    fileAssetId: string,
+    auditActorUserId: string = SYSTEM_AUDIT_ACTOR_SENTINEL,
+  ): Promise<FileAssetResponseDto> {
+    const asset = await this.fileAssetService.getActiveAsset(
+      businessId,
+      fileAssetId,
+    );
+    this.fileAssetService.assertConfirmable(asset);
+
+    if (asset.status !== FileAssetStatus.READY) {
+      const exists = await this.r2StorageProvider.objectExists(asset.objectKey);
+      if (!exists) {
+        throw new AppException(
+          ErrorCode.BAD_REQUEST,
+          'Uploaded object not found in storage',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    const updated =
+      asset.status === FileAssetStatus.READY
+        ? asset
+        : await this.fileAssetService.markReady(asset.id);
+
+    await this.auditService.log({
+      actorUserId: auditActorUserId,
+      businessId,
+      action: 'file_asset.upload_confirmed',
+      entityType: 'FileAsset',
+      entityId: asset.id,
+    });
+
+    return toFileAssetResponse(updated);
+  }
+
+  async failBusinessUpload(
+    businessId: string,
+    fileAssetId: string,
+    reason: string,
+    auditActorUserId: string = SYSTEM_AUDIT_ACTOR_SENTINEL,
+  ): Promise<FileAssetResponseDto> {
+    const asset = await this.fileAssetService.getActiveAsset(
+      businessId,
+      fileAssetId,
+    );
+    this.fileAssetService.assertFailAllowed(asset);
+
+    const updated = await this.fileAssetService.markFailed(asset.id, reason);
+
+    await this.auditService.log({
+      actorUserId: auditActorUserId,
+      businessId,
+      action: 'file_asset.upload_failed',
+      entityType: 'FileAsset',
+      entityId: asset.id,
+      metadata: { reason },
+    });
+
+    return toFileAssetResponse(updated);
+  }
+
+  async confirmUpload(
+    businessId: string,
+    fileAssetId: string,
+    actor: RequestUser,
+  ): Promise<FileAssetResponseDto> {
+    return this.confirmBusinessUpload(businessId, fileAssetId, actor.id);
+  }
+
+  async failUpload(
+    businessId: string,
+    fileAssetId: string,
+    reason: string,
+    actor: RequestUser,
+  ): Promise<FileAssetResponseDto> {
+    return this.failBusinessUpload(businessId, fileAssetId, reason, actor.id);
+  }
+
+  async getFile(
+    businessId: string,
+    fileAssetId: string,
+  ): Promise<FileAssetResponseDto> {
+    const asset = await this.fileAssetService.getActiveAsset(
+      businessId,
+      fileAssetId,
+    );
+    return toFileAssetResponse(asset);
+  }
+
+  async getDownloadUrl(
+    businessId: string,
+    fileAssetId: string,
+  ): Promise<SignedDownloadResponseDto> {
+    const asset = await this.fileAssetService.getActiveAsset(
+      businessId,
+      fileAssetId,
+    );
+    this.fileAssetService.assertDownloadable(asset);
+
+    const { downloadUrl, expiresIn } =
+      await this.r2StorageProvider.createSignedDownloadUrl(asset.objectKey);
+
+    return { downloadUrl, expiresIn };
+  }
+
+  async getDownloadUrlForObjectKey(
+    objectKey: string,
+  ): Promise<SignedDownloadResponseDto> {
+    const { downloadUrl, expiresIn } =
+      await this.r2StorageProvider.createSignedDownloadUrl(objectKey);
+
+    return { downloadUrl, expiresIn };
+  }
+
+  /**
+   * Prefer public CDN URL when configured; otherwise fall back to a signed GET.
+   * Pull-based social publishers (TikTok, Meta, …) need a stable HTTPS URL.
+   */
+  async getPublishMediaUrl(
+    objectKey: string,
+    options?: { preferPublic?: boolean },
+  ): Promise<{ url: string; isPublic: boolean; expiresIn?: number }> {
+    const preferPublic = options?.preferPublic !== false;
+    if (preferPublic) {
+      const publicUrl = this.r2StorageProvider.getPublicUrl(objectKey);
+      if (publicUrl) {
+        return { url: publicUrl, isPublic: true };
+      }
+    }
+    const { downloadUrl, expiresIn } =
+      await this.r2StorageProvider.createSignedDownloadUrl(objectKey);
+    return { url: downloadUrl, isPublic: false, expiresIn };
+  }
+
+  getPublicUrl(objectKey: string): string | null {
+    return this.r2StorageProvider.getPublicUrl(objectKey);
+  }
+
+  hasPublicBaseUrl(): boolean {
+    return this.r2StorageProvider.hasPublicBaseUrl();
+  }
+
+  async getObjectBytes(objectKey: string): Promise<Buffer> {
+    return this.r2StorageProvider.getObjectBytes(objectKey);
+  }
+
+  async deleteFile(
+    businessId: string,
+    fileAssetId: string,
+    actor: RequestUser,
+  ): Promise<FileAssetResponseDto> {
+    const asset = await this.fileAssetService.getActiveAsset(
+      businessId,
+      fileAssetId,
+    );
+
+    const updated = await this.fileAssetService.softDelete(asset.id);
+
+    await this.auditService.log({
+      actorUserId: actor.id,
+      businessId,
+      action: 'file_asset.deleted',
+      entityType: 'FileAsset',
+      entityId: asset.id,
+    });
+
+    return toFileAssetResponse(updated);
+  }
+
+  /**
+   * Create a READY FileAsset from an in-memory buffer (server-generated reports).
+   */
+  async putGeneratedFile(params: {
+    businessId: string;
+    fileName: string;
+    mimeType: string;
+    category: import('@prisma/client').FileCategory;
+    visibility: import('@prisma/client').FileVisibility;
+    buffer: Buffer;
+    uploadedById?: string;
+    auditActorUserId?: string;
+  }): Promise<{
+    fileAssetId: string;
+    downloadUrl: string;
+    expiresIn: number;
+  }> {
+    const dto: CreateUploadDto = {
+      filename: params.fileName,
+      mimeType: params.mimeType,
+      size: params.buffer.length,
+      category: params.category,
+      visibility: params.visibility,
+    };
+
+    const created = await this.createBusinessUpload(params.businessId, dto, {
+      uploadedById: params.uploadedById,
+      auditActorUserId: params.auditActorUserId,
+    });
+
+    const asset = await this.fileAssetRepository.findById(
+      params.businessId,
+      created.fileAssetId,
+    );
+    if (!asset) {
+      throw new AppException(
+        ErrorCode.NOT_FOUND,
+        'File asset not found after create',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.r2StorageProvider.putObject({
+      objectKey: asset.objectKey,
+      mimeType: params.mimeType,
+      body: params.buffer,
+    });
+
+    await this.fileAssetService.markReady(asset.id);
+
+    const { downloadUrl, expiresIn } =
+      await this.r2StorageProvider.createSignedDownloadUrl(asset.objectKey, {
+        downloadFileName: params.fileName,
+      });
+
+    await this.auditService.log({
+      actorUserId: params.auditActorUserId ?? SYSTEM_AUDIT_ACTOR_SENTINEL,
+      businessId: params.businessId,
+      action: 'file_asset.generated',
+      entityType: 'FileAsset',
+      entityId: asset.id,
+    });
+
+    return {
+      fileAssetId: asset.id,
+      downloadUrl,
+      expiresIn,
+    };
+  }
+
+  async deleteOrphanPending(
+    fileAssetId: string,
+    businessId: string,
+  ): Promise<void> {
+    const asset = await this.fileAssetRepository.findByIdIncludingDeleted(
+      businessId,
+      fileAssetId,
+    );
+    if (!asset || asset.deletedAt) {
+      return;
+    }
+
+    if (this.r2StorageProvider.isConfigured()) {
+      try {
+        await this.r2StorageProvider.deleteObject(asset.objectKey);
+      } catch (err) {
+        this.logger.warn(
+          `R2 delete failed for ${asset.objectKey}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    await this.fileAssetService.softDelete(asset.id);
+  }
+}

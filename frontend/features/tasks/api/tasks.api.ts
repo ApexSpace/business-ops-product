@@ -31,7 +31,8 @@ export async function listTasks(
       dueTo: filters.dueTo,
     },
   });
-  return { items, meta };
+  return { items, meta,
+};
 }
 
 export function getTask(id: string) {

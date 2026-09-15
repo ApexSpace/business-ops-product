@@ -13,7 +13,7 @@ import {
 import type { Task } from "@/features/tasks/types";
 
 function assigneeLabel(task: Task): string {
-  if (!task.assignedTo) return "—";
+  if (!task.assignedTo) return "";
   const a = task.assignedTo;
   return [a.firstName, a.lastName].filter(Boolean).join(" ") || a.email;
 }
@@ -47,13 +47,13 @@ export function useTasksPageColumns(): DataTableColumn<Task>[] {
               {formatTaskPriority(row.priority)}
             </Badge>
           ) : (
-            "—"
+            ""
           ),
       },
       {
         id: "link",
         header: "Linked to",
-        cell: (row) => row.contact?.label ?? row.lead?.title ?? "—",
+        cell: (row) => row.contact?.label ?? row.lead?.title ?? "",
       },
       {
         id: "assignee",
@@ -65,7 +65,7 @@ export function useTasksPageColumns(): DataTableColumn<Task>[] {
         header: "Preview",
         cell: (row) => (
           <span className="line-clamp-2 text-muted-foreground">
-            {taskPreviewText(row) || "—"}
+            {taskPreviewText(row) || ""}
           </span>
         ),
       },

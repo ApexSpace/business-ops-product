@@ -148,8 +148,10 @@ export function getCreateSuccessToast(input: {
   unpaidAccessMode?: UnpaidAccessMode;
   paymentRecorded?: boolean;
 }): string {
-  if (input.paymentCollected && input.paymentRecorded) {
-    return "Business created and payment recorded.";
+  if (input.paymentCollected) {
+    return input.paymentRecorded
+      ? "Business created. Offline payment recorded (no card charge)."
+      : "Business created as paid (offline / admin-recorded — no card charge).";
   }
   if (!input.paymentCollected && input.unpaidAccessMode === "PENDING_PAYMENT") {
     return "Business created as pending payment.";
@@ -185,8 +187,10 @@ export function splitFullName(fullName?: string): {
   const trimmed = fullName?.trim();
   if (!trimmed) return {};
   const parts = trimmed.split(/\s+/);
-  if (parts.length === 1) return { firstName: parts[0] };
-  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+  if (parts.length === 1) return { firstName: parts[0],
+};
+  return { firstName: parts[0], lastName: parts.slice(1).join(" "),
+};
 }
 
 export function getAccessWarnings(input: {

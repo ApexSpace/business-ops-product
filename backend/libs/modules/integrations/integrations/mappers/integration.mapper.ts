@@ -118,17 +118,20 @@ export function toPlatformIntegrationResponse(
 export function toBusinessProviderWithStatus(
   provider: IntegrationProvider,
   integration: BusinessIntegrationWithProvider | null | undefined,
+  resourceCount = 0,
 ): IntegrationProviderWithStatusDto {
   return {
     ...toIntegrationProviderResponse(provider),
     status: integration?.status ?? 'NOT_CONNECTED',
     integration: integration ? toIntegrationSummary(integration) : null,
+    resourceCount,
   };
 }
 
 export function toPlatformProviderWithStatus(
   provider: IntegrationProvider,
   integration: PlatformIntegrationWithProvider | null | undefined,
+  resourceCount = 0,
 ): PlatformIntegrationProviderWithStatusDto {
   const summary: PlatformIntegrationSummaryDto | null = integration
     ? {
@@ -145,5 +148,6 @@ export function toPlatformProviderWithStatus(
     ...toIntegrationProviderResponse(provider),
     status: integration?.status ?? 'NOT_CONNECTED',
     integration: summary,
+    resourceCount,
   };
 }

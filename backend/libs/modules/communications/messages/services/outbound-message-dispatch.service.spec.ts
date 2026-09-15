@@ -14,7 +14,9 @@ describe('OutboundMessageDispatchService', () => {
   it('returns after queue enqueue succeeds', async () => {
     const asyncJob = { id: 'job-1' };
     const jobEnqueue = {
-      enqueueSendMessage: jest.fn().mockResolvedValue({ asyncJob, queued: true }),
+      enqueueSendMessage: jest
+        .fn()
+        .mockResolvedValue({ asyncJob, queued: true }),
     };
     const sendMessageProcessor = { process: jest.fn() };
     const prisma = { conversationMessage: { findMany: jest.fn() } };
@@ -35,7 +37,9 @@ describe('OutboundMessageDispatchService', () => {
     process.env.NODE_ENV = 'development';
     const asyncJob = { id: 'job-1' };
     const jobEnqueue = {
-      enqueueSendMessage: jest.fn().mockResolvedValue({ asyncJob, queued: false }),
+      enqueueSendMessage: jest
+        .fn()
+        .mockResolvedValue({ asyncJob, queued: false }),
     };
     const sendMessageProcessor = {
       process: jest.fn().mockResolvedValue(undefined),

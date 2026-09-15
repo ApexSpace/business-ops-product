@@ -10,6 +10,7 @@ export class ConversationContactSummaryDto {
   id!: string;
   label!: string;
   avatarUrl!: string | null;
+  isBlocked!: boolean;
 }
 
 export class ConversationAssigneeDto {
@@ -37,6 +38,7 @@ export class ConversationResponseDto {
   unreadCount!: number;
   createdAt!: Date;
   updatedAt!: Date;
+  chatbotBotPaused?: boolean;
   contact?: ConversationContactSummaryDto | null;
   assignedTo?: ConversationAssigneeDto | null;
 }
@@ -56,4 +58,6 @@ export class ConversationMessageResponseDto {
   sentAt!: Date | null;
   receivedAt!: Date | null;
   createdAt!: Date;
+  /** Present for timeline activity rows (block/spam/close/etc.). */
+  activityType?: string | null;
 }

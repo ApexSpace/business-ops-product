@@ -21,13 +21,21 @@ describe('PlatformBusinessUtilizationService', () => {
       upcoming: 12,
       cancelledOrNoShow: 3,
     },
-    conversations: 0,
+    conversations: 7,
     members: 3,
     workItems: {
       total: 12,
       scheduled: 2,
       completed: 5,
       pending: 5,
+    },
+    revenueToday: { amount: '250.00', paymentCount: 5 },
+    revenueYesterday: { amount: '180.00', paymentCount: 3 },
+    attention: {
+      overdueInvoices: 2,
+      overdueInvoiceBalance: '450.00',
+      lowStockProducts: 1,
+      unreadConversations: 3,
     },
   };
 

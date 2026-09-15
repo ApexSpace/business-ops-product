@@ -4,11 +4,16 @@ import { formatEstimateStatus } from "@/features/estimates/schemas/estimate-prof
 import { formatInvoiceStatus } from "@/features/invoices/schemas/invoice-profile";
 import { formatTaskStatus } from "@/features/tasks/schemas/task-profile";
 import { formatWorkItemStatus } from "@/features/work-items/schemas/work-item-profile";
+import { formatAppointmentStatus } from "@/features/appointments/schemas/appointment-profile";
 import type { EstimateStatus } from "@/features/estimates/types";
 import type { InvoiceStatus } from "@/features/invoices/types";
 import type { TaskStatus } from "@/features/tasks/types";
 import type { WorkItemStatus } from "@/features/work-items/types";
-import { cn } from "@/lib/utils";
+import type { AppointmentStatus } from "@/features/appointments/schemas/appointment-profile";
+import {
+  StatusPill,
+  type StatusPillVariant,
+} from "@/components/data-display/status-pill";
 
 export type StatusBadgeDomain =
   | "contact"
@@ -18,6 +23,10 @@ export type StatusBadgeDomain =
   | "invoice"
   | "estimate"
   | "membership"
+  | "clientMembership"
+  | "giftCard"
+  | "sale"
+  | "appointment"
   | "business"
   | "plan"
   | "planGroup"
@@ -30,30 +39,7 @@ export type StatusBadgeDomain =
   | "user"
   | "transaction";
 
-type StatusTone = "neutral" | "info" | "success" | "warning" | "danger";
-
-const toneStyles: Record<StatusTone, { pill: string; dot: string }> = {
-  neutral: {
-    pill: "bg-muted/70 text-muted-foreground ring-1 ring-border/50",
-    dot: "bg-muted-foreground/55",
-  },
-  info: {
-    pill: "bg-sky-500/10 text-sky-800 ring-1 ring-sky-500/20 dark:text-sky-300",
-    dot: "bg-sky-500",
-  },
-  success: {
-    pill: "bg-emerald-500/10 text-emerald-800 ring-1 ring-emerald-500/20 dark:text-emerald-300",
-    dot: "bg-emerald-500",
-  },
-  warning: {
-    pill: "bg-amber-500/10 text-amber-900 ring-1 ring-amber-500/25 dark:text-amber-300",
-    dot: "bg-amber-500",
-  },
-  danger: {
-    pill: "bg-red-500/10 text-red-800 ring-1 ring-red-500/20 dark:text-red-300",
-    dot: "bg-red-500",
-  },
-};
+type StatusTone = StatusPillVariant;
 
 function humanizeStatus(status: string): string {
   return status
@@ -72,6 +58,15 @@ function resolveLabel(domain: StatusBadgeDomain, status: string): string {
       return formatInvoiceStatus(status as InvoiceStatus);
     case "estimate":
       return formatEstimateStatus(status as EstimateStatus);
+    case "appointment":
+      return formatAppointmentStatus(status as AppointmentStatus);
+    case "sale": {
+      const n = status.toUpperCase();
+      if (n === "VOID") return "Void";
+      if (n === "OPEN") return "Open";
+      if (n === "CLOSED") return "Closed";
+      return humanizeStatus(status);
+    }
     default:
       return humanizeStatus(status);
   }
@@ -153,6 +148,66 @@ function resolveTone(domain: StatusBadgeDomain, status: string): StatusTone {
         return "warning";
       }
       return "success";
+
+    case "sale":
+      switch (normalized) {
+        case "VOID":
+          return "danger";
+        case "OPEN":
+          return "warning";
+        case "CLOSED":
+          return "success";
+        default:
+          return "neutral";
+      }
+
+    case "giftCard":
+      switch (normalized) {
+        case "ACTIVE":
+          return "success";
+        case "DEPLETED":
+          return "neutral";
+        case "VOIDED":
+          return "danger";
+        default:
+          return "neutral";
+      }
+
+    case "clientMembership":
+      switch (normalized) {
+        case "ACTIVE":
+        case "SCHEDULED":
+          return "success";
+        case "PAST_DUE":
+          return "warning";
+        case "UNPAID":
+        case "CANCELED":
+          return "danger";
+        case "PAUSED":
+          return "neutral";
+        default:
+          return "neutral";
+      }
+
+    case "appointment":
+      switch (normalized as AppointmentStatus) {
+        case "CONFIRMED":
+          return "success";
+        case "WAITING":
+          return "info";
+        case "IN_SERVICE":
+          return "info";
+        case "UNCONFIRMED":
+        case "PENDING_COMPLETION":
+        case "NO_SHOW":
+          return "warning";
+        case "COMPLETED":
+          return "neutral";
+        case "CANCELLED":
+          return "danger";
+        default:
+          return "neutral";
+      }
 
     case "snapshot":
     case "planGroup":
@@ -297,6 +352,9 @@ export interface StatusBadgeProps {
   className?: string;
 }
 
+/**
+ * Domain-aware status capsule — delegates chrome to StatusPill.
+ */
 export function StatusBadge({
   status,
   domain,
@@ -310,25 +368,15 @@ export function StatusBadge({
     throw new Error("StatusBadge requires a `domain` prop.");
   }
   const tone = resolveTone(resolvedDomain, status);
-  const styles = toneStyles[tone];
   const displayLabel = label ?? resolveLabel(resolvedDomain, status);
 
   return (
-    <span
-      className={cn(
-        "inline-flex h-6 max-w-full items-center gap-1.5 rounded-full px-2.5 text-[11px] font-medium tracking-wide",
-        styles.pill,
-        className,
-      )}
-    >
-      {showDot ? (
-        <span
-          className={cn("size-1.5 shrink-0 rounded-full", styles.dot)}
-          aria-hidden
-        />
-      ) : null}
-      <span className="truncate">{displayLabel}</span>
-    </span>
+    <StatusPill
+      label={displayLabel}
+      variant={tone}
+      showDot={showDot}
+      className={className}
+    />
   );
 }
 

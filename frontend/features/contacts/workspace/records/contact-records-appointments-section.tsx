@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Trash2  } from "lucide-react";
 import { EmptyState } from "@/components/data-display/empty-state";
 import { ActionButton } from "@/components/ui/action-button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -30,7 +30,6 @@ export function ContactRecordsAppointmentsSection({
         action={
           onCreateAppointment ? (
             <ActionButton onClick={onCreateAppointment}>
-              <Plus className="mr-1.5 size-4" />
               Book appointment
             </ActionButton>
           ) : undefined

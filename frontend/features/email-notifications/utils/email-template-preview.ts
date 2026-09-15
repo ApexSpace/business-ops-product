@@ -31,7 +31,8 @@ export function buildEmailTemplateSampleVariables(
   overrides?: Record<string, string>,
 ): Record<string, string> {
   const def = getConfigurableEmailTypeDefinition(emailType);
-  const samples = { ...BASE_SAMPLE_VARIABLES };
+  const samples = { ...BASE_SAMPLE_VARIABLES,
+};
 
   for (const key of def?.variables ?? []) {
     if (!samples[key]) {
@@ -39,7 +40,8 @@ export function buildEmailTemplateSampleVariables(
     }
   }
 
-  return { ...samples, ...(overrides ?? {}) };
+  return { ...samples, ...(overrides ?? {}),
+};
 }
 
 export function renderEmailTemplateVariables(

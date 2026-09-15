@@ -1,7 +1,6 @@
 "use client";
 
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { Button } from "@/components/ui/button";
 import {
   FormControl,
   FormField,
@@ -11,10 +10,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { SheetFooter } from "@/components/ui/sheet";
 import { leadStatusOptions } from "@/features/leads/utils/select-options";
 import type { UseFormReturn } from "react-hook-form";
-import { Trash2 } from "lucide-react";
 
 export interface LeadDetailFormValues {
   title?: string;
@@ -28,32 +25,29 @@ export interface LeadDetailFormValues {
 }
 
 interface LeadDetailSheetFormProps {
+  formId: string;
   form: UseFormReturn<LeadDetailFormValues>;
   canAssign: boolean;
   stageItems: { value: string; label: string }[];
   serviceItems: { value: string; label: string }[];
   assigneeItems: { value: string; label: string }[];
-  isPending: boolean;
-  onCancel: () => void;
-  onDelete: () => void;
   onSubmit: (values: LeadDetailFormValues) => void;
 }
 
 export function LeadDetailSheetForm({
+  formId,
   form,
   canAssign,
   stageItems,
   serviceItems,
   assigneeItems,
-  isPending,
-  onCancel,
-  onDelete,
   onSubmit,
 }: LeadDetailSheetFormProps) {
   return (
     <form
+      id={formId}
       onSubmit={form.handleSubmit(onSubmit)}
-      className="flex flex-1 flex-col gap-4 px-4 pb-4"
+      className="flex flex-col gap-4"
     >
       <FormField
         control={form.control}
@@ -188,26 +182,6 @@ export function LeadDetailSheetForm({
           </FormItem>
         )}
       />
-
-      <SheetFooter className="flex-col items-end gap-2 px-0 sm:flex-row sm:items-center sm:justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          className="text-destructive hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2 className="mr-2 size-4" />
-          Delete
-        </Button>
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "Saving…" : "Save"}
-          </Button>
-        </div>
-      </SheetFooter>
     </form>
   );
 }

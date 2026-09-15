@@ -66,7 +66,8 @@ export function parseContactSearchQuery(
   if (!q) return {};
 
   if (emailPattern.test(q)) {
-    return { email: q };
+    return { email: q,
+};
   }
 
   if (phonePattern.test(q)) {
@@ -91,7 +92,8 @@ export function parseContactSearchQuery(
       lastName: parts.slice(1).join(" "),
     };
   }
-  return { displayName: q, firstName: q };
+  return { displayName: q, firstName: q,
+};
 }
 
 export function quickContactFormToApiBody(values: QuickContactFormValues) {

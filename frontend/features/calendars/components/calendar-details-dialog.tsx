@@ -213,7 +213,7 @@ function SummaryCard({ cal }: { cal: CalendarDetail | Calendar }) {
   const availability =
     "availability" in cal && cal.availability?.length
       ? summarizeWeeklyAvailability(cal.availability)
-      : "—";
+      : "";
   return (
     <section className="grid gap-3 rounded-lg bg-muted/30 p-4 text-sm sm:grid-cols-2">
       <div>

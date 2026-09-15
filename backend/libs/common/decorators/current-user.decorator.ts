@@ -11,6 +11,8 @@ export interface RequestUser {
   platformRole?: PlatformMemberRole;
   businessId?: string;
   businessRole?: BusinessMemberRole;
+  /** Compact true-only staff permissions for MEMBERs (from JWT/membership). */
+  staffPermissions?: Record<string, boolean>;
 }
 
 export const CurrentUser = createParamDecorator(

@@ -58,6 +58,9 @@ export class ConversationIntegrationRepository {
         providerKey: 'instagram',
         type: IntegrationResourceType.INSTAGRAM_ACCOUNT,
         status: IntegrationResourceStatus.ACTIVE,
+        businessIntegration: {
+          status: IntegrationStatus.CONNECTED,
+        },
         metadata: {
           path: ['linkedPageId'],
           equals: linkedPageId,

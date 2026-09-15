@@ -5,7 +5,13 @@ import {
 } from './meta-attachment.util';
 import { NormalizedInboundMessage } from './meta-inbound.types';
 
-const WHATSAPP_WEBHOOK_OBJECTS = new Set(['whatsapp', 'whatsapp_business_account']);
+export { extractWhatsAppTemplateStatusUpdates } from '@app/modules/integrations/whatsapp/utils/template-webhook.util';
+export type { WhatsAppTemplateStatusUpdate } from '@app/modules/integrations/whatsapp/utils/template-webhook.util';
+
+const WHATSAPP_WEBHOOK_OBJECTS = new Set([
+  'whatsapp',
+  'whatsapp_business_account',
+]);
 
 type MetaMessagingEvent = {
   sender?: { id?: string };
@@ -130,7 +136,12 @@ type WhatsAppWebhookMessage = {
   image?: { id?: string; mime_type?: string; caption?: string };
   video?: { id?: string; mime_type?: string; caption?: string };
   audio?: { id?: string; mime_type?: string };
-  document?: { id?: string; mime_type?: string; filename?: string; caption?: string };
+  document?: {
+    id?: string;
+    mime_type?: string;
+    filename?: string;
+    caption?: string;
+  };
   sticker?: { id?: string; mime_type?: string };
 };
 
@@ -199,9 +210,10 @@ function normalizeWhatsAppMessage(
   };
 }
 
-export function normalizeMetaWhatsAppWebhook(
-  entry: { id?: string; changes?: Array<{ value?: WhatsAppChangeValue; field?: string }> },
-): NormalizedInboundMessage[] {
+export function normalizeMetaWhatsAppWebhook(entry: {
+  id?: string;
+  changes?: Array<{ value?: WhatsAppChangeValue; field?: string }>;
+}): NormalizedInboundMessage[] {
   const wabaId = entry.id ?? null;
   if (!entry.changes?.length) {
     return [];
@@ -236,6 +248,97 @@ export function normalizeMetaWhatsAppWebhook(
 
 export function isWhatsAppWebhookObject(objectType: string | null): boolean {
   return objectType !== null && WHATSAPP_WEBHOOK_OBJECTS.has(objectType);
+}
+
+export type NormalizedWhatsAppDeliveryStatus = {
+  externalMessageId: string;
+  status: 'sent' | 'delivered' | 'read' | 'failed';
+  timestamp: Date;
+  recipientId: string;
+  errorMessage: string | null;
+};
+
+type WhatsAppStatusUpdate = {
+  id?: string;
+  status?: string;
+  timestamp?: string;
+  recipient_id?: string;
+  errors?: Array<{ code?: number; title?: string; message?: string }>;
+};
+
+function mapWhatsAppDeliveryStatus(
+  status: WhatsAppStatusUpdate,
+): NormalizedWhatsAppDeliveryStatus | null {
+  const externalMessageId = status.id?.trim();
+  const rawStatus = status.status?.trim().toLowerCase();
+  if (!externalMessageId || !rawStatus) {
+    return null;
+  }
+
+  if (
+    rawStatus !== 'sent' &&
+    rawStatus !== 'delivered' &&
+    rawStatus !== 'read' &&
+    rawStatus !== 'failed'
+  ) {
+    return null;
+  }
+
+  const timestampSeconds = Number(status.timestamp);
+  const timestamp = Number.isFinite(timestampSeconds)
+    ? new Date(timestampSeconds * 1000)
+    : new Date();
+
+  const errorMessage =
+    rawStatus === 'failed'
+      ? (status.errors
+          ?.map((error) => error.message ?? error.title ?? `Code ${error.code}`)
+          .filter(Boolean)
+          .join('; ') ?? 'WhatsApp delivery failed')
+      : null;
+
+  return {
+    externalMessageId,
+    status: rawStatus,
+    timestamp,
+    recipientId: status.recipient_id?.trim() ?? '',
+    errorMessage,
+  };
+}
+
+export function extractWhatsAppDeliveryStatuses(
+  body: Record<string, unknown>,
+): NormalizedWhatsAppDeliveryStatus[] {
+  const objectType = typeof body.object === 'string' ? body.object : null;
+  if (!isWhatsAppWebhookObject(objectType)) {
+    return [];
+  }
+
+  const entries = Array.isArray(body.entry) ? body.entry : [];
+  const results: NormalizedWhatsAppDeliveryStatus[] = [];
+
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') continue;
+    const changes = (
+      entry as {
+        changes?: Array<{
+          field?: string;
+          value?: WhatsAppChangeValue & { statuses?: WhatsAppStatusUpdate[] };
+        }>;
+      }
+    ).changes;
+    for (const change of changes ?? []) {
+      if (change.field !== 'messages') continue;
+      for (const status of change.value?.statuses ?? []) {
+        const normalized = mapWhatsAppDeliveryStatus(status);
+        if (normalized) {
+          results.push(normalized);
+        }
+      }
+    }
+  }
+
+  return results;
 }
 
 export function normalizeMetaWebhookPayload(body: Record<string, unknown>): {

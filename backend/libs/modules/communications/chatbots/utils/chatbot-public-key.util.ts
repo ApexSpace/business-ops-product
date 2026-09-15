@@ -8,6 +8,10 @@ export function buildChatbotWidgetPath(publicKey: string): string {
   return `/widgets/chatbot/${encodeURIComponent(publicKey)}`;
 }
 
+export function buildFrontendChatbotWidgetPath(publicKey: string): string {
+  return `/widget/chatbot/${encodeURIComponent(publicKey)}`;
+}
+
 export function buildChatbotScriptPath(): string {
   return '/widgets/chatbot.js';
 }
@@ -18,6 +22,14 @@ export function buildChatbotWidgetUrl(
 ): string {
   const base = backendPublicUrl.replace(/\/$/, '');
   return `${base}${buildChatbotWidgetPath(publicKey)}`;
+}
+
+export function buildFrontendChatbotWidgetUrl(
+  frontendUrl: string,
+  publicKey: string,
+): string {
+  const base = frontendUrl.replace(/\/$/, '');
+  return `${base}${buildFrontendChatbotWidgetPath(publicKey)}`;
 }
 
 export function buildChatbotScriptUrl(backendPublicUrl: string): string {

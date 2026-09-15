@@ -14,6 +14,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { buildJobOnlyAcceptedResponse } from '@app/common/utils/async-job-response.util';
 import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
@@ -23,6 +24,7 @@ import { GoogleCalendarSyncService } from './google-calendar-sync.service';
 @ApiBearerAuth()
 @Controller('calendars')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('settings.integrations.manage')
 export class GoogleCalendarSyncController {
   constructor(
     private readonly googleCalendarSyncService: GoogleCalendarSyncService,
@@ -44,7 +46,11 @@ export class GoogleCalendarSyncController {
 
   @Post(':id/sync/google')
   @HttpCode(HttpStatus.ACCEPTED)
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   async syncGoogle(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,

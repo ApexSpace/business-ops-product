@@ -1,11 +1,7 @@
+import { displayInitials } from "@/lib/ui/display-initials";
+
 export function getBoardInitials(name: string): string {
-  const trimmed = name.trim();
-  if (!trimmed || trimmed === "—") return "?";
-  const parts = trimmed.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
-  }
-  return trimmed.slice(0, 2).toUpperCase();
+  return displayInitials(name);
 }
 
 export function parseBoardAmount(value: string | null | undefined): number {

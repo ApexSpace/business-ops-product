@@ -1,7 +1,6 @@
 "use client";
 
-import { MoreVertical } from "lucide-react";
-import { IconButton } from "@/components/ui/icon-button";
+import { MoreActionsButton } from "@/components/ui/more-actions-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,9 +36,7 @@ export function DataTableRowActions({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <IconButton aria-label={menuLabel} className="size-8">
-            <MoreVertical className="size-4" />
-          </IconButton>
+          <MoreActionsButton aria-label={menuLabel} />
         }
       />
       <DropdownMenuContent align="end" className="w-44">

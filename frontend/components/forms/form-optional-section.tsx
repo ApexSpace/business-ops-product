@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,6 @@ export function FormOptionalSection({
         )}
         onClick={() => onOpenChange(true)}
       >
-        <Plus className="size-3.5" />
         {label}
       </Button>
     );

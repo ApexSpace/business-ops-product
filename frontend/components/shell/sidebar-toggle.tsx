@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 /** Circular edge control — same palette as the business/brand icon */
 const brandedToggleClassName =
-  "flex size-6 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground shadow-elevation-sm transition-[box-shadow,opacity,transform] duration-150 hover:opacity-95 hover:shadow-elevation-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar";
+  "flex size-7 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/90 text-[#12172b] shadow-[0_16px_30px_-18px_rgba(15,23,42,0.8)] transition-[box-shadow,opacity,transform] duration-150 hover:opacity-95 hover:shadow-[0_20px_36px_-18px_rgba(15,23,42,0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring";
 
 function BrandSidebarChevron({
   direction,
@@ -76,7 +76,7 @@ export function MobileSidebarMenuTrigger({
   return (
     <Button
       type="button"
-      variant="ghost"
+      variant="glass"
       size="icon-sm"
       data-slot="mobile-sidebar-trigger"
       className={cn(
@@ -120,7 +120,7 @@ export function SidebarFooterCollapseTrigger({
             onClick={toggleSidebar}
             data-slot="sidebar-footer-collapse"
             className={cn(
-              "absolute top-1/2 right-0 z-50 hidden -translate-y-1/2 translate-x-1/2 md:flex",
+              "absolute top-1/2 right-1 z-50 hidden -translate-y-1/2 md:flex",
               className,
             )}
           />

@@ -76,7 +76,9 @@ export type SubscriptionStatus =
   | "CANCELED"
   | "EXPIRED"
   | "INTERNAL"
-  | "PAST_DUE";
+  | "PAST_DUE"
+  | "UNPAID"
+  | "INCOMPLETE";
 
 export interface BillingOverview {
   mrr: string;

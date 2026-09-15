@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pencil, Plus } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -215,7 +215,6 @@ export function PipelineEditSettings({ pipelineId }: PipelineEditSettingsProps) 
               onClick={() => stageActions?.addStage()}
               disabled={!stageActions || stageActions.disabled}
             >
-              <Plus className="mr-2 size-4" />
               Add stage
             </Button>
           </div>

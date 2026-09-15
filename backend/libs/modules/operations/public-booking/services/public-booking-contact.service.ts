@@ -9,7 +9,7 @@ export interface PublicBookingContactInput {
   phoneCountryCode?: string;
   phoneNumber?: string;
   formAnswers?: Record<string, unknown>;
-  source: 'Public Booking' | 'Calendar Widget';
+  source: 'Public Booking' | 'Calendar Widget' | 'Express Booking';
 }
 
 @Injectable()

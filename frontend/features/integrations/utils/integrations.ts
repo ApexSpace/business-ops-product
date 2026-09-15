@@ -45,6 +45,8 @@ export interface IntegrationSummary {
 export interface IntegrationProviderWithStatus extends IntegrationProvider {
   status: IntegrationStatus;
   integration: IntegrationSummary | null;
+  /** Active pages / IG accounts / etc. for this provider (catalog badge). */
+  resourceCount?: number;
 }
 
 export interface BusinessIntegration {
@@ -193,7 +195,7 @@ export function getOAuthOpeningLabel(
 }
 
 export function formatIntegrationDate(value: string | null): string {
-  if (!value) return "—";
+  if (!value) return "";
   return new Date(value).toLocaleString();
 }
 
@@ -212,9 +214,17 @@ export function isMetaBusinessProvider(providerKey: string): boolean {
   );
 }
 
+const GOOGLE_OAUTH_PROVIDER_KEYS = new Set([
+  "google-calendar",
+  "google-business-profile",
+  "google-lead-ads",
+  "youtube",
+]);
+
 export function isGoogleOAuthProvider(providerKey: string): boolean {
   return (
-    providerKey.startsWith("google-") && providerKey !== "google-oauth"
+    GOOGLE_OAUTH_PROVIDER_KEYS.has(providerKey) ||
+    (providerKey.startsWith("google-") && providerKey !== "google-oauth")
   );
 }
 
@@ -227,10 +237,14 @@ export const OAUTH_START_ROUTES = {
   "google-business-profile":
     "/api/oauth/google/start?providerKey=google-business-profile",
   "google-lead-ads": "/api/oauth/google/start?providerKey=google-lead-ads",
+  youtube: "/api/oauth/google/start?providerKey=youtube",
   facebook: "/api/oauth/meta/start?providerKey=facebook",
   instagram: "/api/oauth/meta/start?providerKey=instagram",
   whatsapp: "/api/oauth/meta/whatsapp/start",
   linkedin: "/api/oauth/linkedin/start",
+  x: "/api/oauth/x/start",
+  pinterest: "/api/oauth/pinterest/start",
+  tiktok: "/api/oauth/tiktok/start",
   stripe: "/api/oauth/stripe/start",
 } as const;
 
@@ -276,10 +290,17 @@ export function isPlatformEmailProvider(providerKey: string): boolean {
   return providerKey === "email";
 }
 
+export function isPlatformSmsProvider(providerKey: string): boolean {
+  return providerKey === "sms";
+}
+
 export function shouldUseManualConnect(
   provider: Pick<IntegrationProvider, "connectionType" | "key">,
 ): boolean {
   if (isPlatformEmailProvider(provider.key)) {
+    return false;
+  }
+  if (isPlatformSmsProvider(provider.key)) {
     return false;
   }
   return !shouldUseOAuthPopup(provider);
@@ -316,16 +337,95 @@ export const META_OAUTH_START_ROUTES = {
 
 export function getMetaOAuthStartUrl(
   providerKey: MetaBusinessProviderKey,
+  authFlow?: InstagramAuthFlowParam,
 ): string {
-  return META_OAUTH_START_ROUTES[providerKey];
+  const base = META_OAUTH_START_ROUTES[providerKey];
+  if (providerKey !== "instagram" || !authFlow) {
+    return base;
+  }
+  return appendAuthFlowQuery(base, authFlow);
 }
 
-export function getOAuthStartUrl(providerKey: string): string {
+/** Platform admin Meta OAuth — stamps INTERNAL ops business into OAuth state. */
+export const PLATFORM_META_OAUTH_START_ROUTES = {
+  facebook: "/api/oauth/meta/platform/start?providerKey=facebook",
+  instagram: "/api/oauth/meta/platform/start?providerKey=instagram",
+} as const satisfies Record<"facebook" | "instagram", string>;
+
+/** Platform admin Google OAuth — stamps INTERNAL ops business into OAuth state. */
+export const PLATFORM_GOOGLE_OAUTH_START_ROUTES = {
+  "google-calendar":
+    "/api/oauth/google/platform/start?providerKey=google-calendar",
+  "google-business-profile":
+    "/api/oauth/google/platform/start?providerKey=google-business-profile",
+  "google-lead-ads":
+    "/api/oauth/google/platform/start?providerKey=google-lead-ads",
+} as const;
+
+export type PlatformGoogleOAuthProviderKey =
+  keyof typeof PLATFORM_GOOGLE_OAUTH_START_ROUTES;
+
+export function getPlatformGoogleOAuthStartUrl(
+  providerKey: PlatformGoogleOAuthProviderKey,
+): string {
+  return PLATFORM_GOOGLE_OAUTH_START_ROUTES[providerKey];
+}
+
+export type InstagramAuthFlowParam = "facebook_login" | "instagram_login";
+
+export type InstagramAuthFlow = "FACEBOOK_LOGIN" | "INSTAGRAM_LOGIN";
+
+export function parseInstagramAuthFlowFromConfig(
+  config: Record<string, unknown> | null | undefined,
+): InstagramAuthFlow {
+  const raw = config?.authFlow;
+  if (typeof raw !== "string") return "FACEBOOK_LOGIN";
+  const normalized = raw.trim().toUpperCase().replace(/-/g, "_");
+  return normalized === "INSTAGRAM_LOGIN" ? "INSTAGRAM_LOGIN" : "FACEBOOK_LOGIN";
+}
+
+function appendAuthFlowQuery(url: string, authFlow: InstagramAuthFlowParam): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}authFlow=${authFlow}`;
+}
+
+export function getPlatformMetaOAuthStartUrl(
+  providerKey: "facebook" | "instagram",
+  authFlow?: InstagramAuthFlowParam,
+): string {
+  const base = PLATFORM_META_OAUTH_START_ROUTES[providerKey];
+  if (providerKey !== "instagram" || !authFlow) {
+    return base;
+  }
+  return appendAuthFlowQuery(base, authFlow);
+}
+
+export function getOAuthStartUrl(
+  providerKey: string,
+  options?: { authFlow?: InstagramAuthFlowParam; host?: "business" | "platform" },
+): string {
+  if (options?.host === "platform") {
+    if (providerKey === "facebook" || providerKey === "instagram") {
+      return getPlatformMetaOAuthStartUrl(providerKey, options.authFlow);
+    }
+    if (isGoogleOAuthProvider(providerKey)) {
+      return getPlatformGoogleOAuthStartUrl(
+        providerKey as PlatformGoogleOAuthProviderKey,
+      );
+    }
+    throw new Error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
+  }
+
+  if (providerKey === "instagram" && options?.authFlow) {
+    return getMetaOAuthStartUrl("instagram", options.authFlow);
+  }
+
   if (!hasOAuthStartRoute(providerKey)) {
     throw new Error(OAUTH_ROUTE_NOT_CONFIGURED_MESSAGE);
   }
   return OAUTH_START_ROUTES[providerKey];
 }
+
 
 /** @deprecated Use getOAuthStartUrl */
 export function getGoogleOAuthStartUrl(providerKey: string): string {
@@ -348,6 +448,7 @@ export function getIntegrationConnectLabel(
     if (provider.key === "instagram") return "Connect Instagram";
     if (provider.key === "stripe") return "Connect Stripe";
     if (isPlatformEmailProvider(provider.key)) return "Activate email";
+    if (isPlatformSmsProvider(provider.key)) return "Configure SMS";
     if (isGoogleOAuthProvider(provider.key)) return "Connect with Google";
     if (shouldUseOAuthPopup(provider)) return `Connect ${provider.name}`;
     return "Connect";

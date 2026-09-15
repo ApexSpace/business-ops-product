@@ -69,7 +69,7 @@ export function useContactWorkspace(contactId: string) {
     isError: contactError,
   } = useContactDetail(contactId);
 
-  const related = useContactRelatedRecords(contactId);
+  const related = useContactRelatedRecords(contactId, activeSection);
   const isFinancialSection = isContactFinancialSection(activeSection);
   const financial = useContactFinancialRecords(contactId, isFinancialSection);
   const mutations = useContactWorkspaceMutations(contactId);

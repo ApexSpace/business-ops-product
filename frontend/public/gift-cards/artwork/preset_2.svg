@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-label="Botanical Green gift card artwork">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1f4d3a"/>
+      <stop offset="55%" stop-color="#2f6b4f"/>
+      <stop offset="100%" stop-color="#173f31"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="600" fill="url(#bg)"/>
+  <g fill="#9fd5b5" opacity="0.24">
+    <ellipse cx="150" cy="120" rx="72" ry="28" transform="rotate(-25 150 120)"/>
+    <ellipse cx="215" cy="165" rx="92" ry="32" transform="rotate(15 215 165)"/>
+    <ellipse cx="120" cy="205" rx="62" ry="24" transform="rotate(40 120 205)"/>
+    <ellipse cx="820" cy="440" rx="104" ry="34" transform="rotate(-20 820 440)"/>
+    <ellipse cx="760" cy="495" rx="82" ry="28" transform="rotate(25 760 495)"/>
+    <ellipse cx="875" cy="515" rx="56" ry="22" transform="rotate(-10 875 515)"/>
+    <ellipse cx="700" cy="120" rx="50" ry="18" transform="rotate(30 700 120)"/>
+  </g>
+  <g fill="none" stroke="#d7f0e1" stroke-width="2" opacity="0.35">
+    <path d="M700 70 C745 155, 790 205, 870 290"/>
+    <path d="M90 350 C175 395, 225 470, 270 560"/>
+  </g>
+  <circle cx="480" cy="300" r="130" fill="rgba(255,255,255,0.06)"/>
+  <rect x="36" y="36" width="888" height="528" rx="28" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
+</svg>

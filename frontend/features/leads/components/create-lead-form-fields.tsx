@@ -22,7 +22,8 @@ function getFirstStageId(pipeline?: Pipeline): string {
 interface CreateLeadFormFieldsProps {
   form: UseFormReturn<CreateLeadFormValues>;
   lockPipeline: boolean;
-  lockedContact?: { id: string; label: string };
+  lockedContact?: { id: string; label: string,
+};
   pipelineItems: { value: string; label: string }[];
   stageItems: { value: string; label: string }[];
   serviceItems: { value: string; label: string }[];

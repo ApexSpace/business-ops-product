@@ -6,6 +6,7 @@ import { Public } from '@app/common/decorators/public.decorator';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { SkipEnvelope } from '@app/common/decorators/skip-envelope.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { StripeOAuthService } from '@app/modules/integrations/integrations/stripe/services/stripe-oauth.service';
@@ -19,7 +20,12 @@ export class StripeOAuthController {
   @SkipEnvelope()
   @ApiBearerAuth()
   @UseGuards(BusinessRolesGuard)
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @StaffPermission('settings.integrations.manage')
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   async start(@CurrentUser() user: RequestUser, @Res() res: Response) {
     await this.stripeOAuthService.redirectToStripe(user, res);
   }

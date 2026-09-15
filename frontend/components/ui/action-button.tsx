@@ -12,11 +12,14 @@ export type ActionButtonProps = ComponentProps<typeof Button> &
 
 /**
  * Standard action control for Save, Cancel, Create, Delete, and list-page CTAs.
+ * Defaults to Button `variant="brand"` size="default". Pass variant="outline"
+ * (Cancel) or variant="destructive" when the action is not a primary CTA.
  * Toolbar filters use `var(--control-height)` via `lib/ui/control-styles.ts` (same height as this button).
  */
 export function ActionButton({
   size = ACTION_BUTTON_SIZE,
+  variant = "brand",
   ...props
 }: ActionButtonProps) {
-  return <Button size={size} {...props} />;
+  return <Button size={size} variant={variant} {...props} />;
 }

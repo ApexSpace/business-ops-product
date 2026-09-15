@@ -14,7 +14,6 @@ import {
 import { PanelLeftIcon } from "lucide-react"
 import { useSidebar } from "@/components/ui/use-sidebar"
 import {
-  SIDEBAR_WIDTH,
   SIDEBAR_WIDTH_MOBILE,
   SidebarProvider,
 } from "@/components/ui/sidebar-provider"
@@ -82,7 +81,7 @@ function Sidebar({
           data-mobile="true"
           showCloseButton={false}
           className={cn(
-            "max-w-none bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
+            "glass-sidebar-surface max-w-none border-r border-transparent p-0 text-sidebar-foreground [&>button]:hidden",
             "data-[side=left]:!w-(--sidebar-width) data-[side=left]:!max-w-none",
             "data-[side=right]:!w-(--sidebar-width) data-[side=right]:!max-w-none",
           )}
@@ -105,7 +104,7 @@ function Sidebar({
 
   return (
     <div
-      className="group peer hidden text-sidebar-foreground md:block"
+      className="group peer hidden shrink-0 text-sidebar-foreground md:block"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
@@ -127,7 +126,7 @@ function Sidebar({
         data-slot="sidebar-container"
         data-side={side}
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) overflow-visible transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) overflow-hidden transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
@@ -138,7 +137,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="relative flex size-full flex-col overflow-visible bg-sidebar group-data-[variant=floating]:rounded-md group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
+          className="glass-sidebar-surface relative flex size-full flex-col overflow-hidden border-r border-transparent group-data-[variant=floating]:rounded-md group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
         >
           {children}
         </div>

@@ -26,7 +26,8 @@ import type {
 export type SubscriptionActionPayload = {
   markPaid?: MarkPaidInput;
   recordPayment?: RecordPaymentInput;
-  extendTrial?: { currentPeriodEnd?: string; days?: number; reason?: string; notes?: string };
+  extendTrial?: { currentPeriodEnd?: string; days?: number; reason?: string; notes?: string,
+};
   changePackage?: ChangePackageActionInput;
   changeSnapshot?: ChangeSnapshotActionInput;
   reactivate?: ReactivateBusinessInput;

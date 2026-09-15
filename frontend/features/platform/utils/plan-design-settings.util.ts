@@ -151,12 +151,15 @@ export function featureIconSizeClasses(size: PlanFeatureIconSize): {
   icon: string;
 } {
   if (size === "sm") {
-    return { container: "size-4", icon: "size-2.5" };
+    return { container: "size-4", icon: "size-2.5",
+};
   }
   if (size === "lg") {
-    return { container: "size-6", icon: "size-3.5" };
+    return { container: "size-6", icon: "size-3.5",
+};
   }
-  return { container: "size-5", icon: "size-3" };
+  return { container: "size-5", icon: "size-3",
+};
 }
 
 const SHADOW_VALUES: Record<PlanCardShadow, string> = {

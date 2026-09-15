@@ -33,10 +33,15 @@ export class AppointmentGoogleSyncProcessor {
                   payload.businessId,
                   payload.appointmentId,
                 );
-          if (snapshot) {
+          if (snapshot?.calendarId) {
             await this.googleCalendarSyncService.afterAppointmentDeleted(
               payload.businessId,
-              snapshot,
+              {
+                id: snapshot.id,
+                calendarId: snapshot.calendarId,
+                externalEventId: snapshot.externalEventId ?? null,
+                externalProvider: snapshot.externalProvider ?? null,
+              },
               payload.actorUserId,
             );
           }

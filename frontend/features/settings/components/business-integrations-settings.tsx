@@ -4,6 +4,7 @@ import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
 import { IntegrationCategoryTabs } from "@/features/integrations/components/integration-category-tabs";
 import { IntegrationGrid } from "@/features/integrations/components/integration-grid";
 import { IntegrationManageDialog } from "@/features/integrations/components/integration-manage-dialog";
+import { InstagramConnectChooserDialog } from "@/features/integrations/components/instagram-connect-chooser-dialog";
 import { OAuthPopupBlockedDialog } from "@/features/integrations/components/oauth-popup-blocked-dialog";
 import { PageHeader } from "@/components/layout/page-header";
 import {
@@ -62,6 +63,10 @@ export function BusinessIntegrationsSettings() {
         isPending={s.isPending}
         canDelete={s.canManage}
         showAdvancedDetails={s.canManage}
+        isSyncingAssets={
+          !!s.selectedProvider &&
+          s.syncingAssetsProviderKey === s.selectedProvider.key
+        }
         onSubmit={s.handleDialogSubmit}
         onDelete={() => s.setDeleteOpen(true)}
         onReconnect={
@@ -69,12 +74,24 @@ export function BusinessIntegrationsSettings() {
             ? () => {
                 if (usesWhatsAppEmbeddedSignup(s.selectedProvider!.key)) {
                   void s.startWhatsAppEmbeddedSignup(s.selectedProvider!);
+                } else if (s.selectedProvider!.key === "instagram") {
+                  s.openInstagramChooser(s.selectedProvider!);
                 } else if (shouldUseOAuthPopup(s.selectedProvider!)) {
                   s.startOAuthConnect(s.selectedProvider!);
                 }
               }
             : undefined
         }
+      />
+
+      <InstagramConnectChooserDialog
+        open={s.instagramChooserOpen}
+        onOpenChange={s.setInstagramChooserOpen}
+        onSelect={(authFlow) => {
+          if (s.instagramChooserProvider) {
+            s.startOAuthConnect(s.instagramChooserProvider, { authFlow });
+          }
+        }}
       />
 
       <OAuthPopupBlockedDialog

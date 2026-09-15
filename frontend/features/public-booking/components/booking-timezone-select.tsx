@@ -27,7 +27,6 @@ export function BookingTimezoneSelect({
         searchPlaceholder="Search timezone…"
         triggerClassName="h-11 text-sm sm:h-[var(--control-height)] sm:text-xs"
         contentAlign="start"
-        alignItemWithTrigger
       />
     </div>
   );

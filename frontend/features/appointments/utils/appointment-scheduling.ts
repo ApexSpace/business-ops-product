@@ -108,7 +108,8 @@ export function parseLocalDateTimeInput(value: string): {
   if (!match) return null;
   const [, dateKey, h, m] = match;
   const startMinutes = Number(h) * 60 + Number(m);
-  return { dateKey: dateKey!, startMinutes, endMinutes: startMinutes };
+  return { dateKey: dateKey!, startMinutes, endMinutes: startMinutes,
+};
 }
 
 export function parseStartEndLocalInputs(
@@ -208,7 +209,8 @@ export function findNextAvailableSlot(
 ): { dateKey: string; startMinutes: number } {
   const slots = generateTimeSlots(config.slotIntervalMinutes);
   if (slots.length === 0) {
-    return { dateKey, startMinutes: 9 * 60 };
+    return { dateKey, startMinutes: 9 * 60,
+};
   }
 
   const tryDate = (key: string, minMinutes: number, preferred?: number) => {
@@ -245,7 +247,8 @@ export function findNextAvailableSlot(
 
   const found = tryDate(dateKey, minMinutes, options?.preferredStartMinutes);
   if (found !== undefined) {
-    return { dateKey, startMinutes: found };
+    return { dateKey, startMinutes: found,
+};
   }
 
   if (dateKey === todayKey) {
@@ -254,7 +257,8 @@ export function findNextAvailableSlot(
       .toFormat("yyyy-MM-dd");
     const tomorrowSlot = tryDate(tomorrow, slots[0]!);
     if (tomorrowSlot !== undefined) {
-      return { dateKey: tomorrow, startMinutes: tomorrowSlot };
+      return { dateKey: tomorrow, startMinutes: tomorrowSlot,
+};
     }
   }
 
@@ -287,7 +291,8 @@ export function resolveInitialSchedule(
       config.defaultDurationMinutes,
       config.slotIntervalMinutes,
     );
-    return { dateKey: next.dateKey, startMinutes: next.startMinutes, endMinutes };
+    return { dateKey: next.dateKey, startMinutes: next.startMinutes, endMinutes,
+};
   }
 
   const startMinutes = snapMinutesToSlot(

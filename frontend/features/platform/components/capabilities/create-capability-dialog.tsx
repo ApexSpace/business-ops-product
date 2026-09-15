@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { FormDialog } from "@/components/forms/form-dialog";
 import { SelectField } from "@/components/forms/select-field";
@@ -53,8 +52,7 @@ export function CreateCapabilityDialog() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
-        <Plus className="mr-2 size-4" />
+      <Button type="button" variant="brand" onClick={() => setOpen(true)}>
         Create capability
       </Button>
       <FormDialog

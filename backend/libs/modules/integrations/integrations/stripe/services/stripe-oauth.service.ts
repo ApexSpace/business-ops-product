@@ -157,10 +157,15 @@ export class StripeOAuthService {
         grant_type: 'authorization_code',
         code,
         client_secret: process.env.STRIPE_SECRET_KEY!.trim(),
+        redirect_uri: this.stripeApiService.getRedirectUri(),
       }),
     });
 
     if (!response.ok) {
+      const body = await response.text();
+      this.logger.warn(
+        `Stripe OAuth token exchange failed (${response.status}): ${body}`,
+      );
       throw new AppException(
         ErrorCode.BAD_REQUEST,
         'Failed to exchange Stripe authorization code',

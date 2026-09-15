@@ -1,97 +1,63 @@
 import {
   Bell,
-  Briefcase,
   Calendar,
+  Clock,
   CreditCard,
-  GitBranch,
+  FileText,
+  Globe,
+  Hourglass,
+  IdCard,
+  LayoutGrid,
+  MapPin,
+  MessageCircle,
   MessageSquare,
   Palette,
-  Plug,
   Receipt,
-  Settings,
+  RotateCcw,
+  Settings2,
+  SlidersHorizontal,
+  User,
   Users,
+  Wrench,
   Zap,
-  FileText,
+  CircleDollarSign,
 } from "lucide-react";
 import type { ShellNavItem, ShellNavSection } from "@/lib/types/shell-nav";
+import { canAccessSettingsHref } from "@/features/team/permissions/staff-permissions";
+import type { BusinessMemberRole } from "@/features/auth/types/auth-dto";
 
 export interface BusinessSettingsNavItem extends ShellNavItem {}
 
-const generalItems: BusinessSettingsNavItem[] = [
+const businessSetupItems: BusinessSettingsNavItem[] = [
   {
-    title: "Business Profile",
+    title: "Business Details",
     href: "/business/settings/profile",
-    icon: Settings,
+    icon: IdCard,
   },
   {
-    title: "Team Members",
-    href: "/business/settings/team",
-    icon: Users,
-  },
-];
-
-const operationsItems: BusinessSettingsNavItem[] = [
-  {
-    title: "Calendars",
-    href: "/business/settings/calendars",
-    icon: Calendar,
+    title: "Primary contact",
+    href: "/business/settings/profile?tab=contact",
+    icon: User,
   },
   {
-    title: "Services",
-    href: "/business/settings/services",
-    icon: Briefcase,
+    title: "Locations",
+    href: "/business/settings/profile?tab=address",
+    icon: MapPin,
   },
   {
-    title: "Pipelines",
-    href: "/business/settings/pipelines",
-    icon: GitBranch,
+    title: "Regional & tax",
+    href: "/business/settings/profile?tab=regional",
+    icon: Globe,
   },
   {
-    title: "Financial Settings",
-    href: "/business/settings/financial",
-    icon: Receipt,
+    title: "Business Hours",
+    href: "/business/settings/business-hours",
+    icon: Clock,
   },
   {
-    title: "Templates",
-    href: "/business/settings/templates",
-    icon: FileText,
-  },
-];
-
-const websiteItems: BusinessSettingsNavItem[] = [
-  {
-    title: "Chatbots",
-    href: "/business/settings/chatbots",
+    title: "Web Chat",
+    href: "/business/settings/web-chat",
     icon: MessageSquare,
-  },
-];
-
-const automationItems: BusinessSettingsNavItem[] = [
-  {
-    title: "Automations",
-    href: "/business/settings/automations",
-    icon: Zap,
-  },
-];
-
-const billingItems: BusinessSettingsNavItem[] = [
-  {
-    title: "Plan & Billing",
-    href: "/business/settings/billing",
-    icon: CreditCard,
-  },
-  {
-    title: "Integrations",
-    href: "/business/settings/integrations",
-    icon: Plug,
-  },
-];
-
-const preferencesItems: BusinessSettingsNavItem[] = [
-  {
-    title: "Notifications",
-    href: "/business/settings/notifications",
-    icon: Bell,
   },
   {
     title: "Appearance",
@@ -100,17 +66,140 @@ const preferencesItems: BusinessSettingsNavItem[] = [
   },
 ];
 
-export const businessSettingsSections: ShellNavSection[] = [
-  { id: "general", label: "General", items: generalItems },
-  { id: "website", label: "Website", items: websiteItems },
-  { id: "operations", label: "Operations", items: operationsItems },
-  { id: "automation", label: "Automation", items: automationItems },
+const calendarItems: BusinessSettingsNavItem[] = [
   {
-    id: "billing",
-    label: "Billing & Integrations",
-    items: billingItems,
+    title: "Calendars",
+    href: "/business/settings/calendars",
+    icon: Calendar,
   },
-  { id: "preferences", label: "Preferences", items: preferencesItems },
+  {
+    title: "Display Preferences",
+    href: "/business/settings/display-preferences",
+    icon: LayoutGrid,
+  },
+  {
+    title: "Cancel & Reschedule",
+    href: "/business/settings/cancel-reschedule",
+    icon: RotateCcw,
+  },
+  {
+    title: "Waiting Room",
+    href: "/business/settings/waiting-room",
+    icon: Hourglass,
+  },
+  {
+    title: "Scheduling Options",
+    href: "/business/settings/scheduling-options",
+    icon: Clock,
+  },
+  {
+    title: "Express Booking™",
+    href: "/business/settings/express-booking",
+    icon: Zap,
+  },
+  {
+    title: "Quick Tools",
+    href: "/business/settings/quick-tools",
+    icon: Wrench,
+  },
+];
+
+const paymentsItems: BusinessSettingsNavItem[] = [
+  {
+    title: "Payment Account",
+    href: "/business/settings/payment-account",
+    icon: CreditCard,
+  },
+  {
+    title: "Financial Settings",
+    href: "/business/settings/financial",
+    icon: Receipt,
+  },
+  {
+    title: "Custom Fees",
+    href: "/business/settings/custom-fees",
+    icon: CircleDollarSign,
+  },
+  {
+    title: "Advanced Settings",
+    href: "/business/settings/checkout-advanced",
+    icon: Receipt,
+  },
+  {
+    title: "Plan & Billing",
+    href: "/business/settings/billing",
+    icon: CreditCard,
+  },
+];
+
+const onlineBookingItems: BusinessSettingsNavItem[] = [
+  {
+    title: "Setup & Integration",
+    href: "/business/settings/online-booking",
+    icon: Settings2,
+  },
+  {
+    title: "Preferences",
+    href: "/business/settings/online-booking/preferences",
+    icon: SlidersHorizontal,
+  },
+  {
+    title: "Staff Selection",
+    href: "/business/settings/online-booking/staff-selection",
+    icon: Users,
+  },
+];
+
+const automatedMessagesItems: BusinessSettingsNavItem[] = [
+  {
+    title: "Notifications",
+    href: "/business/settings/notifications",
+    icon: Bell,
+  },
+  {
+    title: "Appointment Booked",
+    href: "/business/settings/appointment-booked",
+    icon: Calendar,
+  },
+  {
+    title: "WhatsApp",
+    href: "/business/settings/whatsapp",
+    icon: MessageCircle,
+  },
+  {
+    title: "Chatbots",
+    href: "/business/settings/chatbots",
+    icon: MessageSquare,
+  },
+  {
+    title: "Templates",
+    href: "/business/settings/templates",
+    icon: FileText,
+  },
+];
+
+export const businessSettingsSections: ShellNavSection[] = [
+  { id: "business-setup", label: "Business Setup", items: businessSetupItems },
+  {
+    id: "calendar-appointments",
+    label: "Calendar & Appointments",
+    items: calendarItems,
+  },
+  {
+    id: "payments-checkout",
+    label: "Payments & Checkout",
+    items: paymentsItems,
+  },
+  {
+    id: "online-booking",
+    label: "Online Booking",
+    items: onlineBookingItems,
+  },
+  {
+    id: "automated-messages",
+    label: "Automated Messages",
+    items: automatedMessagesItems,
+  },
 ];
 
 /** Flat list for backwards compatibility */
@@ -119,9 +208,58 @@ export const businessSettingsNavItems: BusinessSettingsNavItem[] =
 
 export const BUSINESS_SETTINGS_BASE = "/business/settings";
 
+/**
+ * Apps that still live under `/business/settings/**` but are no longer
+ * Settings chrome. Keep this list in sync with the Apps catalog.
+ */
+export const MIGRATED_SETTINGS_APP_PREFIXES = [
+  "/business/settings/services",
+  "/business/settings/team",
+  "/business/settings/resources",
+  "/business/settings/pipelines",
+  "/business/settings/automations",
+  "/business/settings/automation-workflows",
+  "/business/settings/automation-registry",
+  "/business/settings/forms",
+  "/business/settings/integrations",
+  "/business/settings/data",
+] as const;
+
+function matchesPathPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+export function isMigratedSettingsAppPath(pathname: string): boolean {
+  return MIGRATED_SETTINGS_APP_PREFIXES.some((prefix) =>
+    matchesPathPrefix(pathname, prefix),
+  );
+}
+
 export function isBusinessSettingsPath(pathname: string): boolean {
+  if (isMigratedSettingsAppPath(pathname)) return false;
   return (
     pathname === BUSINESS_SETTINGS_BASE ||
     pathname.startsWith(`${BUSINESS_SETTINGS_BASE}/`)
   );
+}
+
+export function filterBusinessSettingsSections(options: {
+  sections?: ShellNavSection[];
+  businessRole?: BusinessMemberRole;
+  staffPermissions?: Record<string, boolean>;
+  isPlatformAdmin?: boolean;
+}): ShellNavSection[] {
+  const sections = options.sections ?? businessSettingsSections;
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) =>
+        canAccessSettingsHref(item.href, {
+          businessRole: options.businessRole,
+          staffPermissions: options.staffPermissions,
+          isPlatformAdmin: options.isPlatformAdmin,
+        }),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
 }

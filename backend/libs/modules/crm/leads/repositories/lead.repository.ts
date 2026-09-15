@@ -22,7 +22,12 @@ const leadInclude = {
     select: { id: true, email: true, firstName: true, lastName: true },
   },
   service: {
-    select: { id: true, name: true, category: true, price: true },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      category: { select: { name: true } },
+    },
   },
 } satisfies Prisma.LeadInclude;
 

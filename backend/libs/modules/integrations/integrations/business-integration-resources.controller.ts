@@ -16,6 +16,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import {
   IntegrationResourceResponseDto,
@@ -28,6 +29,7 @@ import { IntegrationResourcesService } from './services/integration-resources.se
 @ApiBearerAuth()
 @Controller('integrations/business/:providerKey/resources')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('settings.integrations.manage')
 export class BusinessIntegrationResourcesController {
   constructor(
     private readonly integrationResourcesService: IntegrationResourcesService,
@@ -51,7 +53,11 @@ export class BusinessIntegrationResourcesController {
 
   @Post('sync')
   @HttpCode(HttpStatus.ACCEPTED)
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   async sync(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -68,7 +74,11 @@ export class BusinessIntegrationResourcesController {
   }
 
   @Patch(':resourceId')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   update(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -84,7 +94,11 @@ export class BusinessIntegrationResourcesController {
   }
 
   @Post(':resourceId/select')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   select(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -98,7 +112,11 @@ export class BusinessIntegrationResourcesController {
   }
 
   @Post(':resourceId/unselect')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   unselect(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,
@@ -112,7 +130,11 @@ export class BusinessIntegrationResourcesController {
   }
 
   @Post(':resourceId/make-default')
-  @BusinessRoles(BusinessMemberRole.OWNER, BusinessMemberRole.ADMIN)
+  @BusinessRoles(
+    BusinessMemberRole.OWNER,
+    BusinessMemberRole.ADMIN,
+    BusinessMemberRole.MEMBER,
+  )
   makeDefault(
     @CurrentUser() user: RequestUser,
     @Param('providerKey') providerKey: string,

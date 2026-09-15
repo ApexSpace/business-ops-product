@@ -3,6 +3,7 @@ import { RedisModule } from '../redis/redis.module';
 import { RedisPubSubService } from './redis-pub-sub.service';
 import { SseController } from './sse.controller';
 
+/** Shared Redis pub/sub + SSE (used by API and worker). */
 @Module({
   imports: [RedisModule],
   controllers: [SseController],

@@ -20,7 +20,7 @@ export function buildIcsContent(event: CalendarLinkEvent): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//CodeSol//Booking//EN",
+    "PRODID:-//PandaCue//Booking//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",

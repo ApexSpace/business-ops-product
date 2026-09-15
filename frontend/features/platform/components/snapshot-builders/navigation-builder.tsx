@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -229,7 +229,6 @@ export function NavigationBuilder() {
                 disabled={!canManage}
                 onClick={() => addRoute(option.value)}
               >
-                <Plus className="mr-1 size-3" />
                 {option.label}
               </Button>
             ))

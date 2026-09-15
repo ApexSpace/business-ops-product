@@ -30,8 +30,8 @@ describe('meta-attachment.util', () => {
   });
 
   it('builds attachment preview when text is missing', () => {
-    expect(
-      previewFromMessageContent(null, [{ type: 'image' }]),
-    ).toBe('[Image]');
+    expect(previewFromMessageContent(null, [{ type: 'image' }])).toBe(
+      '[Image]',
+    );
   });
 });

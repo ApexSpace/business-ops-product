@@ -1,5 +1,12 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { InvoiceStatus, PaymentProvider, Prisma } from '@prisma/client';
+import {
+  InvoiceStatus,
+  PaymentMethod,
+  PaymentProvider,
+  PaymentStatus,
+  PayableType,
+  Prisma,
+} from '@prisma/client';
 import { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { AppException } from '@app/common/exceptions/app.exception';
 import { ErrorCode } from '@app/common/exceptions/error-code.enum';
@@ -17,16 +24,21 @@ import {
   computeInvoicePaymentSyncFields,
   sumPaymentAmounts,
 } from '../utils/invoice-payment-sync.util';
-import { BusinessIntegrationRepository } from '@app/modules/integrations/integrations/repositories/business-integration.repository';
+import { syncInvoicePaymentFields } from '../utils/sync-invoice-payment-fields.util';
 import { StripeApiService } from '@app/modules/integrations/integrations/stripe/services/stripe-api.service';
-import { assertStripeReadyForPayments } from '@app/modules/integrations/integrations/stripe/utils/stripe-readiness.util';
-import { EmailNotificationService } from '@app/modules/communications/email/services/email-notification.service';
+import { StripeConnectContextService } from '@app/modules/integrations/integrations/stripe/services/stripe-connect-context.service';
+import { NotificationDispatchService } from '@app/modules/communications/notifications/services/notification-dispatch.service';
+import { formatPhone } from '@app/modules/crm/contacts/utils/contact-profile.util';
 import {
   formatContactName,
   formatMoney,
 } from '@app/modules/communications/email/utils/email-variables.util';
 import { BusinessRepository } from '@app/modules/platform/business/repositories/business.repository';
 import { DateTime } from 'luxon';
+import { PaymentOrchestratorService } from '../orchestration/payment-orchestrator.service';
+import { assertCanRefundSale } from '@app/modules/finance/invoices/utils/sales-staff-access.util';
+import { CheckoutAdvancedSettingsService } from '@app/modules/finance/checkout-advanced-settings/services/checkout-advanced-settings.service';
+import { buildPaidReceiptEmailExtras } from '@app/modules/finance/checkout-advanced-settings/utils/paid-receipt-email.util';
 
 @Injectable()
 export class PaymentsService {
@@ -35,13 +47,82 @@ export class PaymentsService {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-    private readonly businessIntegrationRepository: BusinessIntegrationRepository,
     private readonly stripeApiService: StripeApiService,
-    private readonly emailNotificationService: EmailNotificationService,
+    private readonly stripeConnectContext: StripeConnectContextService,
+    private readonly notificationDispatch: NotificationDispatchService,
     private readonly businessRepository: BusinessRepository,
+    private readonly paymentOrchestrator: PaymentOrchestratorService,
+    private readonly checkoutAdvancedSettings: CheckoutAdvancedSettingsService,
   ) {}
 
   async create(
+    businessId: string,
+    dto: CreatePaymentDto,
+    actor: RequestUser,
+  ): Promise<PaymentResponseDto> {
+    if (dto.method !== PaymentMethod.STRIPE) {
+      return this.createViaOrchestrator(businessId, dto, actor);
+    }
+
+    return this.createLegacyStripePayment(businessId, dto, actor);
+  }
+
+  private async createViaOrchestrator(
+    businessId: string,
+    dto: CreatePaymentDto,
+    actor: RequestUser,
+  ): Promise<PaymentResponseDto> {
+    const result = await this.paymentOrchestrator.collectPayment({
+      businessId,
+      payableType: PayableType.INVOICE,
+      payableId: dto.invoiceId,
+      tenders: [
+        {
+          method: dto.method,
+          amount: dto.amount,
+          reference: dto.reference,
+          notes: dto.notes,
+        },
+      ],
+      channel: 'STAFF_POS',
+      stripeMode: 'NONE',
+      actorUserId: actor.id,
+    });
+
+    const paymentId = result.paymentIds[0];
+    if (!paymentId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Payment was not created',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (dto.paidAt) {
+      await this.prisma.payment.update({
+        where: { id: paymentId },
+        data: { paidAt: new Date(dto.paidAt) },
+      });
+      await this.syncInvoicePaymentsStandalone(businessId, dto.invoiceId);
+    }
+
+    const payment = await this.paymentRepository.findById(
+      businessId,
+      paymentId,
+    );
+    if (payment) {
+      void this.sendPaidReceiptEmail(
+        businessId,
+        payment,
+        new Prisma.Decimal(dto.amount.toFixed(2)),
+        new Date(dto.paidAt),
+      ).catch(() => undefined);
+    }
+
+    return toPaymentResponse(payment!);
+  }
+
+  private async createLegacyStripePayment(
     businessId: string,
     dto: CreatePaymentDto,
     actor: RequestUser,
@@ -61,8 +142,15 @@ export class PaymentsService {
           business: { connect: { id: businessId } },
           invoice: { connect: { id: dto.invoiceId } },
           contact: { connect: { id: invoice.contactId } },
+          payableType: PayableType.INVOICE,
+          payableId: dto.invoiceId,
           amount,
           method: dto.method,
+          status: PaymentStatus.SUCCEEDED,
+          provider:
+            dto.method === PaymentMethod.STRIPE
+              ? PaymentProvider.STRIPE
+              : PaymentProvider.MANUAL,
           reference: dto.reference?.trim() || null,
           notes: dto.notes?.trim() || null,
           paidAt: new Date(dto.paidAt),
@@ -121,6 +209,15 @@ export class PaymentsService {
       payment.id,
     );
     return toPaymentResponse(refreshed ?? payment);
+  }
+
+  private async syncInvoicePaymentsStandalone(
+    businessId: string,
+    invoiceId: string,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await this.syncInvoiceInTransaction(tx, businessId, invoiceId);
+    });
   }
 
   async list(
@@ -334,6 +431,9 @@ export class PaymentsService {
       );
     }
 
+    const invoiceStatus = existing.invoice?.status ?? null;
+    assertCanRefundSale(actor, invoiceStatus);
+
     const refundedAmount = existing.amount.toFixed(2);
 
     if (
@@ -345,8 +445,8 @@ export class PaymentsService {
         existing.stripePaymentIntentId,
       );
       await this.markPaymentRefunded(
-        id,
-        existing.providerMetadata,
+        businessId,
+        existing,
         refundedAmount,
       );
       await this.auditService.log({
@@ -362,8 +462,8 @@ export class PaymentsService {
     }
 
     await this.markPaymentRefunded(
-      id,
-      existing.providerMetadata,
+      businessId,
+      existing,
       refundedAmount,
     );
 
@@ -381,19 +481,31 @@ export class PaymentsService {
   }
 
   private async markPaymentRefunded(
-    paymentId: string,
-    existingMetadata: Prisma.JsonValue | null,
+    businessId: string,
+    payment: {
+      id: string;
+      invoiceId: string | null;
+      providerMetadata: Prisma.JsonValue | null;
+    },
     amountRefunded: string,
   ): Promise<void> {
     await this.prisma.payment.update({
-      where: { id: paymentId },
+      where: { id: payment.id },
       data: {
+        status: PaymentStatus.REFUNDED,
         providerMetadata: this.buildRefundedMetadata(
-          existingMetadata,
+          payment.providerMetadata,
           amountRefunded,
         ),
       },
     });
+    if (payment.invoiceId) {
+      await syncInvoicePaymentFields(
+        this.prisma,
+        businessId,
+        payment.invoiceId,
+      );
+    }
   }
 
   private buildRefundedMetadata(
@@ -414,9 +526,13 @@ export class PaymentsService {
   }
 
   private isPaymentRefunded(payment: {
+    status?: PaymentStatus;
     stripeRefundId: string | null;
     providerMetadata: Prisma.JsonValue | null;
   }): boolean {
+    if (payment.status === PaymentStatus.REFUNDED) {
+      return true;
+    }
     if (payment.stripeRefundId) {
       return true;
     }
@@ -435,18 +551,15 @@ export class PaymentsService {
     businessId: string,
     paymentIntentId: string,
   ): Promise<void> {
-    const integration =
-      await this.businessIntegrationRepository.findByBusinessAndKey(
+    const chargeCtx =
+      await this.stripeConnectContext.resolveTenantStripeChargeContext(
         businessId,
-        'stripe',
       );
-    const config = assertStripeReadyForPayments(integration);
-    const stripe = this.stripeApiService.getClient();
 
     try {
-      await stripe.refunds.create(
+      await chargeCtx.stripe.refunds.create(
         { payment_intent: paymentIntentId },
-        { stripeAccount: config.stripeAccountId },
+        { stripeAccount: chargeCtx.stripeAccountId },
       );
     } catch (error) {
       this.stripeApiService.logStripeError('refund.create', error);
@@ -471,11 +584,20 @@ export class PaymentsService {
     }
 
     const payments = await tx.payment.findMany({
-      where: { businessId, invoiceId, deletedAt: null },
+      where: {
+        businessId,
+        invoiceId,
+        deletedAt: null,
+        status: PaymentStatus.SUCCEEDED,
+        paidAt: { not: null },
+      },
       select: { amount: true, paidAt: true },
     });
 
-    const sync = computeInvoicePaymentSyncFields(invoice, payments);
+    const sync = computeInvoicePaymentSyncFields(
+      invoice,
+      payments.map((p) => ({ amount: p.amount, paidAt: p.paidAt! })),
+    );
 
     await tx.invoice.update({
       where: { id: invoiceId },
@@ -553,6 +675,8 @@ export class PaymentsService {
         lastName: string | null;
         companyName: string | null;
         email: string | null;
+        phoneCountryCode?: string | null;
+        phoneNumber?: string | null;
       };
       invoice: { id: string; invoiceNumber: string };
     },
@@ -560,26 +684,76 @@ export class PaymentsService {
     paidAt: Date,
   ): Promise<void> {
     const contactEmail = payment.contact.email?.trim();
-    if (!contactEmail) {
+    const contactPhone = formatPhone(
+      payment.contact.phoneCountryCode,
+      payment.contact.phoneNumber,
+    );
+    if (!contactEmail && !contactPhone) {
       return;
     }
 
     const business = await this.businessRepository.findById(businessId);
 
-    await this.emailNotificationService.enqueueTransactionalEmail({
+    const invoiceDetails = await this.prisma.invoice.findFirst({
+      where: {
+        id: payment.invoice.id,
+        businessId,
+        deletedAt: null,
+      },
+      include: {
+        items: {
+          include: {
+            staffUser: {
+              select: { firstName: true, lastName: true, email: true },
+            },
+          },
+        },
+      },
+    });
+
+    const advancedSettings =
+      await this.checkoutAdvancedSettings.ensureRow(businessId);
+    const receiptExtras = buildPaidReceiptEmailExtras(
+      advancedSettings,
+      (invoiceDetails?.items ?? []).map((item) => ({
+        title: item.title,
+        staff: item.staffUser
+          ? {
+              label:
+                [item.staffUser.firstName, item.staffUser.lastName]
+                  .filter(Boolean)
+                  .join(' ')
+                  .trim() ||
+                item.staffUser.email ||
+                'Staff',
+            }
+          : null,
+      })),
+      (invoiceDetails?.metadata as Record<string, unknown> | null) ?? null,
+    );
+
+    const tipLine = receiptExtras['payment.tip']
+      ? `<p><strong>Tip:</strong> ${receiptExtras['payment.tip']}</p>`
+      : '';
+
+    await this.notificationDispatch.dispatch({
       businessId,
-      emailType: 'invoice.paid_receipt',
+      notificationKey: 'invoice.paid_receipt',
       toEmail: contactEmail,
+      toPhone: contactPhone,
       contactId: payment.contact.id,
       entityType: 'Payment',
       entityId: payment.id,
       idempotencyKey: `invoice-paid-manual-${payment.id}`,
+      missingRecipient: 'skip',
       variables: {
         'business.name': business?.name ?? 'Business',
         'contact.name': formatContactName(payment.contact),
         'invoice.number': payment.invoice.invoiceNumber,
         'payment.amount': formatMoney(amount),
         'payment.date': DateTime.fromJSDate(paidAt).toFormat('LLL d, yyyy'),
+        'payment.tip': tipLine,
+        ...receiptExtras,
       },
     });
   }

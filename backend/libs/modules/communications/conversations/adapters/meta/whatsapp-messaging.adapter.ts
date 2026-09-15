@@ -11,6 +11,7 @@ import {
   SendChannelMessageResult,
 } from '../conversation-channel-adapter.interface';
 import { toMetaOutboundAttachments } from './meta-attachment.util';
+import { buildWhatsAppTemplateSendPayload } from '@app/modules/integrations/whatsapp/utils/whatsapp-template-send.util';
 
 @Injectable()
 export class WhatsAppMessagingAdapter implements ConversationChannelAdapter {
@@ -31,10 +32,11 @@ export class WhatsAppMessagingAdapter implements ConversationChannelAdapter {
   async sendMessage(
     params: SendChannelMessageParams,
   ): Promise<SendChannelMessageResult> {
-    const resource = await this.integrationResourceRepository.findByIdAndBusiness(
-      params.resourceId,
-      params.businessId,
-    );
+    const resource =
+      await this.integrationResourceRepository.findByIdAndBusiness(
+        params.resourceId,
+        params.businessId,
+      );
 
     if (!resource || resource.providerKey !== this.getProviderKey()) {
       throw new AppException(
@@ -59,6 +61,24 @@ export class WhatsAppMessagingAdapter implements ConversationChannelAdapter {
     }
 
     const attachments = toMetaOutboundAttachments(params.attachments);
+
+    if (params.template) {
+      const templatePayload = buildWhatsAppTemplateSendPayload(params.template);
+      const result = await this.metaApiClient.sendWhatsAppTemplate(
+        resource.externalId,
+        accessToken,
+        params.externalRecipientId,
+        templatePayload,
+      );
+
+      return {
+        externalMessageId: result.messageId || null,
+        metadata: {
+          phoneNumberId: resource.externalId,
+          whatsappTemplate: params.template,
+        },
+      };
+    }
 
     const result = await this.metaApiClient.sendWhatsAppMessage(
       resource.externalId,

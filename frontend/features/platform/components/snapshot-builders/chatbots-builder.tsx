@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,7 +104,6 @@ export function ChatbotsBuilder() {
         </div>
         {canManage ? (
           <Button type="button" size="sm" onClick={addChatbot}>
-            <Plus className="mr-2 size-4" />
             Add chatbot
           </Button>
         ) : null}
@@ -194,7 +193,6 @@ export function ChatbotsBuilder() {
                   size="sm"
                   onClick={() => addRule(bot.sourceKey)}
                 >
-                  <Plus className="mr-2 size-4" />
                   Add rule
                 </Button>
               ) : null}

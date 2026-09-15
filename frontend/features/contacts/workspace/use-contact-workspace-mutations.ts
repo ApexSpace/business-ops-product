@@ -16,6 +16,7 @@ import {
   invalidateContactDetail,
   invalidateContactLists,
   invalidateContactPicker,
+  invalidateContactWorkspace,
   invalidateLeadLists,
   invalidateNoteLists,
   invalidatePipelines,
@@ -29,6 +30,7 @@ export function useContactWorkspaceMutations(contactId: string) {
 
   const refreshContactData = () => {
     void invalidateContactDetail(queryClient, contactId);
+    void invalidateContactWorkspace(queryClient, contactId);
     void invalidateLeadLists(queryClient);
     void invalidateWorkItemLists(queryClient);
     void invalidateNoteLists(queryClient);
@@ -57,7 +59,7 @@ export function useContactWorkspaceMutations(contactId: string) {
   });
 
   const deleteWorkItemMutation = useMutation({
-    mutationFn: deleteWorkItem,
+    mutationFn: (id: string) => deleteWorkItem(id),
     onSuccess: () => {
       toast.success("Work item deleted");
       refreshContactData();

@@ -100,6 +100,20 @@ export function canManageBusinessSettings(
   return hasBusinessAdminRole(jwt?.businessRole);
 }
 
+/** Time cards management (add/edit/delete). */
+export function canManageTimeCards(
+  jwt?: JwtAccessPayload | null,
+  contexts?: AuthContextItem[],
+): boolean {
+  if (hasPlatformBusinessAdminAccess(jwt, contexts)) return true;
+  return hasBusinessAdminRole(jwt?.businessRole);
+}
+
+/** Time clock kiosk page — any active business member. */
+export function canViewTimeClock(jwt?: JwtAccessPayload | null): boolean {
+  return jwt?.context === "business";
+}
+
 export function getActiveRoles(payload: JwtAccessPayload | null) {
   return {
     platformRole: payload?.platformRole,

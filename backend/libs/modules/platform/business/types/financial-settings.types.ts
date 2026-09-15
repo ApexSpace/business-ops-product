@@ -34,6 +34,11 @@ export interface EstimateSettingsConfig {
   showBusinessAddress: boolean;
 }
 
+export interface CheckoutSettingsConfig {
+  prefix: string;
+  nextNumber: number;
+}
+
 export interface TaxesAndCurrencySettings {
   currencyCode: string;
   currencySymbol: string;
@@ -45,6 +50,7 @@ export interface BusinessFinancialSettings {
   businessInformation: BusinessInformationSettings;
   invoice: InvoiceSettingsConfig;
   estimate: EstimateSettingsConfig;
+  checkout: CheckoutSettingsConfig;
   taxesAndCurrency: TaxesAndCurrencySettings;
 }
 
@@ -84,6 +90,11 @@ export const DEFAULT_ESTIMATE_SETTINGS: EstimateSettingsConfig = {
   showBusinessAddress: true,
 };
 
+export const DEFAULT_CHECKOUT_SETTINGS: CheckoutSettingsConfig = {
+  prefix: 'SALE',
+  nextNumber: 1,
+};
+
 export const DEFAULT_TAXES_AND_CURRENCY: TaxesAndCurrencySettings = {
   currencyCode: 'USD',
   currencySymbol: '$',
@@ -95,5 +106,6 @@ export const DEFAULT_FINANCIAL_SETTINGS: BusinessFinancialSettings = {
   businessInformation: DEFAULT_BUSINESS_INFORMATION,
   invoice: DEFAULT_INVOICE_SETTINGS,
   estimate: DEFAULT_ESTIMATE_SETTINGS,
+  checkout: DEFAULT_CHECKOUT_SETTINGS,
   taxesAndCurrency: DEFAULT_TAXES_AND_CURRENCY,
 };

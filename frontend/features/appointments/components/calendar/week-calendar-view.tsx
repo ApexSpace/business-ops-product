@@ -1,19 +1,38 @@
 "use client";
 
+import { useRef } from "react";
 import type { Appointment } from "@/features/appointments/schemas/appointment-profile";
 import type { Calendar } from "@/features/calendars/schemas/calendar-profile";
+import { CalendarCurrentTimeIndicator } from "@/features/appointments/components/calendar/calendar-current-time-indicator";
+import { CalendarDayColumnHeader } from "@/features/appointments/components/calendar/calendar-day-column-header";
 import {
-  GRID_HEIGHT,
   TimeGridColumn,
   TimeGridGutter,
+  useTimeGridHeight,
 } from "@/features/appointments/components/calendar/time-grid-shared";
+import { useCalendarCurrentTimeTop } from "@/features/appointments/hooks/use-calendar-current-time";
+import { useScrollTimeGridToNow } from "@/features/appointments/hooks/use-scroll-time-grid-to-now";
+import { getMobileWeekDateKeys } from "@/features/calendar-display-settings/utils/calendar-display-runtime.util";
+import type { WeekStartsOn } from "@/features/calendar-display-settings/api/calendar-display-settings.api";
 import {
-  formatDayMonthForDateKey,
   formatShortWeekdayForDateKey,
   getWeekDateKeysInTimezone,
   isTodayDateKey,
+  parseDateKeyInTimezone,
 } from "@/features/calendars/utils/timezone";
 import { CALENDAR_GRID } from "@/features/calendars/utils/calendar-grid-styles";
+import { calendarTimeGridLayout } from "@/features/calendars/utils/calendar-time-grid-layout";
+import { LoadingState } from "@/components/data-display/loading-state";
+import {
+  CALENDAR_FIGMA_DAY_HEADER_HEIGHT_PX,
+  CALENDAR_FIGMA_TIME_GUTTER_PX,
+} from "@/features/calendars/styles/calendar-figma";
+import {
+  MOBILE_CAL_COL_WIDTH_PX,
+  MOBILE_CAL_TIME_GUTTER_PX,
+  MOBILE_CAL_WEEK_VISIBLE_DAYS,
+} from "@/features/appointments/styles/mobile-calendar-tokens";
+import type { BusinessHoursSlot } from "@/features/business-hours/types";
 import { cn } from "@/lib/utils";
 
 interface WeekCalendarViewProps {
@@ -23,8 +42,30 @@ interface WeekCalendarViewProps {
   businessTimezone?: string | null;
   appointments: Appointment[];
   isLoading?: boolean;
+  className?: string;
+  showBufferOnCalendar?: boolean;
+  bufferTimeEnabled?: boolean;
   onAppointmentClick: (appointment: Appointment) => void;
-  onSlotClick: (dateKey: string, hour: number, minute: number) => void;
+  onAppointmentMoveStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  onAppointmentResizeStart?: (
+    appointment: Appointment,
+    event: React.PointerEvent,
+  ) => void;
+  draggingAppointmentId?: string | null;
+  businessHoursSlots?: BusinessHoursSlot[];
+  weekStaffHoursSlots?: BusinessHoursSlot[] | null;
+  onSlotClick: (
+    dateKey: string,
+    hour: number,
+    minute: number,
+    assignedToId?: string,
+  ) => void;
+  /** Figma phone week — Mon–Wed columns only. */
+  density?: "desktop" | "mobile";
+  weekStartsOn?: WeekStartsOn;
 }
 
 export function WeekCalendarView({
@@ -34,56 +75,111 @@ export function WeekCalendarView({
   businessTimezone,
   appointments,
   isLoading,
+  className,
+  showBufferOnCalendar,
+  bufferTimeEnabled,
   onAppointmentClick,
+  onAppointmentMoveStart,
+  onAppointmentResizeStart,
+  draggingAppointmentId,
+  businessHoursSlots,
+  weekStaffHoursSlots,
   onSlotClick,
+  density = "desktop",
+  weekStartsOn = "SUNDAY",
 }: WeekCalendarViewProps) {
-  const weekDateKeys = getWeekDateKeysInTimezone(anchorDateKey, timezone);
+  const isMobile = density === "mobile";
+  const gridHeight = useTimeGridHeight();
+  const allWeekKeys = getWeekDateKeysInTimezone(
+    anchorDateKey,
+    timezone,
+    weekStartsOn,
+  );
+  const weekDateKeys = isMobile
+    ? getMobileWeekDateKeys(
+        allWeekKeys,
+        weekStartsOn,
+        MOBILE_CAL_WEEK_VISIBLE_DAYS,
+      )
+    : allWeekKeys;
+  const currentTimeTop = useCalendarCurrentTimeTop(timezone, weekDateKeys);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const stickyHeaderHeight = CALENDAR_FIGMA_DAY_HEADER_HEIGHT_PX;
+  useScrollTimeGridToNow(scrollRef, {
+    currentTimeTopPx: currentTimeTop,
+    stickyHeaderHeight,
+    enabled: !isLoading,
+    resetKey: `${density}:${weekDateKeys.join(",")}`,
+  });
+  const timeGutterPx = isMobile
+    ? MOBILE_CAL_TIME_GUTTER_PX
+    : CALENDAR_FIGMA_TIME_GUTTER_PX;
+  const columnCount = weekDateKeys.length;
+  const { gridTemplateColumns, frameStyle } = calendarTimeGridLayout({
+    gutterPx: timeGutterPx,
+    columnCount,
+    columnMinPx: MOBILE_CAL_COL_WIDTH_PX,
+    mode: isMobile ? "fixed" : "fluid",
+  });
 
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl bg-card shadow-elevation-xs",
+        "flex h-full min-h-0 flex-col bg-white",
         CALENDAR_GRID.card,
+        className,
       )}
     >
-      <div className="overflow-x-auto">
-        <div className="min-w-[640px]">
+      {/* Single scroll host — avoids stacked horizontal scrollbars */}
+      <div
+        ref={scrollRef}
+        className={cn(
+          "min-h-0 flex-1 overscroll-contain bg-white",
+          isMobile ? "overflow-auto" : "overflow-x-hidden overflow-y-auto",
+        )}
+      >
+        <div className="min-w-0 bg-white" style={frameStyle}>
           <div
-            className={cn("grid bg-muted/20", CALENDAR_GRID.headerRow)}
-            style={{ gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))` }}
+            className={cn(
+              "sticky top-0 z-30 grid w-full bg-white",
+              CALENDAR_GRID.headerRow,
+            )}
+            style={{ gridTemplateColumns }}
           >
-            <div />
+            <div
+              className={CALENDAR_GRID.dayHeaderCorner}
+              style={{ width: timeGutterPx }}
+              aria-hidden
+            />
             {weekDateKeys.map((dayKey) => (
-              <div
+              <CalendarDayColumnHeader
                 key={dayKey}
-                className={cn(
-                  CALENDAR_GRID.column,
-                  "px-2 py-2 text-center text-sm",
-                  isTodayDateKey(dayKey, timezone) &&
-                    "bg-primary/[0.06] font-semibold text-primary",
-                )}
-              >
-                <span className="block text-xs text-muted-foreground">
-                  {formatShortWeekdayForDateKey(dayKey, timezone)}
-                </span>
-                {formatDayMonthForDateKey(dayKey, timezone)}
-              </div>
+                weekday={formatShortWeekdayForDateKey(dayKey, timezone)}
+                dayNumber={parseDateKeyInTimezone(dayKey, timezone).day}
+                isToday={isTodayDateKey(dayKey, timezone)}
+              />
             ))}
           </div>
-          <div className="max-h-[min(70vh,720px)] overflow-auto">
-            {isLoading ? (
-              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-                Loading appointments…
-              </div>
-            ) : (
+          {isLoading ? (
+            <div className="flex h-48 items-center justify-center">
+              <LoadingState variant="inline" label="Loading appointments…" />
+            </div>
+          ) : (
+            <div
+              className="relative bg-white"
+              style={{ minHeight: gridHeight }}
+            >
+              {currentTimeTop !== null ? (
+                <CalendarCurrentTimeIndicator topPx={currentTimeTop} />
+              ) : null}
               <div
-                className="grid"
+                className="grid w-full bg-white"
                 style={{
-                  gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))`,
-                  minHeight: GRID_HEIGHT,
+                  gridTemplateColumns,
+                  minHeight: gridHeight,
                 }}
               >
-                <TimeGridGutter />
+                <TimeGridGutter className={isMobile ? "w-[52px]" : undefined} />
                 {weekDateKeys.map((dayKey) => (
                   <TimeGridColumn
                     key={dayKey}
@@ -93,24 +189,21 @@ export function WeekCalendarView({
                     calendars={calendars}
                     businessTimezone={businessTimezone}
                     onAppointmentClick={onAppointmentClick}
+                    onAppointmentMoveStart={onAppointmentMoveStart}
+                    onAppointmentResizeStart={onAppointmentResizeStart}
+                    draggingAppointmentId={draggingAppointmentId}
+                    businessHoursSlots={businessHoursSlots}
+                    staffHoursSlots={weekStaffHoursSlots}
+                    showBufferOnCalendar={showBufferOnCalendar}
+                    bufferTimeEnabled={bufferTimeEnabled}
                     onSlotClick={onSlotClick}
                   />
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
-      {!isLoading && appointments.length === 0 ? (
-        <p
-          className={cn(
-            "px-4 py-3 text-center text-sm text-muted-foreground",
-            CALENDAR_GRID.footer,
-          )}
-        >
-          No appointments this week. Click a time slot to create one.
-        </p>
-      ) : null}
     </div>
   );
 }

@@ -168,6 +168,19 @@ async function main(): Promise<void> {
       },
     });
 
+    await prisma.integrationResource.updateMany({
+      where: {
+        businessIntegrationId: integration.id,
+        type: IntegrationResourceType.PHONE_NUMBER,
+        id: { not: resource.id },
+      },
+      data: {
+        isDefault: false,
+        isSelected: false,
+        status: IntegrationResourceStatus.INACTIVE,
+      },
+    });
+
     console.log('WhatsApp dev bootstrap complete.');
     console.log(`  businessId: ${businessId}`);
     if (businessName) {

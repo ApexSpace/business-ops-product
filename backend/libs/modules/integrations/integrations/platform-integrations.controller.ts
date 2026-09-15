@@ -21,28 +21,37 @@ import {
   ConnectIntegrationDto,
   CreateIntegrationProviderDto,
   IntegrationProviderResponseDto,
-  PlatformIntegrationProviderWithStatusDto,
+  IntegrationProviderWithStatusDto,
   PlatformIntegrationResponseDto,
   UpdateIntegrationDto,
   UpdateIntegrationProviderDto,
 } from './dto/integration.dto';
 import { IntegrationsService } from './integrations.service';
+import { InternalBusinessService } from '@app/modules/platform/business/services/internal-business.service';
 
 @ApiTags('platform')
 @ApiBearerAuth()
 @Controller('platform/integrations')
 @UseGuards(PlatformRolesGuard)
 export class PlatformIntegrationsController {
-  constructor(private readonly integrationsService: IntegrationsService) {}
+  constructor(
+    private readonly integrationsService: IntegrationsService,
+    private readonly internalBusiness: InternalBusinessService,
+  ) {}
 
+  /**
+   * Same shape as business `GET integrations/providers`: business-level
+   * providers for the INTERNAL ops workspace, plus platform-only providers.
+   */
   @Get('providers')
   @PlatformRoles(
     PlatformMemberRole.SUPER_ADMIN,
     PlatformMemberRole.PLATFORM_ADMIN,
     PlatformMemberRole.SUPPORT,
   )
-  listProviders(): Promise<PlatformIntegrationProviderWithStatusDto[]> {
-    return this.integrationsService.listPlatformProviders();
+  async listProviders(): Promise<IntegrationProviderWithStatusDto[]> {
+    const businessId = await this.internalBusiness.getId();
+    return this.integrationsService.listOpsWorkspaceProviders(businessId);
   }
 
   @Post('providers')

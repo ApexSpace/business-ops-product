@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/forms/searchable-select";
@@ -61,7 +61,8 @@ function toSortableStages(
 
 export function CrmBuilder() {
   const { assets, updateAssets, canManage } = useSnapshotEditor();
-  const crm = assets?.crm ?? { pipelines: [], services: [], tags: [] };
+  const crm = assets?.crm ?? { pipelines: [], services: [], tags: [],
+};
   const pipelines = crm.pipelines ?? [];
 
   const updateCrm = (patch: Partial<typeof crm>) => {
@@ -131,7 +132,8 @@ export function CrmBuilder() {
     const index = findStageIndex(stages, pipelineKey, stageKey);
     if (index < 0) return;
     const next = [...stages];
-    next[index] = { ...next[index], ...patch };
+    next[index] = { ...next[index], ...patch,
+};
     commitStages(pipelineKey, next);
   };
 
@@ -169,7 +171,6 @@ export function CrmBuilder() {
         </div>
         {canManage ? (
           <Button type="button" size="sm" onClick={addPipeline}>
-            <Plus className="mr-2 size-4" />
             Add pipeline
           </Button>
         ) : null}
@@ -205,7 +206,6 @@ export function CrmBuilder() {
                           className="shrink-0"
                           onClick={() => addStage(pipeline.sourceKey)}
                         >
-                          <Plus className="mr-2 size-4" />
                           Add stage
                         </Button>
                         <Button

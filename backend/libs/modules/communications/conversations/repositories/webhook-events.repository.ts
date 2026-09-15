@@ -43,10 +43,7 @@ export class WebhookEventsRepository {
     });
   }
 
-  resetForReprocessing(
-    id: string,
-    payload: Prisma.InputJsonValue,
-  ) {
+  resetForReprocessing(id: string, payload: Prisma.InputJsonValue) {
     return this.prisma.webhookEvent.update({
       where: { id },
       data: {

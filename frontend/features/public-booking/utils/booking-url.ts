@@ -7,9 +7,9 @@ export function resolvePublicBookingUrl(slug: string): string {
 
 export function resolvePublicEmbedUrl(slug: string): string {
   if (typeof window !== "undefined") {
-    return `${window.location.origin}/embed/calendar/${slug}`;
+    return `${window.location.origin}/embed/booking/${slug}`;
   }
-  return `/embed/calendar/${slug}`;
+  return `/embed/booking/${slug}`;
 }
 
 export function buildEmbedCode(slug: string): string {

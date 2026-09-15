@@ -1,0 +1,291 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import type { FieldType } from "@/features/forms/types";
+import { getFieldTypeLabel } from "@/features/forms/utils/field-defaults.util";
+import {
+  findColumnFieldContext,
+  parseColumnDropZoneId,
+  resolveColumnAddContext,
+} from "@/features/forms/utils/column-fields.util";
+import type { FormBuilderStateApi } from "@/features/forms/hooks/use-form-builder-state";
+import { BuilderTopbar } from "@/features/forms/components/builder/builder-topbar";
+import {
+  CANVAS_APPEND_ID,
+  CANVAS_EMPTY_ID,
+  FormCanvas,
+} from "@/features/forms/components/builder/form-canvas";
+import { FieldSettingsPanel } from "@/features/forms/components/builder/field-settings-panel";
+import { FormShareDialog } from "@/features/forms/components/form-share-dialog";
+import { FormPreviewModal } from "@/features/forms/components/builder/form-preview-modal";
+import { FORMS_BUILDER_SHELL_GRID_CLASS } from "@/lib/design/forms-builder-tokens";
+
+interface FormBuilderShellProps {
+  builder: FormBuilderStateApi;
+  shareOpen: boolean;
+  onShareOpenChange: (open: boolean) => void;
+  onSave: () => void;
+  onPublish: () => void;
+  onMoveToDraft: () => void;
+  onDuplicate: () => void;
+  onArchive: () => void;
+  onExport: () => void;
+  onDelete: () => void;
+}
+
+export function FormBuilderShell({
+  builder,
+  shareOpen,
+  onShareOpenChange,
+  onSave,
+  onPublish,
+  onMoveToDraft,
+  onDuplicate,
+  onArchive,
+  onExport,
+  onDelete,
+}: FormBuilderShellProps) {
+  const [activePaletteType, setActivePaletteType] = useState<FieldType | null>(null);
+  const [targetColumnIndex, setTargetColumnIndex] = useState(0);
+  const canvasColumnRef = useRef<HTMLDivElement>(null);
+  const settingsPanelRef = useRef<HTMLDivElement>(null);
+
+  const columnAddContext = useMemo(
+    () =>
+      resolveColumnAddContext(
+        builder.definition.fields,
+        builder.selectedFieldId,
+        targetColumnIndex,
+      ),
+    [builder.definition.fields, builder.selectedFieldId, targetColumnIndex],
+  );
+
+  useEffect(() => {
+    if (!builder.selectedFieldId) return;
+    const context = findColumnFieldContext(
+      builder.definition.fields,
+      builder.selectedFieldId,
+    );
+    if (context && context.columnsField.id !== builder.selectedFieldId) {
+      setTargetColumnIndex(context.columnIndex);
+    }
+  }, [builder.selectedFieldId, builder.definition.fields]);
+
+  const handleDeselectField = () => {
+    builder.setSelectedFieldId(null);
+  };
+
+  const handleBuilderPointerDown = (event: React.PointerEvent) => {
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+    if (canvasColumnRef.current?.contains(target)) return;
+    if (settingsPanelRef.current?.contains(target)) return;
+    if (
+      target instanceof Element &&
+      target.closest(
+        '[data-slot="dropdown-menu-content"], [data-slot="select-content"], [data-slot="popover-content"]',
+      )
+    ) {
+      return;
+    }
+    handleDeselectField();
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const data = event.active.data.current;
+    if (data?.source === "palette") {
+      setActivePaletteType(data.type as FieldType);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActivePaletteType(null);
+    if (!over) return;
+
+    const activeData = active.data.current;
+
+    if (activeData?.source === "palette") {
+      const type = activeData.type as FieldType;
+      const overId = String(over.id);
+      const columnDrop = parseColumnDropZoneId(overId);
+
+      if (columnDrop) {
+        builder.addFieldToColumn(
+          columnDrop.columnsFieldId,
+          columnDrop.columnIndex,
+          type,
+        );
+        setTargetColumnIndex(columnDrop.columnIndex);
+        return;
+      }
+
+      if (overId === CANVAS_EMPTY_ID || overId === CANVAS_APPEND_ID) {
+        if (columnAddContext) {
+          builder.addFieldToColumn(
+            columnAddContext.columnsFieldId,
+            columnAddContext.targetColumnIndex,
+            type,
+          );
+          return;
+        }
+        builder.addField(type);
+        return;
+      }
+
+      const index = builder.definition.fields.findIndex(
+        (field) => field.id === overId,
+      );
+      if (columnAddContext) {
+        builder.addFieldToColumn(
+          columnAddContext.columnsFieldId,
+          columnAddContext.targetColumnIndex,
+          type,
+        );
+        return;
+      }
+      builder.addField(type, index >= 0 ? index : undefined);
+      return;
+    }
+
+    if (activeData?.source === "canvas" && active.id !== over.id) {
+      const overId = String(over.id);
+      if (overId === CANVAS_APPEND_ID) {
+        const activeId = String(active.id);
+        const fields = builder.definition.fields;
+        const oldIndex = fields.findIndex((field) => field.id === activeId);
+        if (oldIndex >= 0 && oldIndex < fields.length - 1) {
+          const lastField = fields[fields.length - 1];
+          builder.reorderFields(activeId, lastField.id);
+        }
+        return;
+      }
+      builder.reorderFields(String(active.id), overId);
+    }
+  };
+
+  const handleDragCancel = () => {
+    setActivePaletteType(null);
+  };
+
+  return (
+    <div
+      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+      onPointerDown={handleBuilderPointerDown}
+    >
+      <div className="shrink-0">
+        <BuilderTopbar
+          formId={builder.formId}
+          name={builder.name}
+          status={builder.status}
+          isDirty={builder.isDirty}
+          savedAt={builder.savedAt}
+          onNameChange={(value) => {
+            builder.setName(value);
+            builder.markDirty();
+          }}
+          onPreview={() => builder.setPreviewOpen(true)}
+          onPublish={onPublish}
+          onMoveToDraft={onMoveToDraft}
+          onDuplicate={onDuplicate}
+          onArchive={onArchive}
+          onExport={onExport}
+          onShare={() => onShareOpenChange(true)}
+          onDelete={onDelete}
+        />
+      </div>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className={FORMS_BUILDER_SHELL_GRID_CLASS}>
+            <div ref={canvasColumnRef} className="min-h-0">
+              <FormCanvas
+                definition={builder.definition}
+                selectedFieldId={builder.selectedFieldId}
+                isDraggingFromPalette={activePaletteType != null}
+                activeColumnTargetIndex={columnAddContext?.targetColumnIndex ?? null}
+                onSelectField={builder.setSelectedFieldId}
+                onDeselectField={handleDeselectField}
+                onDuplicateField={builder.duplicateField}
+                onRemoveField={builder.removeField}
+                onMoveField={builder.moveField}
+                onAddField={builder.addField}
+                onAddFieldToColumn={builder.addFieldToColumn}
+                className="min-h-0"
+              />
+            </div>
+            <div ref={settingsPanelRef} className="min-h-0">
+              <FieldSettingsPanel
+                selectedField={builder.selectedField}
+                fields={builder.definition.fields}
+                settings={builder.definition.settings}
+                formId={builder.formId}
+                formStatus={builder.status}
+                formName={builder.name}
+                onOpenShareDialog={() => onShareOpenChange(true)}
+                onUpdateField={builder.updateField}
+                onRemoveField={builder.removeField}
+                onUpdateSettings={builder.updateSettings}
+                onClose={handleDeselectField}
+                onSave={onSave}
+                onDiscard={builder.discardChanges}
+                isDirty={builder.isDirty}
+                isSaving={builder.isSaving}
+                className="min-h-0"
+              />
+            </div>
+          </div>
+        </div>
+
+        <DragOverlay>
+          {activePaletteType ? (
+            <div className="rounded-md border bg-card px-3 py-2 text-sm shadow-lg">
+              {getFieldTypeLabel(activePaletteType)}
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      <FormPreviewModal
+        open={builder.previewOpen}
+        onOpenChange={builder.setPreviewOpen}
+        definition={builder.definition}
+        previewDevice={builder.previewDevice}
+        onPreviewDeviceChange={builder.setPreviewDevice}
+      />
+
+      <FormShareDialog
+        open={shareOpen}
+        onOpenChange={onShareOpenChange}
+        formId={builder.formId}
+        status={builder.status}
+        formName={builder.name}
+      />
+    </div>
+  );
+}

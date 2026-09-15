@@ -2,14 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, Loader2, Plus, User } from "lucide-react";
+import { Check, Loader2, Plus, User } from "lucide-react";
 import { QuickCreateContactDialog } from "@/features/contacts/components/quick-create-contact-dialog";
-import { Input } from "@/components/ui/input";
+import { DrawerPlusSquareButton } from "@/components/drawer/drawer-icons";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Combobox,
+  ComboboxFieldInput,
+  COMBOBOX_EMPTY_CLASS,
+  COMBOBOX_ITEM_CLASS,
+  COMBOBOX_STATUS_CLASS,
+  ComboboxPopup,
+} from "@/components/ui/combobox";
+import {
+  APPOINTMENT_DRAWER_FIELD_CLASS,
+} from "@/features/appointments/styles/appointment-drawer-tokens";
+import { CONTROL_START_SLOT_CLASS } from "@/lib/ui/control-styles";
 import { cn } from "@/lib/utils";
 import {
   formatContactPickerLine,
@@ -21,7 +28,7 @@ import {
   invalidateContactPicker,
 } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
-import type { Contact, PaginatedResult } from "@/features/contacts/types";
+import type { Contact } from "@/features/contacts/types";
 import { getContact, listContacts } from "@/features/contacts/api/contacts.api";
 
 export interface ContactPickerSelection {
@@ -41,6 +48,13 @@ export interface ContactPickerProps {
   locked?: boolean;
   lockedContact?: ContactPickerSelection;
   id?: string;
+  triggerClassName?: string;
+  /**
+   * `drawer` — hide User / ChevronsUpDown; purple plus only (appointment sidebar).
+   */
+  variant?: "default" | "drawer";
+  /** Contacts API path prefix (business `contacts` or `platform/contacts`). */
+  apiBase?: string;
 }
 
 function contactToSelection(contact: Contact): ContactPickerSelection {
@@ -52,44 +66,6 @@ function contactToSelection(contact: Contact): ContactPickerSelection {
   };
 }
 
-function ContactPickerOption({
-  contact,
-  selected,
-  onSelect,
-}: {
-  contact: ContactPickerSelection;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const { primary, secondary } = formatContactPickerLine(contact);
-
-  return (
-    <button
-      type="button"
-      role="option"
-      aria-selected={selected}
-      className={cn(
-        "flex w-full items-start gap-2 rounded-sm px-2 py-2 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-        selected && "bg-accent/60",
-      )}
-      onClick={onSelect}
-    >
-      <User className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 flex-1">
-        <span className="block font-medium leading-snug">{primary}</span>
-        {secondary ? (
-          <span className="block truncate text-xs text-muted-foreground">
-            {secondary}
-          </span>
-        ) : null}
-      </span>
-      {selected ? (
-        <Check className="size-4 shrink-0 text-primary" aria-hidden />
-      ) : null}
-    </button>
-  );
-}
-
 export function ContactPicker({
   value,
   onValueChange,
@@ -99,8 +75,12 @@ export function ContactPicker({
   locked = false,
   lockedContact,
   id,
+  triggerClassName,
+  variant = "default",
+  apiBase = "contacts",
 }: ContactPickerProps) {
   const queryClient = useQueryClient();
+  const isDrawer = variant === "drawer";
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -111,15 +91,18 @@ export function ContactPicker({
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const { data: searchResults, isFetching } = useQuery({
-    queryKey: queryKeys.contacts.search(debouncedSearch),
+    queryKey: queryKeys.contacts.search(debouncedSearch, apiBase),
     queryFn: () =>
-      listContacts({ page: 1, limit: 20, search: debouncedSearch || undefined }),
+      listContacts(
+        { page: 1, limit: 20, search: debouncedSearch || undefined },
+        apiBase,
+      ),
     enabled: open && !locked,
   });
 
   const { data: loadedContact } = useQuery({
-    queryKey: queryKeys.contacts.detail(value),
-    queryFn: () => getContact(value),
+    queryKey: queryKeys.contacts.detail(value, apiBase),
+    queryFn: () => getContact(value, apiBase),
     enabled: !!value && !selection && !lockedContact && !locked,
   });
 
@@ -140,6 +123,10 @@ export function ContactPicker({
   }, [value]);
 
   const contacts = searchResults?.items ?? [];
+  const contactItems = useMemo(
+    () => contacts.map(contactToSelection),
+    [contacts],
+  );
 
   const createPrefill = useMemo(
     () => parseContactSearchQuery(search),
@@ -164,8 +151,8 @@ export function ContactPicker({
     setSelection(picked);
     onValueChange(contact.id);
     onContactSelect?.(contact);
-    void invalidateContactPicker(queryClient);
-    void invalidateContactLists(queryClient);
+    void invalidateContactPicker(queryClient, apiBase);
+    void invalidateContactLists(queryClient, apiBase);
     setOpen(false);
     setSearch("");
   };
@@ -175,7 +162,10 @@ export function ContactPicker({
     return (
       <div
         id={id}
-        className="flex h-[var(--control-height)] w-full items-center gap-2 rounded-md border border-input bg-muted/30 px-3 text-sm"
+        className={cn(
+          "flex h-11 w-full items-center gap-2.5 rounded-[10px] border-[1.5px] border-input bg-muted/30 px-3 text-[13.5px]",
+          triggerClassName,
+        )}
       >
         <User className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate">
@@ -188,92 +178,143 @@ export function ContactPicker({
     );
   }
 
+  const createButton =
+    !locked && !disabled ? (
+      isDrawer ? (
+        <DrawerPlusSquareButton
+          aria-label="Create new client"
+          stopPropagation
+          onClick={() => setCreateOpen(true)}
+        />
+      ) : (
+        <button
+          type="button"
+          aria-label="Create new client"
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-[4px] bg-[#7E3BED] text-white hover:bg-[#7135D5]"
+          onClick={() => setCreateOpen(true)}
+        >
+          <Plus className="size-3.5" strokeWidth={2.5} aria-hidden />
+        </button>
+      )
+    ) : null;
+
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          id={id}
+      <div className={cn("flex w-full min-w-0 items-center", !isDrawer && "gap-2")}>
+        <Combobox.Root
+          items={contactItems}
+          filteredItems={contactItems}
+          filter={null}
+          value={displaySelection}
+          onValueChange={(next) => {
+            if (!next) return;
+            handleSelect(next);
+            const full = contacts.find((contact) => contact.id === next.id);
+            if (full) onContactSelect?.(full);
+          }}
           disabled={disabled}
-          className={cn(
-            "flex h-[var(--control-height)] w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 text-sm font-normal shadow-none outline-none transition-[border-color,box-shadow] hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50",
-            !displaySelection && "text-muted-foreground",
-          )}
+          modal={false}
+          autoHighlight
+          autoComplete="off"
+          open={open}
+          onOpenChange={(next) => {
+            setOpen(next);
+            if (!next) setSearch("");
+          }}
+          onInputValueChange={(next) => {
+            setSearch(next);
+            if (!open) setOpen(true);
+          }}
+          itemToStringLabel={(item) =>
+            formatContactPickerLine(item).primary
+          }
+          itemToStringValue={(item) => item.id}
+          isItemEqualToValue={(left, right) => left.id === right.id}
         >
-          <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
-            <User className="size-4 shrink-0 opacity-60" />
-            <span className="truncate">
-              {displaySelection
-                ? formatContactPickerLine(displaySelection).primary
-                : placeholder}
-            </span>
-          </span>
-          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="w-[var(--anchor-width)] min-w-[min(100%,320px)] p-0"
-        >
-          <div className="border-b p-2">
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email, or phone…"
-              autoFocus
-              className="h-9"
+          <div className="relative w-full min-w-0 flex-1">
+            {!isDrawer ? (
+              <span className={CONTROL_START_SLOT_CLASS}>
+                <User className="size-4 opacity-60" />
+              </span>
+            ) : null}
+            <ComboboxFieldInput
+              id={id}
+              disabled={disabled}
+              placeholder={placeholder}
+              showIcon={!isDrawer}
+              endSlot={isDrawer ? createButton : undefined}
+              className={cn(
+                isDrawer
+                  ? cn(APPOINTMENT_DRAWER_FIELD_CLASS, "font-normal")
+                  : "pl-9",
+                triggerClassName,
+              )}
             />
           </div>
-          <div
-            className="max-h-60 overflow-y-auto p-1"
-            role="listbox"
-            aria-label="Contacts"
-          >
+          <ComboboxPopup>
             {isFetching ? (
-              <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Searching…
-              </div>
-            ) : contacts.length === 0 && !debouncedSearch ? (
-              <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-                Type to search contacts
-              </p>
-            ) : contacts.length === 0 ? (
-              <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-                No matching contacts
-              </p>
+              <Combobox.Status className={COMBOBOX_STATUS_CLASS}>
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  Searching…
+                </span>
+              </Combobox.Status>
             ) : (
-              contacts.map((contact) => {
-                const picked = contactToSelection(contact);
-                return (
-                  <ContactPickerOption
-                    key={contact.id}
-                    contact={picked}
-                    selected={value === contact.id}
-                    onSelect={() => {
-                      handleSelect(picked);
-                      onContactSelect?.(contact);
-                    }}
-                  />
-                );
-              })
+              <Combobox.Empty className={COMBOBOX_EMPTY_CLASS}>
+                {debouncedSearch
+                  ? "No matching contacts"
+                  : "Type to search contacts"}
+              </Combobox.Empty>
             )}
-          </div>
-          <div className="border-t p-1">
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm font-medium text-primary outline-none hover:bg-accent"
-              onClick={() => {
-                setCreateOpen(true);
-                setOpen(false);
+            <Combobox.List>
+              {(item: ContactPickerSelection) => {
+                const { primary, secondary } = formatContactPickerLine(item);
+                return (
+                  <Combobox.Item
+                    key={item.id}
+                    value={item}
+                    className={cn(COMBOBOX_ITEM_CLASS, "items-start pr-8")}
+                  >
+                    <User className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium leading-snug">
+                        {primary}
+                      </span>
+                      {secondary ? (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {secondary}
+                        </span>
+                      ) : null}
+                    </span>
+                    {value === item.id ? (
+                      <Check
+                        className="mt-0.5 size-4 shrink-0 text-primary"
+                        aria-hidden
+                      />
+                    ) : null}
+                  </Combobox.Item>
+                );
               }}
-            >
-              <Plus className="size-4 shrink-0" />
-              {search.trim()
-                ? `Create ${createLabel} as new contact`
-                : "Create new contact"}
-            </button>
-          </div>
-        </PopoverContent>
-      </Popover>
+            </Combobox.List>
+            <div className="border-t p-1">
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm font-medium text-primary outline-none hover:bg-accent"
+                onClick={() => {
+                  setCreateOpen(true);
+                  setOpen(false);
+                }}
+              >
+                <Plus className="size-4 shrink-0" />
+                {search.trim()
+                  ? `Create ${createLabel} as new contact`
+                  : "Create new contact"}
+              </button>
+            </div>
+          </ComboboxPopup>
+        </Combobox.Root>
+        {!isDrawer ? createButton : null}
+      </div>
 
       <QuickCreateContactDialog
         key={search.trim() || "new-contact"}
@@ -281,6 +322,7 @@ export function ContactPicker({
         onOpenChange={setCreateOpen}
         initialValues={createPrefill}
         createLabel={search.trim() ? search.trim() : undefined}
+        apiBase={apiBase}
         onCreated={handleCreated}
       />
     </>

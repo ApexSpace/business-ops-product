@@ -8,7 +8,15 @@ export function isLinkedInOAuthProviderKey(
   return providerKey === LINKEDIN_OAUTH_PROVIDER_KEY;
 }
 
-export const LINKEDIN_OAUTH_SCOPES = ['openid', 'profile', 'email'] as const;
+/** Identity + Community Management posting scopes (product approval may be required). */
+export const LINKEDIN_OAUTH_SCOPES = [
+  'openid',
+  'profile',
+  'email',
+  'w_organization_social',
+  'r_organization_social',
+  'rw_organization_admin',
+] as const;
 
 export const LINKEDIN_OAUTH_AUTHORIZE_URL =
   'https://www.linkedin.com/oauth/v2/authorization';

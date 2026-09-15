@@ -4,6 +4,7 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { StaffPermission } from '@app/common/decorators/staff-permission.decorator';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { IntegrationProviderWithStatusDto } from './dto/integration.dto';
 import { IntegrationsService } from './integrations.service';
@@ -12,6 +13,7 @@ import { IntegrationsService } from './integrations.service';
 @ApiBearerAuth()
 @Controller('integrations')
 @UseGuards(BusinessRolesGuard)
+@StaffPermission('settings.integrations.manage')
 export class IntegrationProvidersController {
   constructor(private readonly integrationsService: IntegrationsService) {}
 

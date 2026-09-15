@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InvoiceStatus, Prisma } from '@prisma/client';
+import { InvoiceKind, InvoiceStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@app/core/database/prisma.service';
 import {
   formatInvoiceNumber,
@@ -137,11 +137,13 @@ export class InvoiceRepository {
       search?: string;
       contactId?: string;
       status?: InvoiceStatus;
+      kind?: InvoiceKind;
       issueFrom?: Date;
       issueTo?: Date;
     },
   ): Promise<{ items: InvoiceWithRelations[]; total: number }> {
     const where = this.activeWhere(businessId, {
+      kind: params.kind ?? InvoiceKind.STANDARD,
       ...(params.contactId ? { contactId: params.contactId } : {}),
       ...(params.status ? { status: params.status } : {}),
       ...(params.issueFrom || params.issueTo

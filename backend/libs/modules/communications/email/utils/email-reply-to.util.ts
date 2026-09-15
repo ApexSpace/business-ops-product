@@ -58,12 +58,18 @@ function parseLegacyConversationReplyToAddress(
   return { conversationId, tenantId };
 }
 
+function stripDisplayName(address: string): string {
+  const trimmed = address.trim();
+  const match = trimmed.match(/<([^>]+)>/);
+  return (match?.[1] ?? trimmed).trim().toLowerCase();
+}
+
 /** Ensures routing addresses include the inbound domain when only the local part is present. */
 export function normalizeRoutableEmailAddress(
   address: string,
   inboundDomain: string,
 ): string {
-  const trimmed = address.trim().toLowerCase();
+  const trimmed = stripDisplayName(address);
   if (!trimmed) {
     return trimmed;
   }

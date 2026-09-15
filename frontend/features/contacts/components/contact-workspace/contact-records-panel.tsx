@@ -1,25 +1,14 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import { ContactEstimatesPanel } from "@/features/contacts/components/contact-workspace/contact-estimates-panel";
-import { ContactInvoicesPanel } from "@/features/contacts/components/contact-workspace/contact-invoices-panel";
-import { ContactPaymentsPanel } from "@/features/contacts/components/contact-workspace/contact-payments-panel";
+import { ContactRecordsSectionBody } from "@/features/contacts/components/contact-workspace/contact-records-section-body";
 import { ActionButton } from "@/components/ui/action-button";
 import { cn } from "@/lib/utils";
 import {
   CONTACT_RAIL_ITEMS,
   getRecordsSectionTitle,
-  isPlaceholderSection,
   type ContactRecordsSectionId,
   WORKSPACE_PANEL_CLASS,
 } from "@/features/contacts/workspace/contact-workspace";
-import { ContactRecordsSectionPlaceholder } from "@/features/contacts/workspace/records/contact-records-placeholder";
-import { ContactRecordsLeadsSection } from "@/features/contacts/workspace/records/contact-records-leads-section";
-import { ContactRecordsWorkItemsSection } from "@/features/contacts/workspace/records/contact-records-work-items-section";
-import { ContactRecordsNotesSection } from "@/features/contacts/workspace/records/contact-records-notes-section";
-import { ContactRecordsAppointmentsSection } from "@/features/contacts/workspace/records/contact-records-appointments-section";
-import { ContactRecordsTasksSection } from "@/features/contacts/workspace/records/contact-records-tasks-section";
-import { ContactRecordsActivitySection } from "@/features/contacts/workspace/records/contact-records-activity-section";
 import type { ContactRecordsSectionProps } from "@/features/contacts/workspace/records/contact-records-types";
 
 interface ContactRecordsPanelProps extends ContactRecordsSectionProps {
@@ -27,15 +16,6 @@ interface ContactRecordsPanelProps extends ContactRecordsSectionProps {
   showSectionPicker?: boolean;
   onSectionChange?: (section: ContactRecordsSectionId) => void;
   className?: string;
-}
-
-function SectionPlaceholder({ description }: { description: string }) {
-  return (
-    <ContactRecordsSectionPlaceholder
-      title="Coming soon"
-      description={description}
-    />
-  );
 }
 
 export function ContactRecordsPanel({
@@ -46,9 +26,8 @@ export function ContactRecordsPanel({
   className,
   ...sectionProps
 }: ContactRecordsPanelProps) {
-  const props = { labels, ...sectionProps };
   const { contact, onCreateLead, onCreateWorkItem, onCreateNote, onCreateTask, onCreateAppointment } =
-    props;
+    sectionProps;
 
   const sectionTitle = getRecordsSectionTitle(activeSection, labels);
 
@@ -56,7 +35,6 @@ export function ContactRecordsPanel({
     if (activeSection === "leads") {
       return (
         <ActionButton onClick={onCreateLead}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -64,7 +42,6 @@ export function ContactRecordsPanel({
     if (activeSection === "work-items") {
       return (
         <ActionButton onClick={onCreateWorkItem}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -72,7 +49,6 @@ export function ContactRecordsPanel({
     if (activeSection === "notes") {
       return (
         <ActionButton onClick={onCreateNote}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -80,7 +56,6 @@ export function ContactRecordsPanel({
     if (activeSection === "tasks") {
       return (
         <ActionButton onClick={onCreateTask}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
@@ -88,70 +63,11 @@ export function ContactRecordsPanel({
     if (activeSection === "appointments" && onCreateAppointment) {
       return (
         <ActionButton onClick={onCreateAppointment}>
-          <Plus className="mr-1 size-3.5" />
           Add
         </ActionButton>
       );
     }
     return null;
-  })();
-
-  const body = (() => {
-    if (isPlaceholderSection(activeSection)) {
-      const descriptions: Record<string, string> = {
-        appointments: `${labels.appointments} scheduling will appear here.`,
-        automations: "Workflows and AI automations are on the roadmap.",
-      };
-      return (
-        <SectionPlaceholder
-          description={
-            descriptions[activeSection] ?? "This module is coming soon."
-          }
-        />
-      );
-    }
-
-    switch (activeSection) {
-      case "leads":
-        return <ContactRecordsLeadsSection {...props} />;
-      case "work-items":
-        return <ContactRecordsWorkItemsSection {...props} />;
-      case "notes":
-        return <ContactRecordsNotesSection {...props} />;
-      case "appointments":
-        return <ContactRecordsAppointmentsSection {...props} />;
-      case "tasks":
-        return <ContactRecordsTasksSection {...props} />;
-      case "activity":
-        return <ContactRecordsActivitySection {...props} />;
-      case "estimates":
-        return (
-          <ContactEstimatesPanel
-            contactId={contact.id}
-            contactLabel={contact.label}
-            estimates={props.estimates ?? []}
-            isLoading={props.financialLoading ?? false}
-          />
-        );
-      case "invoices":
-        return (
-          <ContactInvoicesPanel
-            contactId={contact.id}
-            contactLabel={contact.label}
-            invoices={props.invoices ?? []}
-            isLoading={props.financialLoading ?? false}
-          />
-        );
-      case "payments":
-        return (
-          <ContactPaymentsPanel
-            payments={props.payments ?? []}
-            isLoading={props.financialLoading ?? false}
-          />
-        );
-      default:
-        return null;
-    }
   })();
 
   return (
@@ -191,7 +107,11 @@ export function ContactRecordsPanel({
       ) : null}
 
       <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-3">
-        {body}
+        <ContactRecordsSectionBody
+          activeSection={activeSection}
+          labels={labels}
+          {...sectionProps}
+        />
       </div>
     </aside>
   );

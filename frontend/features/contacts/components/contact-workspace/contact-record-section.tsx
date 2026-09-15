@@ -1,7 +1,7 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { cn } from "@/lib/utils";
 import type { ContactRecordsSectionId } from "@/features/contacts/workspace/contact-workspace";
 
@@ -43,7 +43,6 @@ export function ContactRecordSection({
             onClick={onAdd}
             disabled={addDisabled}
           >
-            <Plus className="size-3.5" />
             {addLabel}
           </Button>
         ) : addDisabled ? (
@@ -57,9 +56,11 @@ export function ContactRecordSection({
 
 export function RecordListEmpty({ message }: { message: string }) {
   return (
-    <p className="rounded-lg bg-muted/40 px-3 py-4 text-center text-xs text-muted-foreground">
-      {message}
-    </p>
+    <LoadingState
+      variant="inline"
+      label={message}
+      className="w-full justify-center rounded-lg bg-muted/40 px-3 py-4"
+    />
   );
 }
 

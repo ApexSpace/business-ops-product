@@ -199,7 +199,6 @@ export const DURATION_PRESETS = [
 export const CALENDAR_EDIT_SECTIONS = [
   { id: "general", label: "General" },
   { id: "availability", label: "Availability" },
-  { id: "booking-page", label: "Booking Page" },
   { id: "integrations", label: "Integrations" },
   { id: "advanced", label: "Advanced" },
 ] as const;

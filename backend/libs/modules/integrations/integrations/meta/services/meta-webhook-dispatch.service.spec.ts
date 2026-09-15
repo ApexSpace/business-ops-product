@@ -38,7 +38,9 @@ describe('MetaWebhookDispatchService', () => {
     );
 
     await expect(service.dispatch(webhookEventId)).resolves.toBe(false);
-    expect(metaWebhookProcessor.process).toHaveBeenCalledWith({ webhookEventId });
+    expect(metaWebhookProcessor.process).toHaveBeenCalledWith({
+      webhookEventId,
+    });
   });
 
   it('processes inline when enqueue fails and returns true on success', async () => {
@@ -57,6 +59,8 @@ describe('MetaWebhookDispatchService', () => {
     );
 
     await expect(service.dispatch(webhookEventId)).resolves.toBe(true);
-    expect(metaWebhookProcessor.process).toHaveBeenCalledWith({ webhookEventId });
+    expect(metaWebhookProcessor.process).toHaveBeenCalledWith({
+      webhookEventId,
+    });
   });
 });

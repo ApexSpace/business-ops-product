@@ -5,9 +5,15 @@ export type RouteCapabilityEntry = {
 
 const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
   ["/business/contacts", { moduleKey: "contacts", capabilityKeys: ["contacts.list"] }],
-  ["/business/leads", { moduleKey: "leads", capabilityKeys: ["leads.list"] }],
+  ["/business/leads", { moduleKey: "pipelines", capabilityKeys: ["pipelines.list", "leads.list"] }],
   ["/business/pipelines", { moduleKey: "pipelines", capabilityKeys: ["pipelines.list"] }],
+  ["/business/notes", { moduleKey: "notes", capabilityKeys: ["notes.list"] }],
   ["/business/work-items", { moduleKey: "work_items", capabilityKeys: ["work_items.list"] }],
+  [
+    "/business/social-planner",
+    { moduleKey: "social_planner", capabilityKeys: ["social_planner.list"] },
+  ],
+  ["/business/tasks", { moduleKey: "tasks", capabilityKeys: ["tasks.list"] }],
   [
     "/business/conversations",
     { moduleKey: "conversations", capabilityKeys: ["conversations.inbox"] },
@@ -17,16 +23,53 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
   ],
   [
+    "/business/time-clock",
+    { moduleKey: "time_clock", capabilityKeys: ["time_clock.kiosk"] },
+  ],
+  [
+    "/business/time-cards",
+    { moduleKey: "time_clock", capabilityKeys: ["time_clock.cards.manage"] },
+  ],
+  [
     "/business/payments",
-    { moduleKey: "payments", capabilityKeys: ["payments.estimates.list"] },
+    {
+      moduleKey: "payments",
+      capabilityKeys: [
+        "payments.transactions.list",
+        "estimates.list",
+        "invoices.list",
+      ],
+    },
+  ],
+  ["/business/sales", { moduleKey: "sales", capabilityKeys: ["sales.access"] }],
+  [
+    "/business/gift-cards",
+    { moduleKey: "gift_cards", capabilityKeys: ["gift_cards.list"] },
+  ],
+  [
+    "/business/packages",
+    { moduleKey: "packages", capabilityKeys: ["packages.list"] },
+  ],
+  [
+    "/business/memberships",
+    { moduleKey: "memberships", capabilityKeys: ["memberships.list"] },
+  ],
+  ["/business/offers", { moduleKey: "offers", capabilityKeys: ["offers.list"] }],
+  [
+    "/business/products",
+    { moduleKey: "products", capabilityKeys: ["products.list"] },
+  ],
+  [
+    "/business/reports",
+    { moduleKey: "reports", capabilityKeys: ["reports.access"] },
   ],
   [
     "/business/invoices",
-    { moduleKey: "payments", capabilityKeys: ["payments.invoices.list"] },
+    { moduleKey: "invoices", capabilityKeys: ["invoices.list"] },
   ],
   [
     "/business/estimates",
-    { moduleKey: "payments", capabilityKeys: ["payments.estimates.list"] },
+    { moduleKey: "estimates", capabilityKeys: ["estimates.list"] },
   ],
   [
     "/business/settings/calendars",
@@ -41,8 +84,102 @@ const ROUTE_CAPABILITY_MAP = new Map<string, RouteCapabilityEntry>([
     { moduleKey: "ai_agents", capabilityKeys: ["ai_agents.list"] },
   ],
   [
+    "/business/settings/web-chat",
+    { moduleKey: "ai_agents", capabilityKeys: ["ai_agents.list"] },
+  ],
+  [
+    "/business/settings/scheduling-options",
+    { moduleKey: "calendar", capabilityKeys: ["calendar.list"] },
+  ],
+  [
+    "/business/settings/express-booking",
+    {
+      moduleKey: "appointments",
+      capabilityKeys: ["appointments.express_booking"],
+    },
+  ],
+  [
+    "/business/settings/custom-fees",
+    { moduleKey: "sales", capabilityKeys: ["sales.access"] },
+  ],
+  [
+    "/business/settings/checkout-advanced",
+    { moduleKey: "sales", capabilityKeys: ["sales.access"] },
+  ],
+  [
+    "/business/settings/display-preferences",
+    { moduleKey: "calendar", capabilityKeys: ["calendar.list"] },
+  ],
+  [
+    // Appointment settings pages share the list option — there is no dedicated
+    // registry key for waiting-room / booked / cancel-reschedule / quick-tools.
+    "/business/settings/waiting-room",
+    { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
+  ],
+  [
+    "/business/settings/appointment-booked",
+    { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
+  ],
+  [
+    "/business/settings/cancel-reschedule",
+    { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
+  ],
+  [
+    "/business/settings/payment-account",
+    {
+      moduleKey: "payments",
+      capabilityKeys: ["payments.transactions.list"],
+    },
+  ],
+  [
+    "/business/settings/quick-tools",
+    { moduleKey: "appointments", capabilityKeys: ["appointments.list"] },
+  ],
+  [
+    "/business/settings/forms",
+    { moduleKey: "forms", capabilityKeys: ["forms.list"] },
+  ],
+  [
+    "/business/settings/automations",
+    { moduleKey: "automations", capabilityKeys: ["automations.list"] },
+  ],
+  [
+    "/business/settings/automation-workflows",
+    { moduleKey: "automations", capabilityKeys: ["automations.list"] },
+  ],
+  [
+    "/business/settings/automation-registry",
+    { moduleKey: "automations", capabilityKeys: ["automations.list"] },
+  ],
+  [
+    "/business/automations",
+    { moduleKey: "automations", capabilityKeys: ["automations.list"] },
+  ],
+  [
+    "/business/settings/services",
+    { moduleKey: "services", capabilityKeys: ["services.list"] },
+  ],
+  [
+    "/business/settings/resources",
+    { moduleKey: "resources", capabilityKeys: ["resources.list"] },
+  ],
+  [
+    "/business/settings/online-booking",
+    { moduleKey: "online_booking", capabilityKeys: ["online_booking.settings"] },
+  ],
+  [
     "/business/settings/integrations",
     { moduleKey: "settings", capabilityKeys: ["settings.integrations"] },
+  ],
+  [
+    "/business/settings/whatsapp",
+    {
+      moduleKey: "conversations",
+      capabilityKeys: [
+        "conversations.inbox",
+        "settings.integrations.whatsapp",
+      ],
+    },
   ],
 ]);
 
@@ -55,7 +192,6 @@ const CORE_SAFE_PREFIXES = [
   "/business/settings/appearance",
   "/business/settings/financial",
   "/business/settings/templates",
-  "/business/settings/automations",
   "/business/access-blocked",
   "/business/feature-unavailable",
 ];
@@ -89,18 +225,48 @@ export function isCoreSafeBusinessRoute(pathname: string): boolean {
   );
 }
 
+function hasModuleInKeys(
+  capabilityKeys: Set<string>,
+  moduleKey: string,
+): boolean {
+  if (capabilityKeys.has(moduleKey)) {
+    return true;
+  }
+  const prefix = `${moduleKey}.`;
+  for (const key of capabilityKeys) {
+    if (key.startsWith(prefix)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function hasModuleForRoute(
   route: string,
   capabilityKeys: Set<string>,
 ): boolean {
-  const entry = getRouteCapabilityEntry(route);
+  const entry = resolveRouteCapability(route);
   if (!entry) return true;
-  const prefix = `${entry.moduleKey}.`;
-  return (
-    capabilityKeys.has(entry.moduleKey) ||
-    entry.capabilityKeys.some((key) => capabilityKeys.has(key)) ||
-    Array.from(capabilityKeys).some((key) => key.startsWith(prefix))
-  );
+
+  // Exact option keys only. Prefix fallback ("any appointments.*") treated staff
+  // keys like appointments.access as module access and broke feature gating.
+  return entry.capabilityKeys.some((key) => capabilityKeys.has(key));
+}
+
+/** Nav/route gate aligned with registry feature keys (not permission keys). */
+export function canAccessBusinessRoute(
+  route: string,
+  capabilityKeys: Set<string>,
+): boolean {
+  if (route === "/business/settings/whatsapp") {
+    return (
+      hasModuleInKeys(capabilityKeys, "conversations") &&
+      (capabilityKeys.has("settings.integrations.whatsapp") ||
+        capabilityKeys.has("settings.integrations"))
+    );
+  }
+
+  return hasModuleForRoute(route, capabilityKeys);
 }
 
 export function getMappedRoutes(): string[] {

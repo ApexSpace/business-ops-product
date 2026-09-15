@@ -70,8 +70,6 @@ export class EmailMessageRepository {
   findExistingForSend(
     params: FindExistingForSendParams,
   ): Promise<EmailMessage | null> {
-    const notFailed = { not: EmailMessageStatus.FAILED };
-
     const businessFilter =
       params.businessId === undefined ? {} : { businessId: params.businessId };
 
@@ -83,7 +81,8 @@ export class EmailMessageRepository {
             path: ['idempotencyKey'],
             equals: params.idempotencyKey,
           },
-          status: notFailed,
+          // Same idempotency key must never enqueue twice (even after send).
+          status: { not: EmailMessageStatus.FAILED },
         },
         orderBy: { createdAt: 'desc' },
       })
@@ -94,6 +93,9 @@ export class EmailMessageRepository {
         if (!params.entityType || !params.entityId) {
           return null;
         }
+        // Entity fallback only blocks in-flight duplicates. Completed sends
+        // (SENT/DELIVERED/BOUNCED) must not prevent intentional resends
+        // (e.g. membership.invite).
         return this.prisma.emailMessage.findFirst({
           where: {
             ...businessFilter,
@@ -101,7 +103,9 @@ export class EmailMessageRepository {
             entityType: params.entityType,
             entityId: params.entityId,
             toEmail: params.toEmail,
-            status: notFailed,
+            status: {
+              in: [EmailMessageStatus.QUEUED, EmailMessageStatus.SENDING],
+            },
           },
           orderBy: { createdAt: 'desc' },
         });

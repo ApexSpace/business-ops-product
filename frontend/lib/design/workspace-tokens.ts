@@ -1,0 +1,136 @@
+/**
+ * Design-token ownership
+ * - Visual values: frontend/app/globals.css and frontend/lib/theme/*
+ * - This file: workspace / list-surface recipes and drawer layout contracts only
+ * - Features must not introduce new raw color / radius / height values
+ *
+ * Drawer widths live in `drawer-tokens` (`drawerShellWidthClass`). Do not add a
+ * parallel width map here.
+ */
+
+import type { CSSProperties } from "react";
+import type { DrawerShellWidthTier } from "@/lib/design/drawer-tokens";
+
+/** Shared workspace and entity drawer recipes. */
+export const WORKSPACE_ACTIVE_ROW_CLASS =
+  "shadow-[inset_3px_0_0_0_var(--pc-violet-primary-normal)]";
+
+/**
+ * List toolbar above the table — no card chrome.
+ * Horizontal inset: `--cs-list-toolbar-padding-x` (hit-and-trial in globals.css).
+ * Vertical rhythm is `--cs-list-toolbar-gap` on the workspace card (equal
+ * above and below the toolbar). Do not add extra py here or the shell
+ * `--page-content-top-gap` stacks and the top gap looks larger.
+ */
+export const WORKSPACE_TOOLBAR_CLASS =
+  "rounded-none border-0 bg-transparent px-[var(--cs-list-toolbar-padding-x)] py-0 shadow-none";
+
+export const WORKSPACE_TOOLBAR_SURFACE_CLASS =
+  "flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--drawer-tab-track)] bg-white p-2 sm:p-3";
+
+/**
+ * Applied on DataTable in EntityListLayout — full-bleed list shell
+ * (no extra radius that insets the grid from the page edges).
+ */
+export const WORKSPACE_TABLE_CLASS = "w-full min-w-0 rounded-none shadow-none";
+
+/**
+ * Full-height workspace column — parent must also be a flex fill chain.
+ * `h-0 flex-1` (not `h-full`): percentage height fails when the parent is
+ * flex-sized without an explicit `height`, so the table card shrinks to rows.
+ */
+export const WORKSPACE_FILL_CLASS =
+  "flex h-0 min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden";
+
+/**
+ * App shell main content slot — shared flex chain for both scroll modes.
+ * Workspace children with `data-workspace-fill` stretch to the viewport slot.
+ */
+const APP_SHELL_MAIN_BASE_CLASS =
+  "flex h-0 min-h-0 flex-1 flex-col [&>[data-workspace-fill]]:flex [&>[data-workspace-fill]]:h-0 [&>[data-workspace-fill]]:min-h-0 [&>[data-workspace-fill]]:flex-1 [&>[data-workspace-fill]]:flex-col";
+
+/** Document-style pages (dashboard, forms) — shell owns vertical scroll. */
+export const APP_SHELL_SCROLLABLE_MAIN_CLASS = `${APP_SHELL_MAIN_BASE_CLASS} overflow-y-auto`;
+
+/** Full-bleed workspaces (inbox, calendar, settings) — internal panes scroll. */
+export const APP_SHELL_WORKSPACE_MAIN_CLASS = `${APP_SHELL_MAIN_BASE_CLASS} overflow-hidden`;
+
+/**
+ * Settings-route shell for Apps master-detail pages (Services, Resources, Team).
+ * Makes the first child a flex fill column so nested ListPage / two-pane canvases stretch.
+ */
+export const APPS_MASTER_DETAIL_ROUTE_SHELL_CLASS = `${WORKSPACE_FILL_CLASS} [&>*]:flex [&>*]:h-0 [&>*]:min-h-0 [&>*]:min-w-0 [&>*]:flex-1 [&>*]:flex-col`;
+
+/**
+ * ListPage slot that stretches the two-pane canvas to the content area.
+ * `!h-full` overrides feature-level `h-[calc(100vh-…)]` height caps.
+ */
+export const APPS_MASTER_DETAIL_CANVAS_SLOT_CLASS =
+  "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden [&>*]:!h-full [&>*]:!min-h-0 [&>*]:min-w-0 [&>*]:!flex-1 [&>*]:rounded-none";
+
+/**
+ * Outer inset for DataTable list pages (navbar → toolbar → table).
+ * Shell list routes are full-bleed (`p-0`). Horizontal padding is 0 so the
+ * toolbar and table use the full content width on every list page.
+ * Vertical rhythm stays `--cs-list-toolbar-gap` / `--page-padding-y`.
+ */
+export const ENTITY_LIST_PAGE_INSET_CLASS =
+  "w-full min-w-0 px-0 pb-[var(--page-padding-y)] pt-[var(--cs-list-toolbar-gap)]";
+
+/**
+ * Chrome above the list toolbar (tabs, back links, summary cards).
+ * Same horizontal inset as `WORKSPACE_TOOLBAR_CLASS` / list toolbar.
+ */
+export const ENTITY_LIST_LEADING_CLASS =
+  "w-full min-w-0 px-[var(--cs-list-toolbar-padding-x)]";
+
+/** Workspace list surface — page white; table supplies its own border chrome */
+export const WORKSPACE_TABLE_CARD_CLASS =
+  "flex h-0 min-h-0 w-full min-w-0 flex-1 flex-col gap-[var(--cs-list-toolbar-gap)] overflow-hidden rounded-none border-0 bg-white shadow-none";
+
+/**
+ * Table slot between toolbar and pagination.
+ * Content-height (`flex: 0 1 auto` + `min-h-0`): few rows size the table;
+ * many rows shrink and scroll. Do not use `flex-1` / `h-0` here.
+ */
+export const WORKSPACE_TABLE_BODY_CLASS =
+  "flex min-h-0 flex-col overflow-hidden";
+
+/** Pagination / footer strip under the table — hidden when pagination renders nothing */
+export const WORKSPACE_FOOTER_CLASS =
+  "empty:hidden shrink-0 border-t border-[var(--drawer-header-border)] bg-white px-4 py-2";
+
+export const ENTITY_DRAWER_TOOLBAR_CLASS =
+  "shrink-0 border-b border-border/70 bg-background px-6 py-3";
+
+export const ENTITY_DRAWER_SUMMARY_CLASS =
+  "shrink-0 border-b border-border/70 bg-background px-6 py-3";
+
+/**
+ * Discrete filter pills (Figma Client Details timeline).
+ * Height 30px / radius-sm / px 16 / py 6 / gap 8 — values already used
+ * by contacts timeline chips; promoted here for shared reuse.
+ */
+export const ENTITY_FILTER_PILL_ROW_CLASS =
+  "flex w-full min-w-0 flex-wrap items-center justify-center gap-2";
+
+export const ENTITY_FILTER_PILL_CLASS =
+  "relative box-border inline-flex h-[30px] max-h-[30px] min-h-[30px] shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-[var(--radius-sm)] border border-[var(--mobile-list-border)] bg-white px-4 py-1.5 text-[12px] font-medium leading-none text-[var(--drawer-text-primary)] shadow-none transition-colors duration-150 after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] hover:bg-violet-primary-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/25";
+
+export const ENTITY_FILTER_PILL_ACTIVE_CLASS =
+  "relative box-border inline-flex h-[30px] max-h-[30px] min-h-[30px] shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-[var(--radius-sm)] border border-violet-primary-normal bg-violet-primary-normal px-4 py-1.5 text-[12px] font-semibold leading-none text-white shadow-none transition-colors duration-150 after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] hover:bg-violet-primary-normal-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-primary-normal/25";
+
+/** CSS custom properties for workspace shells (set on layout root when needed). */
+export const WORKSPACE_CSS_VARS = {
+  "--workspace-toolbar-height": "3rem",
+  "--drawer-width-default": "480px",
+  "--drawer-width-standard": "600px",
+  "--drawer-width-wide": "640px",
+  "--drawer-width-split": "1040px",
+  "--entity-drawer-toolbar-z": "10",
+} as Record<string, string> as CSSProperties;
+
+export type EntityDrawerWidthTier = Extract<
+  DrawerShellWidthTier,
+  "compact" | "standard" | "wide" | "split" | "conversation"
+>;

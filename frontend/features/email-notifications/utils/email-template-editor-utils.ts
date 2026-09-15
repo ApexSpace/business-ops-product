@@ -52,6 +52,7 @@ export function insertAtCursor(
     if (!element) return;
     element.focus();
     element.setSelectionRange(cursor, cursor);
-    selectionRef.current = { start: cursor, end: cursor };
+    selectionRef.current = { start: cursor, end: cursor,
+};
   });
 }

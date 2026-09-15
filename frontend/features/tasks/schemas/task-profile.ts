@@ -20,13 +20,13 @@ export function formatTaskStatus(status: TaskStatus): string {
 }
 
 export function formatTaskPriority(priority: TaskPriority | null): string {
-  if (!priority) return "—";
+  if (!priority) return "";
   return TASK_PRIORITY_OPTIONS.find((o) => o.value === priority)?.label ?? priority;
 }
 
 export function formatTaskDueAt(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",

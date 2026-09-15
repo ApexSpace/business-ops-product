@@ -23,6 +23,7 @@ import {
   createChatbot,
   getChatbotEmbed,
 } from "@/features/chatbots/api/chatbots.api";
+import { useChatbotsHost } from "@/features/chatbots/chatbots-host-context";
 import {
   chatbotCreateDefaults,
   chatbotCreateSchema,
@@ -45,6 +46,7 @@ export function ChatbotCreateDialog({
   onOpenChange,
   onCreated,
 }: ChatbotCreateDialogProps) {
+  const { apiBase } = useChatbotsHost();
   const [step, setStep] = useState(0);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [embedScript, setEmbedScript] = useState("");
@@ -65,23 +67,27 @@ export function ChatbotCreateDialog({
 
   const createMutation = useMutation({
     mutationFn: async (values: ChatbotCreateFormValues) => {
-      const bot = await createChatbot({
-        name: values.name.trim(),
-        widgetTitle: values.widgetTitle.trim(),
-        welcomeMessage: values.welcomeMessage.trim(),
-        requireName: values.requireName,
-        requireEmail: values.requireEmail,
-        requirePhone: values.requirePhone,
-        allowAnonymous: values.allowAnonymous,
-        collectContactInfo: true,
-        autoReplyEnabled: values.autoReplyEnabled,
-        primaryColor: values.primaryColor,
-        position: values.position,
-        showBranding: values.showBranding,
-      });
-      await activateChatbot(bot.id);
-      const embed = await getChatbotEmbed(bot.id);
-      return { bot, embed };
+      const bot = await createChatbot(
+        {
+          name: values.name.trim(),
+          widgetTitle: values.widgetTitle.trim(),
+          welcomeMessage: values.welcomeMessage.trim(),
+          requireName: values.requireName,
+          requireEmail: values.requireEmail,
+          requirePhone: values.requirePhone,
+          allowAnonymous: values.allowAnonymous,
+          collectContactInfo: true,
+          autoReplyEnabled: values.autoReplyEnabled,
+          primaryColor: values.primaryColor,
+          position: values.position,
+          showBranding: values.showBranding,
+        },
+        apiBase,
+      );
+      await activateChatbot(bot.id, apiBase);
+      const embed = await getChatbotEmbed(bot.id, apiBase);
+      return { bot, embed,
+};
     },
     onSuccess: ({ bot, embed }) => {
       setCreatedId(bot.id);
@@ -233,12 +239,13 @@ export function ChatbotCreateDialog({
                   </Button>
                 </div>
                 {step < 3 ? (
-                  <Button type="button" onClick={() => void handleNext()}>
+                  <Button type="button" variant="brand" onClick={() => void handleNext()}>
                     Next
                   </Button>
                 ) : (
                   <Button
                     type="button"
+                    variant="brand"
                     disabled={createMutation.isPending}
                     onClick={form.handleSubmit((values) =>
                       createMutation.mutate(values),
@@ -261,7 +268,7 @@ export function ChatbotCreateDialog({
                   Copy embed code
                 </Button>
                 {createdId ? (
-                  <Button type="button" onClick={() => onCreated(createdId)}>
+                  <Button type="button" variant="brand" onClick={() => onCreated(createdId)}>
                     Continue editing
                   </Button>
                 ) : null}

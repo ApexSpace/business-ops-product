@@ -17,7 +17,7 @@ const ACCESS_BLOCKED_MESSAGES: Record<string, AccessMessage> = {
   BUSINESS_NOT_ACTIVE: {
     title: "Workspace not active",
     message:
-      "Your workspace is not active yet. Please contact support if you believe this is a mistake.",
+      "This workspace is no longer active. If you canceled your subscription, sign out and sign in again to use another workspace, or contact support for help.",
     primaryCta: "Contact support",
     secondaryCtas: ["Switch workspace", "Go to login"],
   },

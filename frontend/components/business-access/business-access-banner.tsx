@@ -18,15 +18,17 @@ export function BusinessAccessBanner() {
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 items-center gap-1.5 text-xs sm:gap-2 sm:text-sm",
+        "glass-panel-soft mt-2 rounded-2xl border border-[color:var(--glass-border)] px-3 py-2 sm:px-4",
         banner.tone === "warning"
           ? "text-amber-700 dark:text-amber-400"
           : "text-muted-foreground",
       )}
       role="status"
     >
-      <Icon className="size-3.5 shrink-0 sm:size-4" />
-      <p className="min-w-0 truncate">{banner.message}</p>
+      <div className="flex w-full min-w-0 items-center gap-1.5 text-xs sm:gap-2 sm:text-sm">
+        <Icon className="size-3.5 shrink-0 sm:size-4" />
+        <p className="min-w-0 truncate">{banner.message}</p>
+      </div>
     </div>
   );
 }

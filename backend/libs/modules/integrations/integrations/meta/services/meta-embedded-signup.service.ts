@@ -34,6 +34,7 @@ import {
   META_ENV_NOT_CONFIGURED_MESSAGE,
   MetaConfigService,
 } from './meta-config.service';
+import { MetaTokenService } from './meta-token.service';
 import { JobEnqueueService } from '@app/core/jobs/job-enqueue.service';
 import { StoredMetaCredentials } from './meta-token.service';
 
@@ -47,6 +48,7 @@ export class MetaEmbeddedSignupService {
     private readonly configService: ConfigService<RootConfig, true>,
     private readonly metaConfigService: MetaConfigService,
     private readonly metaApiClient: MetaApiClient,
+    private readonly metaTokenService: MetaTokenService,
     private readonly jobEnqueueService: JobEnqueueService,
     private readonly providerRepository: IntegrationProviderRepository,
     private readonly businessIntegrationRepository: BusinessIntegrationRepository,
@@ -58,15 +60,36 @@ export class MetaEmbeddedSignupService {
     user: RequestUser,
     res: Response,
   ): Promise<void> {
+    if (!user.businessId) {
+      throw new AppException(
+        ErrorCode.BAD_REQUEST,
+        'Business context is required for WhatsApp embedded signup',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.redirectToWhatsAppSignupForBusiness(
+      user,
+      user.businessId,
+      res,
+    );
+  }
+
+  async redirectToWhatsAppSignupForBusiness(
+    user: RequestUser,
+    businessId: string,
+    res: Response,
+  ): Promise<void> {
     this.assertMetaOAuthConfigured();
     await this.assertWhatsAppProvider();
     this.assertWhatsAppEmbeddedSignupConfigured();
 
-    this.logger.log('Meta WhatsApp embedded signup start');
+    this.logger.log(
+      `Meta WhatsApp embedded signup start businessId=${businessId}`,
+    );
 
     const state = createMetaOAuthState(
       {
-        businessId: user.businessId!,
+        businessId,
         userId: user.id,
         providerKey: META_WHATSAPP_PROVIDER_KEY,
         flowType: 'WHATSAPP_EMBEDDED_SIGNUP',
@@ -184,6 +207,17 @@ export class MetaEmbeddedSignupService {
         },
         dto.code,
       );
+
+      if (dto.wabaId || dto.onboardingType) {
+        await this.mergeEmbeddedSignupConfig(businessId, {
+          wabaId: dto.wabaId,
+          onboardingType: dto.onboardingType,
+        });
+      }
+
+      if (dto.wabaId) {
+        await this.ensureWhatsAppWebhookSubscription(businessId, dto.wabaId);
+      }
     }
 
     if (dto.phoneNumberId) {
@@ -242,6 +276,10 @@ export class MetaEmbeddedSignupService {
         dto.displayPhoneNumber,
         dto.verifiedName,
       );
+
+      if (dto.wabaId) {
+        await this.ensureWhatsAppWebhookSubscription(businessId, dto.wabaId);
+      }
       return;
     }
 
@@ -256,6 +294,41 @@ export class MetaEmbeddedSignupService {
     );
   }
 
+  private async mergeEmbeddedSignupConfig(
+    businessId: string,
+    extra: {
+      wabaId?: string;
+      onboardingType?: 'business_app' | 'cloud_api';
+    },
+  ): Promise<void> {
+    const integration =
+      await this.businessIntegrationRepository.findByBusinessAndKey(
+        businessId,
+        META_WHATSAPP_PROVIDER_KEY,
+      );
+    if (!integration) return;
+
+    const existingConfig =
+      (integration.config as Record<string, unknown> | null) ?? {};
+
+    await this.businessIntegrationRepository.update(
+      businessId,
+      META_WHATSAPP_PROVIDER_KEY,
+      {
+        config: {
+          ...existingConfig,
+          wabaId: extra.wabaId ?? existingConfig.wabaId ?? null,
+          onboardingType:
+            extra.onboardingType ?? existingConfig.onboardingType ?? null,
+          skipPhoneRegistration:
+            extra.onboardingType === 'business_app'
+              ? true
+              : (existingConfig.skipPhoneRegistration ?? null),
+        },
+      },
+    );
+  }
+
   private async completeWithCode(
     payload: { businessId: string; userId: string; providerKey: string },
     code: string,
@@ -263,6 +336,7 @@ export class MetaEmbeddedSignupService {
     const shortLived = await this.metaApiClient.exchangeCodeForToken(
       code,
       META_WHATSAPP_PROVIDER_KEY,
+      { includeRedirectUri: false },
     );
     const longLived = await this.metaApiClient.exchangeForLongLivedToken(
       shortLived.access_token,
@@ -295,6 +369,32 @@ export class MetaEmbeddedSignupService {
       providerKey: META_WHATSAPP_PROVIDER_KEY,
       idempotencyKey: `meta-embedded-sync-${payload.businessId}`,
     });
+  }
+
+  private async ensureWhatsAppWebhookSubscription(
+    businessId: string,
+    wabaId: string,
+  ): Promise<void> {
+    try {
+      const accessToken = await this.metaTokenService.getAccessToken(
+        businessId,
+        META_WHATSAPP_PROVIDER_KEY,
+      );
+      const subscribed =
+        await this.metaApiClient.subscribeWhatsAppBusinessAccountToApp(
+          wabaId,
+          accessToken,
+        );
+      this.logger.log(
+        `WhatsApp webhook subscription wabaId=${wabaId} businessId=${businessId} success=${subscribed}`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Subscription failed';
+      this.logger.warn(
+        `WhatsApp webhook subscription failed wabaId=${wabaId} businessId=${businessId}: ${message}`,
+      );
+    }
   }
 
   private async saveWhatsAppIntegration(

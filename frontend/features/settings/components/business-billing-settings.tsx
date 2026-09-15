@@ -1,15 +1,15 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { ArrowDown, ArrowUp, ArrowUpDown, CreditCard, ExternalLink } from "lucide-react";
+import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
+import { useAuth } from "@/lib/auth/provider";
+import { useAppRouter } from "@/lib/hooks/use-app-router";
 import { useBusinessAccess } from "@/lib/business-access/use-business-access";
 import { getAccessBlockedMessage } from "@/components/business-access/business-access-messages";
-import Link from "next/link";
-import {
-  getBookCallHref,
-  getSupportHref,
-  getSupportMailto,
-} from "@/lib/config/support";
-import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/ui/action-button";
 import {
   Card,
   CardContent,
@@ -18,9 +18,31 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  cancelBusinessSubscription,
+  confirmBusinessSetupIntent,
+  createBusinessCheckoutSession,
+  createBusinessPortalSession,
+  createBusinessSetupIntent,
+  getBusinessPlanOptions,
+  listBusinessPaymentMethods,
+} from "@/features/settings/api/business-billing.api";
+import {
+  PlanChangeDialog,
+  type PlanChangeMode,
+} from "@/features/settings/components/plan-change-dialog";
+import {
+  canChangePlanBothWays,
+  canDowngrade,
+  canUpgrade,
+  getPlanChangeButtonLabel,
+  getTierPosition,
+} from "@/features/settings/utils/plan-tier-position.util";
+import { EmbeddedStripePayment } from "@/features/payments/payments-kit/embedded-stripe-payment";
+import { queryKeys } from "@/lib/query/keys";
 
 function formatLabel(value?: string | null): string {
-  if (!value) return "—";
+  if (!value) return "";
   return value
     .toLowerCase()
     .split("_")
@@ -29,17 +51,134 @@ function formatLabel(value?: string | null): string {
 }
 
 function formatDate(value?: string | null): string {
-  if (!value) return "—";
+  if (!value) return "";
   return new Date(value).toLocaleDateString();
 }
 
 export function BusinessBillingSettings() {
+  const router = useAppRouter();
+  const { logout } = useAuth();
   const { access, isLoading } = useBusinessAccess();
+  const [planDialogMode, setPlanDialogMode] = useState<PlanChangeMode | null>(
+    null,
+  );
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [setupClientSecret, setSetupClientSecret] = useState<string | null>(
+    null,
+  );
+  const [setupPublishableKey, setSetupPublishableKey] = useState<string | null>(
+    null,
+  );
+
+  const hasPlanGroup = Boolean(access?.subscription?.planGroupId);
+  const hasTier = Boolean(access?.subscription?.planTierId);
+  const canLoadPlanOptions = hasPlanGroup || hasTier;
+  const isStripeBilling = access?.subscription?.billingSource === "STRIPE";
+
+  const { data: planOptions } = useQuery({
+    queryKey: queryKeys.business.planOptions(),
+    queryFn: getBusinessPlanOptions,
+    enabled: canLoadPlanOptions,
+  });
+
+  const { data: paymentMethods, refetch: refetchPaymentMethods } = useQuery({
+    queryKey: ["business", "billing", "payment-methods"],
+    queryFn: listBusinessPaymentMethods,
+  });
+
+  const tierPosition = useMemo(
+    () =>
+      getTierPosition(
+        planOptions?.currentPlanTierIndex ?? -1,
+        planOptions?.tiers.length ?? 0,
+      ),
+    [planOptions?.currentPlanTierIndex, planOptions?.tiers.length],
+  );
+
+  const showBothWays = canLoadPlanOptions && canChangePlanBothWays(tierPosition);
+  const showUpgradeOnly =
+    canLoadPlanOptions && canUpgrade(tierPosition) && !showBothWays;
+  const showDowngradeOnly =
+    canLoadPlanOptions && canDowngrade(tierPosition) && !showBothWays;
+  const planChangeLabel = getPlanChangeButtonLabel(tierPosition);
+  const subscriptionStatus = access?.subscription?.status?.toUpperCase();
+  const showCancelSubscription =
+    Boolean(access?.subscription?.id) && subscriptionStatus !== "CANCELED";
+
+  const portalMutation = useMutation({
+    mutationFn: createBusinessPortalSession,
+    onSuccess: (data) => {
+      window.location.href = data.url;
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: createBusinessCheckoutSession,
+    onSuccess: (data) => {
+      window.location.href = data.url;
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const setupIntentMutation = useMutation({
+    mutationFn: createBusinessSetupIntent,
+    onSuccess: (data) => {
+      if (!data.clientSecret || !data.publishableKey) {
+        toast.error("Card setup is unavailable right now.");
+        return;
+      }
+      setSetupClientSecret(data.clientSecret);
+      setSetupPublishableKey(data.publishableKey);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const confirmSetupMutation = useMutation({
+    mutationFn: confirmBusinessSetupIntent,
+    onSuccess: async () => {
+      toast.success("Card saved");
+      setSetupClientSecret(null);
+      setSetupPublishableKey(null);
+      await refetchPaymentMethods();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: () => cancelBusinessSubscription(),
+    onSuccess: async () => {
+      setCancelOpen(false);
+      if (isStripeBilling) {
+        toast.success(
+          "Cancellation requested. Access continues until the current period ends — refreshes when Stripe confirms.",
+        );
+        return;
+      }
+      toast.info(
+        "Your subscription has been canceled. Removing workspace access…",
+      );
+      await logout();
+      router.push("/login?reason=subscription-canceled");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const startCheckout = () => {
+    const tierId = planOptions?.currentPlanTierId;
+    if (!tierId) {
+      toast.error("No plan tier is assigned to this workspace.");
+      return;
+    }
+    checkoutMutation.mutate({
+      planTierId: tierId,
+      billingCycle: "MONTHLY",
+    });
+  };
 
   if (isLoading) {
     return (
-      <div className="w-full min-w-0 space-y-6">
-        <PageHeader description="Your subscription and plan details." />
+      <div className="w-full min-w-0 space-y-[var(--spacing-6)]">
         <p className="text-sm text-muted-foreground">Loading plan details…</p>
       </div>
     );
@@ -52,8 +191,7 @@ export function BusinessBillingSettings() {
       : null;
 
   return (
-    <div className="w-full min-w-0 space-y-6">
-      <PageHeader description="Your subscription and plan details." />
+    <div className="w-full min-w-0 space-y-[var(--spacing-6)]">
 
       {blockedCopy ? (
         <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
@@ -61,31 +199,102 @@ export function BusinessBillingSettings() {
             <CardTitle className="text-base">{blockedCopy.title}</CardTitle>
             <CardDescription>{blockedCopy.message}</CardDescription>
           </CardHeader>
+          {sub?.billingSource !== "STRIPE" ? (
+            <CardContent>
+              <ActionButton size="sm" onClick={startCheckout}>
+                <CreditCard className="mr-2 size-4" />
+                Subscribe with Stripe
+              </ActionButton>
+            </CardContent>
+          ) : null}
         </Card>
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Current plan</CardTitle>
+            <CardTitle>Current tier</CardTitle>
             <CardDescription>Package assigned to this workspace.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Plan group</span>
-              <span>{sub?.planGroupName ?? "—"}</span>
+          <CardContent className="space-y-4 text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Tier</span>
+                <span>{sub?.planTierName ?? ""}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Billing source</span>
+                <span>{formatLabel(sub?.billingSource)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Subscription status</span>
+                <Badge variant="secondary">{formatLabel(sub?.status)}</Badge>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Access status</span>
+                <span>{access?.reasonLabel ?? ""}</span>
+              </div>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Plan tier</span>
-              <span>{sub?.planTierName ?? "—"}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Subscription status</span>
-              <Badge variant="secondary">{formatLabel(sub?.status)}</Badge>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Access status</span>
-              <span>{access?.reasonLabel ?? "—"}</span>
+
+            <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+              {isStripeBilling ? (
+                <ActionButton
+                  size="sm"
+                  variant="outline"
+                  onClick={() => portalMutation.mutate()}
+                  disabled={portalMutation.isPending}
+                >
+                  <ExternalLink className="mr-2 size-4" />
+                  Manage billing
+                </ActionButton>
+              ) : canLoadPlanOptions ? (
+                <ActionButton
+                  size="sm"
+                  onClick={startCheckout}
+                  disabled={checkoutMutation.isPending}
+                >
+                  <CreditCard className="mr-2 size-4" />
+                  Subscribe with Stripe
+                </ActionButton>
+              ) : null}
+              {showBothWays ? (
+                <ActionButton
+                  size="sm"
+                  onClick={() => setPlanDialogMode("both")}
+                >
+                  <ArrowUpDown className="mr-2 size-4" />
+                  {planChangeLabel}
+                </ActionButton>
+              ) : null}
+              {showUpgradeOnly ? (
+                <ActionButton
+                  size="sm"
+                  onClick={() => setPlanDialogMode("upgrade")}
+                >
+                  <ArrowUp className="mr-2 size-4" />
+                  {planChangeLabel}
+                </ActionButton>
+              ) : null}
+              {showDowngradeOnly ? (
+                <ActionButton
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPlanDialogMode("downgrade")}
+                >
+                  <ArrowDown className="mr-2 size-4" />
+                  {planChangeLabel}
+                </ActionButton>
+              ) : null}
+              {showCancelSubscription ? (
+                <ActionButton
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setCancelOpen(true)}
+                >
+                  Cancel subscription
+                </ActionButton>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -104,48 +313,90 @@ export function BusinessBillingSettings() {
               <span className="text-muted-foreground">Payment status</span>
               <span>{formatLabel(sub?.paymentStatus)}</span>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Current period ends</span>
-              <span>{formatDate(sub?.currentPeriodEnd)}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Amount</span>
-              <span>
-                {sub?.amount && sub.currency
-                  ? `${sub.currency} ${sub.amount}`
-                  : "—"}
-              </span>
-            </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Current period ends</span>
+                <span>{formatDate(sub?.currentPeriodEnd)}</span>
+              </div>
+              {sub?.cancelAtPeriodEnd ? (
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Access until</span>
+                  <span>
+                    {formatDate(sub.currentPeriodEnd)} (cancel at period end)
+                  </span>
+                </div>
+              ) : null}
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Amount</span>
+                <span>
+                  {sub?.amount && sub.currency
+                    ? `${sub.currency} ${sub.amount}`
+                    : ""}
+                </span>
+              </div>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Included capabilities</CardTitle>
+          <CardTitle>Card on file</CardTitle>
           <CardDescription>
-            Features enabled for this workspace.
+            Save a card for off-session renewals (platform Stripe account).
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {access?.effectiveCapabilities.length ? (
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {access.effectiveCapabilities.map((cap) => (
+        <CardContent className="space-y-4">
+          {(paymentMethods?.length ?? 0) > 0 ? (
+            <ul className="space-y-2 text-sm">
+              {paymentMethods!.map((pm) => (
                 <li
-                  key={cap.id}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  key={pm.id}
+                  className="flex items-center justify-between rounded-md border px-3 py-2"
                 >
-                  <p className="font-medium">{cap.name}</p>
-                  {cap.description ? (
-                    <p className="text-muted-foreground">{cap.description}</p>
+                  <span>
+                    {(pm.brand ?? "Card").toUpperCase()} ···· {pm.last4 ?? "????"}
+                    {pm.expMonth && pm.expYear
+                      ? ` · ${pm.expMonth}/${pm.expYear}`
+                      : ""}
+                  </span>
+                  {pm.isDefault ? (
+                    <Badge variant="secondary">Default</Badge>
                   ) : null}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              No capabilities are assigned yet.
-            </p>
+            <p className="text-sm text-muted-foreground">No cards on file yet.</p>
+          )}
+
+          {setupClientSecret && setupPublishableKey ? (
+            <EmbeddedStripePayment
+              mode="setup"
+              publishableKey={setupPublishableKey}
+              clientSecret={setupClientSecret}
+              onSuccess={(result) => {
+                const setupIntentId = result?.setupIntentId;
+                if (!setupIntentId) {
+                  toast.error("Card was saved in Stripe but confirmation failed.");
+                  return;
+                }
+                confirmSetupMutation.mutate(setupIntentId);
+              }}
+              onError={(message) => toast.error(message)}
+            />
+          ) : (
+            <ActionButton
+              size="sm"
+              variant="outline"
+              onClick={() => setupIntentMutation.mutate()}
+              disabled={
+                setupIntentMutation.isPending || confirmSetupMutation.isPending
+              }
+            >
+              <CreditCard className="mr-2 size-4" />
+              {setupIntentMutation.isPending || confirmSetupMutation.isPending
+                ? "Preparing…"
+                : "Add card"}
+            </ActionButton>
           )}
         </CardContent>
       </Card>
@@ -165,40 +416,26 @@ export function BusinessBillingSettings() {
         </Card>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        <Button nativeButton={false} render={<a href={getSupportHref()} />}>
-          Contact support
-        </Button>
-        <Button
-          variant="outline"
-          nativeButton={false}
-          render={<a href={getSupportMailto("Request plan upgrade")} />}
-        >
-          Request upgrade
-        </Button>
-        {getBookCallHref() ? (
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={
-              <a
-                href={getBookCallHref()!}
-                target="_blank"
-                rel="noreferrer"
-              />
-            }
-          >
-            Book call
-          </Button>
-        ) : null}
-        <Button
-          variant="ghost"
-          nativeButton={false}
-          render={<Link href="/business/dashboard" />}
-        >
-          Go to dashboard
-        </Button>
-      </div>
+      <PlanChangeDialog
+        open={planDialogMode !== null}
+        onOpenChange={(open) => !open && setPlanDialogMode(null)}
+        mode={planDialogMode ?? "both"}
+      />
+
+      <ConfirmDeleteDialog
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        title="Cancel subscription?"
+        description={
+          isStripeBilling
+            ? "Your subscription will remain active until the end of the current billing period. Stripe will stop renewing after that date."
+            : "Your subscription will end immediately, your workspace access will be removed, and you will be signed out."
+        }
+        confirmLabel="Cancel subscription"
+        pendingLabel="Canceling…"
+        isPending={cancelMutation.isPending}
+        onConfirm={() => cancelMutation.mutate()}
+      />
     </div>
   );
 }

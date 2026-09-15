@@ -100,7 +100,8 @@ export function CalendarCreationFlow({
         });
       }
       const full = await getCalendar(created.id);
-      return { calendar: full, navigateToEdit };
+      return { calendar: full, navigateToEdit,
+};
     },
     onSuccess: async ({ calendar, navigateToEdit }) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.calendars.all() });

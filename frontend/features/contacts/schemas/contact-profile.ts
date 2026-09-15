@@ -31,7 +31,12 @@ export const contactProfileSchema = z.object({
   state: z.string().max(100).optional(),
   country: z.string().max(100).optional(),
   zip: z.string().max(20).optional(),
-  avatarUrl: z.string().max(500_000).optional(),
+  avatarAssetId: z
+    .string()
+    .optional()
+    .refine((v) => !v || z.string().min(1).safeParse(v).success, {
+      message: "Invalid profile picture",
+    }),
 });
 
 export type ContactProfileFormValues = z.infer<typeof contactProfileSchema>;
@@ -49,13 +54,13 @@ export const contactProfileDefaultValues: ContactProfileFormValues = {
   state: "",
   country: "",
   zip: "",
-  avatarUrl: "",
+  avatarAssetId: "",
 };
 
 export function formatContactTableDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "";
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -81,7 +86,7 @@ export function contactToProfileForm(contact: Contact): ContactProfileFormValues
     state: contact.state ?? "",
     country: contact.country ?? "",
     zip: contact.zip ?? "",
-    avatarUrl: contact.avatarUrl ?? "",
+    avatarAssetId: contact.avatarAssetId ?? "",
   };
 }
 
@@ -103,6 +108,6 @@ export function profileFormToApiBody(values: ContactProfileFormValues) {
     state: values.state?.trim() || undefined,
     country: values.country?.trim() || undefined,
     zip: values.zip?.trim() || undefined,
-    avatarUrl: values.avatarUrl?.trim() || undefined,
+    avatarAssetId: values.avatarAssetId?.trim() || null,
   };
 }

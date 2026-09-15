@@ -38,7 +38,7 @@ export function useInvoicesTabColumns(): DataTableColumn<Invoice>[] {
         header: "Customer",
         className: "min-w-[8rem] max-w-[12rem]",
         cell: (row) => (
-          <span className="line-clamp-1">{row.contact?.label ?? "—"}</span>
+          <span className="line-clamp-1">{row.contact?.label ?? ""}</span>
         ),
       },
       {

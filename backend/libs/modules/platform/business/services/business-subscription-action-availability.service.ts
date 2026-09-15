@@ -132,7 +132,9 @@ export class BusinessSubscriptionActionAvailabilityService {
     }
 
     if (state.subscriptionStatus === SubscriptionStatus.TRIALING) {
-      const periodEnd = state.currentPeriodEnd ? new Date(state.currentPeriodEnd) : null;
+      const periodEnd = state.currentPeriodEnd
+        ? new Date(state.currentPeriodEnd)
+        : null;
       if (periodEnd && periodEnd < new Date()) {
         return (
           enabled.find((a) => a.key === 'EXTEND_TRIAL') ??
@@ -231,7 +233,9 @@ export class BusinessSubscriptionActionAvailabilityService {
         category: 'danger',
         visible: !isCanceled,
         enabled: Boolean(subscription) && !isCanceled && !isSuspended,
-        disabledReason: isCanceled ? 'Subscription is already canceled' : undefined,
+        disabledReason: isCanceled
+          ? 'Subscription is already canceled'
+          : undefined,
         severity: 'danger',
         requiresConfirmation: true,
         requiresInput: false,
@@ -241,7 +245,9 @@ export class BusinessSubscriptionActionAvailabilityService {
         category: 'danger',
         visible: isTrialing && !isExpired,
         enabled: isTrialing && !isSuspended,
-        disabledReason: !isTrialing ? 'Subscription is not trialing' : undefined,
+        disabledReason: !isTrialing
+          ? 'Subscription is not trialing'
+          : undefined,
         severity: 'danger',
         requiresConfirmation: true,
         requiresInput: false,
@@ -251,7 +257,9 @@ export class BusinessSubscriptionActionAvailabilityService {
         category: 'danger',
         visible: !isSuspended,
         enabled: !isSuspended,
-        disabledReason: isSuspended ? 'Business is already suspended' : undefined,
+        disabledReason: isSuspended
+          ? 'Business is already suspended'
+          : undefined,
         severity: 'danger',
         requiresConfirmation: true,
         requiresInput: false,
@@ -291,9 +299,7 @@ export class BusinessSubscriptionActionAvailabilityService {
         category: 'package',
         visible: !isSuspended,
         enabled: hasPlanTier && !isSuspended,
-        disabledReason: !hasPlanTier
-          ? 'No plan tier assigned'
-          : undefined,
+        disabledReason: !hasPlanTier ? 'No plan tier assigned' : undefined,
         severity: 'warning',
         requiresConfirmation: true,
         requiresInput: false,

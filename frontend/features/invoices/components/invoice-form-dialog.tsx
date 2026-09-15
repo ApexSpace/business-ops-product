@@ -1,6 +1,14 @@
 "use client";
 
-import { FormDialog } from "@/components/forms/form-dialog";
+import { FormSheet } from "@/components/forms/form-sheet";
+import {
+  FORM_DRAWER_CONTENT_COMPACT_CLASS,
+  FORM_DRAWER_DESCRIPTION_CLASS,
+  FORM_DRAWER_FOOTER_CLASS,
+  FORM_DRAWER_HEADER_COMPACT_CLASS,
+  FORM_DRAWER_SHEET_FINANCIAL_CLASS,
+  FORM_DRAWER_TITLE_COMPACT_CLASS,
+} from "@/components/forms/form-drawer-shell";
 import { invoiceFormSchema } from "@/features/invoices/schemas/invoice-profile";
 import {
   InvoiceBasicFields,
@@ -72,15 +80,22 @@ export function InvoiceFormDialog(props: InvoiceFormDialogProps) {
   });
 
   return (
-    <FormDialog
+    <FormSheet
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? `Edit ${editingInvoice?.invoiceNumber}` : "New invoice"}
       description={
         canSend
-          ? "Select a customer, add line items, then save as draft or send."
-          : "Select a customer, add line items, and save."
+          ? "Create an invoice and send it to your customer."
+          : "Create an invoice for your customer."
       }
+      className={FORM_DRAWER_SHEET_FINANCIAL_CLASS}
+      width="wide"
+      headerClassName={FORM_DRAWER_HEADER_COMPACT_CLASS}
+      titleClassName={FORM_DRAWER_TITLE_COMPACT_CLASS}
+      descriptionClassName={FORM_DRAWER_DESCRIPTION_CLASS}
+      contentClassName={FORM_DRAWER_CONTENT_COMPACT_CLASS}
+      footerClassName={FORM_DRAWER_FOOTER_CLASS}
       form={form}
       schema={invoiceFormSchema}
       onSubmit={canSend ? sendInvoice : saveDraft}
@@ -90,7 +105,6 @@ export function InvoiceFormDialog(props: InvoiceFormDialogProps) {
       submitLabel={canSend ? "Send" : "Save"}
       secondarySubmitLabel="Save as draft"
       isPending={mutation.isPending}
-      size="2xl"
     >
       <InvoiceBasicFields
         form={form}
@@ -126,6 +140,6 @@ export function InvoiceFormDialog(props: InvoiceFormDialogProps) {
       />
 
       <InvoiceFormFooterFields form={form} dialogOpen={open} />
-    </FormDialog>
+    </FormSheet>
   );
 }

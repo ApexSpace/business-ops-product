@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
-import { FormDialog } from "@/components/forms/form-dialog";
+import { FormSheet } from "@/components/forms/form-sheet";
 import { RichTextEditor } from "@/components/forms/rich-text-editor";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import {
@@ -72,7 +72,8 @@ export function TaskFormDialog({
 
   const lockedContact = useMemo(() => {
     if (!defaultContactId || !defaultContactLabel) return undefined;
-    return { id: defaultContactId, label: defaultContactLabel };
+    return { id: defaultContactId, label: defaultContactLabel,
+};
   }, [defaultContactId, defaultContactLabel]);
 
   const assigneeItems = useMemo(() => {
@@ -119,15 +120,15 @@ export function TaskFormDialog({
   });
 
   return (
-    <FormDialog
+    <FormSheet
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? "Edit task" : "New task"}
+      description="Create or update a task linked to a contact or lead."
       form={form}
       schema={taskFormSchema}
       onSubmit={(values) => mutation.mutate(values)}
       isPending={mutation.isPending}
-      size="lg"
     >
       {!lockContact && !lockLead ? (
         <FormField
@@ -285,6 +286,6 @@ export function TaskFormDialog({
           )}
         />
       ) : null}
-    </FormDialog>
+    </FormSheet>
   );
 }

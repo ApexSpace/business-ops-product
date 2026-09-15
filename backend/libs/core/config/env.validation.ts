@@ -19,6 +19,10 @@ const baseSchema = Joi.object({
     .default('info'),
   API_PREFIX: Joi.string().required(),
   CORS_ORIGIN: Joi.string().default('*'),
+  REALTIME_WEBSOCKET_ENABLED: Joi.string()
+    .valid('true', 'false')
+    .default('false'),
+  REALTIME_CORS_ORIGIN: Joi.string().optional(),
   ENABLE_RESPONSE_ENVELOPE: Joi.string().valid('true', 'false').default('true'),
   FRONTEND_URL: Joi.string().uri().optional(),
   /** Public API origin for widgets and embed scripts (no trailing slash). */
@@ -53,11 +57,7 @@ const baseSchema = Joi.object({
     then: Joi.string().required(),
     otherwise: Joi.string().optional(),
   }),
-  GOOGLE_OAUTH_REDIRECT_URI: Joi.when('GOOGLE_OAUTH_ENABLED', {
-    is: 'true',
-    then: Joi.string().uri().required(),
-    otherwise: Joi.string().uri().optional(),
-  }),
+  GOOGLE_OAUTH_REDIRECT_URI: Joi.string().uri().optional(),
   INTEGRATION_ENCRYPTION_KEY: Joi.string().min(32).optional(),
   META_OAUTH_ENABLED: Joi.string().valid('true', 'false').default('false'),
   META_APP_ID: Joi.when('META_OAUTH_ENABLED', {
@@ -76,13 +76,27 @@ const baseSchema = Joi.object({
     otherwise: Joi.string().uri().optional(),
   }),
   META_WEBHOOK_VERIFY_TOKEN: Joi.string().optional(),
+  /** HTTPS webhook URL registered in Meta App Dashboard (overrides BACKEND_PUBLIC_URL for subscriptions). */
+  META_WEBHOOK_CALLBACK_URL: Joi.string().uri().optional(),
   META_GRAPH_API_VERSION: Joi.string().default('v20.0'),
   /** Facebook Login for Business — Facebook connect (Page-oriented variation) */
   META_FACEBOOK_LOGIN_CONFIG_ID: Joi.string().optional(),
-  /** Instagram Graph API Login for Business — Instagram connect */
+  /** Facebook Login for Business config used for Instagram-with-Facebook connect */
   META_INSTAGRAM_LOGIN_CONFIG_ID: Joi.string().optional(),
   /** @deprecated Fallback when META_FACEBOOK_LOGIN_CONFIG_ID / META_INSTAGRAM_LOGIN_CONFIG_ID unset */
   META_LOGIN_CONFIG_ID: Joi.string().optional(),
+  /**
+   * Instagram App ID for Business Login for Instagram (Direct).
+   * Falls back to META_APP_ID when unset.
+   */
+  META_INSTAGRAM_APP_ID: Joi.string().optional(),
+  /** Instagram App Secret for Direct Instagram Login (falls back to META_APP_SECRET). */
+  META_INSTAGRAM_APP_SECRET: Joi.string().optional(),
+  /**
+   * OAuth redirect URI registered under Instagram → API setup with Instagram login.
+   * Falls back to META_REDIRECT_URI when unset.
+   */
+  META_INSTAGRAM_DIRECT_REDIRECT_URI: Joi.string().uri().optional(),
   /** WhatsApp Embedded Signup only — do not use for Facebook/Instagram */
   META_EMBEDDED_SIGNUP_CONFIG_ID: Joi.string().optional(),
 
@@ -120,6 +134,9 @@ const baseSchema = Joi.object({
     then: Joi.string().uri().required(),
     otherwise: Joi.string().uri().optional(),
   }),
+  STRIPE_PUBLISHABLE_KEY: Joi.string().optional(),
+  STRIPE_SECRET_KEY_TEST: Joi.string().optional(),
+  STRIPE_PUBLISHABLE_KEY_TEST: Joi.string().optional(),
   STRIPE_WEBHOOK_SECRET_PLATFORM: Joi.string().optional(),
   STRIPE_WEBHOOK_SECRET_CONNECTED_ACCOUNT: Joi.string().optional(),
   STRIPE_API_VERSION: Joi.string().default('2025-05-28.basil'),
@@ -137,6 +154,17 @@ const baseSchema = Joi.object({
   REDIS_TLS: Joi.string().valid('true', 'false').optional(),
   /** Password when not embedded in REDIS_URL (e.g. ACL user default). */
   REDIS_PASSWORD: Joi.string().optional(),
+
+  R2_BUCKET: Joi.string().optional(),
+  R2_ENDPOINT: Joi.string().uri().optional(),
+  R2_ACCESS_KEY_ID: Joi.string().optional(),
+  R2_SECRET_ACCESS_KEY: Joi.string().optional(),
+  R2_PUBLIC_BASE_URL: Joi.string().uri().optional(),
+  R2_SIGNED_UPLOAD_EXPIRES_SECONDS: Joi.number().integer().min(60).default(900),
+  R2_SIGNED_DOWNLOAD_EXPIRES_SECONDS: Joi.number()
+    .integer()
+    .min(60)
+    .default(300),
 
   ...emailEnvValidationSchema,
 });

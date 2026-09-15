@@ -101,7 +101,8 @@ export function CalendarEditNotificationsSection(props: CalendarEditSectionProps
                     rows={3}
                     value={
                       (
-                        form.watch("policySettings") as { noShowPolicy?: string }
+                        form.watch("policySettings") as { noShowPolicy?: string,
+}
                       )?.noShowPolicy ?? ""
                     }
                     onChange={(e) =>

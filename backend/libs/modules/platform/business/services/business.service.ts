@@ -32,6 +32,8 @@ import { BusinessSubscriptionActionAvailabilityService } from './business-subscr
 import { BusinessSubscriptionPaymentRepository } from '../repositories/business-subscription-payment.repository';
 import { BusinessSubscriptionEventService } from './business-subscription-event.service';
 import { BusinessSubscriptionPaymentService } from './business-subscription-payment.service';
+import { MedSpaBootstrapService } from './medspa-bootstrap.service';
+import { BusinessProvisioningService } from './business-provisioning.service';
 import type { CreateBusinessDto } from '../dto/create-business.dto';
 import type { NeedsAttentionFlag } from '../types/business-access-resolution.types';
 import {
@@ -48,6 +50,7 @@ import {
   normalizeCurrencyCode,
 } from '../utils/currency.util';
 import { resolveCreateBusinessAccess } from '../utils/create-business-access.util';
+import { PlatformSmsProvisioningService } from '@app/modules/integrations/twilio/services/platform-sms-provisioning.service';
 
 @Injectable()
 export class BusinessService {
@@ -58,6 +61,8 @@ export class BusinessService {
     private readonly industriesService: IndustriesService,
     private readonly snapshotsService: SnapshotsService,
     private readonly snapshotApplyService: SnapshotApplyService,
+    private readonly medSpaBootstrap: MedSpaBootstrapService,
+    private readonly provisioning: BusinessProvisioningService,
     private readonly businessAccessService: BusinessAccessService,
     private readonly accessResolver: BusinessAccessResolverService,
     private readonly actionService: BusinessSubscriptionActionService,
@@ -67,6 +72,7 @@ export class BusinessService {
     private readonly subscriptionEventService: BusinessSubscriptionEventService,
     @Inject(forwardRef(() => MembershipService))
     private readonly membershipService: MembershipService,
+    private readonly platformSmsProvisioning: PlatformSmsProvisioningService,
   ) {}
 
   async createPlatform(dto: CreateBusinessDto, actor: RequestUser) {
@@ -100,17 +106,9 @@ export class BusinessService {
       );
     }
 
-    const snapshot = await this.snapshotsService.resolveForBusiness(
-      effectiveDto.snapshotId,
-    );
-
-    if (!snapshot) {
-      throw new AppException(
-        ErrorCode.BAD_REQUEST,
-        'No published snapshot is configured. Add a snapshot in platform settings first.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    const snapshot = effectiveDto.snapshotId
+      ? await this.snapshotsService.resolveForBusiness(effectiveDto.snapshotId)
+      : null;
 
     const profileData = toBusinessCreateData({
       ...effectiveDto,
@@ -129,7 +127,20 @@ export class BusinessService {
       return created;
     });
 
-    await this.snapshotApplyService.apply(business.id, snapshot.id, actor.id);
+    // Prefer MedSpa bootstrap (CEO model). Optional legacy snapshot if explicitly provided.
+    if (snapshot) {
+      await this.snapshotApplyService.apply(business.id, snapshot.id, actor.id);
+    } else {
+      await this.medSpaBootstrap.apply(business.id, {
+        name: business.name,
+        address: business.address,
+        city: business.city,
+        state: business.state,
+        country: business.country,
+        zip: business.zip,
+        timezone: business.timezone,
+      });
+    }
 
     await this.auditService.log({
       actorUserId: actor.id,
@@ -155,7 +166,34 @@ export class BusinessService {
       effectiveDto.currency !== undefined ||
       effectiveDto.notes !== undefined;
 
-    if (hasAccessFields) {
+    if (effectiveDto.planTierId) {
+      const accessMode =
+        effectiveDto.subscriptionStatus === SubscriptionStatus.INTERNAL
+          ? 'INTERNAL'
+          : effectiveDto.subscriptionStatus === SubscriptionStatus.PENDING_PAYMENT
+            ? 'PENDING_PAYMENT'
+            : effectiveDto.subscriptionStatus === SubscriptionStatus.ACTIVE
+              ? 'ACTIVE'
+              : 'TRIAL';
+      await this.provisioning.provisionAccess(
+        business.id,
+        {
+          name: business.name,
+          tierId: effectiveDto.planTierId,
+          purchaseAddonIds: effectiveDto.purchaseAddonIds,
+          accessMode,
+          billingCycle: effectiveDto.billingCycle,
+          trialDays: undefined,
+          address: business.address,
+          city: business.city,
+          state: business.state,
+          country: business.country,
+          zip: business.zip,
+          timezone: business.timezone,
+        },
+        actor,
+      );
+    } else if (hasAccessFields) {
       await this.businessAccessService.createAccessForBusiness(
         business.id,
         {
@@ -181,16 +219,23 @@ export class BusinessService {
 
     await this.actionService.emitBusinessCreatedEvents(business.id, actor);
 
+    // Fire-and-forget: US businesses get an auto-assigned local number for
+    // outbound notification SMS (shared A2P pool). Failures must not block create.
+    void this.platformSmsProvisioning
+      .ensurePlatformDefaultSms(business.id)
+      .catch(() => undefined);
+
     if (effectiveDto.inviteOwner && effectiveDto.email?.trim()) {
       await this.membershipService.invite(
         business.id,
         {
           email: effectiveDto.email.trim(),
-          role: BusinessMemberRole.ADMIN,
+          role: BusinessMemberRole.OWNER,
           firstName: effectiveDto.firstName,
           lastName: effectiveDto.lastName,
         },
         actor,
+        { allowOwnerRole: true },
       );
     }
 
@@ -220,7 +265,8 @@ export class BusinessService {
         : SubscriptionPaymentMethod.MANUAL_INVOICE;
 
     const correlationId = randomUUID();
-    const beforeState = await this.subscriptionEventService.captureState(businessId);
+    const beforeState =
+      await this.subscriptionEventService.captureState(businessId);
 
     await this.prisma.$transaction(async (tx) => {
       const payment = await this.subscriptionPaymentService.recordPayment(
@@ -261,8 +307,8 @@ export class BusinessService {
           actionKey: 'CREATE_BUSINESS',
           paymentId: payment.id,
           correlationId,
-          fromState: beforeState as unknown as Prisma.InputJsonValue,
-          toState: afterState as unknown as Prisma.InputJsonValue,
+          fromState: beforeState,
+          toState: afterState,
           source: BusinessSubscriptionEventSource.ADMIN,
         },
         actor,
@@ -325,7 +371,7 @@ export class BusinessService {
 
     const { items, total } = await this.businessRepository.findMany({
       skip: hasResolverFilter ? 0 : params.skip,
-      take: hasResolverFilter ? businessIds?.length ?? 0 : params.limit,
+      take: hasResolverFilter ? (businessIds?.length ?? 0) : params.limit,
       status: params.status,
       subscriptionStatus: params.subscriptionStatus,
       paymentStatus: params.paymentStatus,
@@ -356,7 +402,7 @@ export class BusinessService {
     return {
       items: resolvedItems,
       meta: {
-        total: hasResolverFilter ? businessIds?.length ?? 0 : total,
+        total: hasResolverFilter ? (businessIds?.length ?? 0) : total,
         page: params.page,
         limit: params.limit,
       },
@@ -444,6 +490,14 @@ export class BusinessService {
       metadata: { ...dto },
     });
 
+    if (dto.timezone?.trim()) {
+      await this.prisma.businessOnlineBookingSettings.upsert({
+        where: { businessId: id },
+        create: { businessId: id, timezone: dto.timezone.trim() },
+        update: { timezone: dto.timezone.trim() },
+      });
+    }
+
     return toBusinessResponse(refreshed ?? business);
   }
 
@@ -511,8 +565,7 @@ export class BusinessService {
         HttpStatus.NOT_FOUND,
       );
     }
-    const resolution =
-      await this.accessResolver.resolveForBusiness(businessId);
+    const resolution = await this.accessResolver.resolveForBusiness(businessId);
     return toBusinessResponse(business, resolution);
   }
 

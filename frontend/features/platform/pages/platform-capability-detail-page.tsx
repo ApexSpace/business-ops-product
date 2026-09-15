@@ -78,6 +78,7 @@ export function PlatformCapabilityDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        showTitle
         title={
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-page-title">{capability.name}</h1>

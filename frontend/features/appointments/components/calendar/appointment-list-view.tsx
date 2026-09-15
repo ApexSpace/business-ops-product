@@ -1,16 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
+import { LoadingState } from "@/components/data-display/loading-state";
 import { Badge } from "@/components/ui/badge";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ListPagination } from "@/components/ui/list-pagination";
 import {
   formatAppointmentRange,
-  formatAppointmentStatus,
+  getAppointmentStatusDisplayLabel,
   getContactDisplayName,
   type Appointment,
   type AppointmentStatus,
@@ -23,8 +22,11 @@ const STATUS_VARIANT: Record<
   AppointmentStatus,
   "default" | "secondary" | "destructive" | "outline"
 > = {
-  SCHEDULED: "outline",
+  PENDING_COMPLETION: "outline",
+  UNCONFIRMED: "outline",
   CONFIRMED: "default",
+  WAITING: "default",
+  IN_SERVICE: "default",
   COMPLETED: "secondary",
   CANCELLED: "destructive",
   NO_SHOW: "destructive",
@@ -84,7 +86,11 @@ export function AppointmentListView({
       {
         id: "contact",
         header: "Contact",
-        cell: (row) => getContactDisplayName(row.contact),
+        cell: (row) =>
+          getContactDisplayName(row.contact, {
+            guestFirstName: row.guestFirstName,
+            guestEmail: row.guestEmail,
+          }),
       },
       {
         id: "staff",
@@ -94,14 +100,18 @@ export function AppointmentListView({
             ? [row.assignedTo.firstName, row.assignedTo.lastName]
                 .filter(Boolean)
                 .join(" ") || row.assignedTo.email
-            : "—",
+            : "",
       },
       {
         id: "status",
         header: "Status",
         cell: (row) => (
           <Badge variant={STATUS_VARIANT[row.status]}>
-            {formatAppointmentStatus(row.status)}
+            {getAppointmentStatusDisplayLabel(
+              row.status,
+              row.relatedCheckoutId ?? null,
+              row.relatedCheckoutStatus ?? null,
+            )}
           </Badge>
         ),
       },
@@ -127,32 +137,32 @@ export function AppointmentListView({
 
   if (isLoading && appointments.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
-        Loading appointments…
-      </div>
+      <LoadingState
+        label="Loading appointments…"
+        className="h-48 rounded-[var(--radius-xl)] border border-dashed py-0"
+      />
     );
   }
 
   return (
-    <div className="space-y-4">
-      <DataTable
-        columns={columns}
-        data={appointments}
-        getRowId={(row) => row.id}
-      />
-      {appointments.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground">
-          No appointments match your filters.
-        </p>
-      ) : null}
-      {meta ? (
-        <ListPagination
-          meta={meta}
-          page={page}
-          onPageChange={onPageChange}
-          label="appointments"
-        />
-      ) : null}
-    </div>
+    <EntityListLayout
+      title="Appointments"
+      hideHeader
+      flush
+      columns={columns}
+      data={appointments}
+      getRowId={(row) => row.id}
+      emptyTitle="No appointments match your filters."
+      footer={
+        meta ? (
+          <ListPagination
+            meta={meta}
+            page={page}
+            onPageChange={onPageChange}
+            label="appointments"
+          />
+        ) : undefined
+      }
+    />
   );
 }

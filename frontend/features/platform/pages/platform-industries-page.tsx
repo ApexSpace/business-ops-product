@@ -5,20 +5,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CreateIndustryDialog } from "@/features/platform/components/create-industry-dialog";
 import { IndustryFormDialog } from "@/features/platform/components/industry-form-dialog";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import {
   DataTableRowActions,
   type RowAction,
 } from "@/components/data-display/data-table-row-actions";
 import { StatusBadge } from "@/components/data-display/status-badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { FilterBar } from "@/components/layout/filter-bar";
-import { ListPage, ListPageSkeleton } from "@/components/layout/list-page";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
+import { ListFilterCheckboxGroup } from "@/components/layout/list-filter-checkbox-group";
+import { ListPageSkeleton } from "@/components/layout/list-page";
 import { ListPagination } from "@/components/ui/list-pagination";
-import { SearchableSelect } from "@/components/forms/searchable-select";
 import { useListSearchParams } from "@/lib/hooks/use-list-search-params";
 import {
   deletePlatformIndustry,
@@ -41,6 +38,8 @@ function PlatformIndustriesPageContent() {
   const { params, page, setParams } = useListSearchParams(LIST_SCHEMA);
   const [editTarget, setEditTarget] = useState<Industry | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Industry | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState(params.status);
   const canManage = useCan(PERMISSIONS["platform.industries.manage"]);
   const status = params.status;
 
@@ -116,24 +115,29 @@ function PlatformIndustriesPageContent() {
 
   return (
     <>
-      <ListPage
+      <EntityListLayout
         title="Industries"
         description="Define industries for business profiles—sidebar labels and default pipelines for new businesses."
-        actions={canManage ? <CreateIndustryDialog /> : null}
-        filters={
-          <FilterBar>
-            <SearchableSelect
-              items={industryStatusFilterOptions}
-              value={status}
-              onValueChange={(v) =>
-                setParams({ status: v ?? "all", page: "1" }, { resetPage: true })
-              }
-              placeholder="Status"
-              triggerClassName="w-[180px]"
-            />
-          </FilterBar>
+        extraActions={canManage ? <CreateIndustryDialog /> : null}
+        filterAriaLabel="Industry filters"
+        filterActive={status !== "all"}
+        filterOpen={filterOpen}
+        onFilterOpenChange={(open) => {
+          if (open) setDraftStatus(status);
+          setFilterOpen(open);
+        }}
+        filterContent={
+          <ListFilterCheckboxGroup
+            legend="Status"
+            options={industryStatusFilterOptions}
+            value={draftStatus}
+            onChange={(next) => setDraftStatus(String(next))}
+          />
         }
-        pagination={
+        onFilterApply={() =>
+          setParams({ status: draftStatus, page: "1" }, { resetPage: true })
+        }
+        footer={
           data?.meta ? (
             <ListPagination
               meta={data.meta}
@@ -141,18 +145,16 @@ function PlatformIndustriesPageContent() {
               onPageChange={(p) => setParams({ page: String(p) })}
               label="industries"
             />
-          ) : null
+          ) : undefined
         }
-      >
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          emptyTitle="No industries found"
-          rowActions={
-            canManage
-              ? (row) => {
+        columns={columns}
+        data={data?.items ?? []}
+        getRowId={(row) => row.id}
+        isLoading={isLoading}
+        emptyTitle="No industries found"
+        rowActions={
+          canManage
+            ? (row) => {
                   const actions: RowAction[] = [
                     { label: "Edit", onClick: () => setEditTarget(row) },
                   ];
@@ -165,10 +167,9 @@ function PlatformIndustriesPageContent() {
                   }
                   return <DataTableRowActions actions={actions} />;
                 }
-              : undefined
-          }
-        />
-      </ListPage>
+            : undefined
+        }
+      />
 
       <IndustryFormDialog
         open={!!editTarget}

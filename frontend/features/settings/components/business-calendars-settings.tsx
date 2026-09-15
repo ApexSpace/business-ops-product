@@ -4,23 +4,20 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { CalendarCreationFlow } from "@/features/calendars/components/calendar-creation-flow";
 import { CalendarDetailsDialog } from "@/features/calendars/components/calendar-details-dialog";
-import {
-  DataTable,
-  type DataTableColumn,
-} from "@/components/data-display/data-table";
+import { type DataTableColumn } from "@/components/data-display/data-table";
 import { DataTableRowActions } from "@/components/data-display/data-table-row-actions";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDeleteDialog } from "@/components/forms/confirm-delete-dialog";
-import { PageHeader } from "@/components/layout/page-header";
+import { EntityListLayout } from "@/components/layout/entity-list-layout";
 import { ActionButton } from "@/components/ui/action-button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   formatDurationLabel,
   getBookingTypeLabel,
-  slugifyCalendarName,
   type Calendar,
   type CalendarStatus,
 } from "@/features/calendars/schemas/calendar-profile";
@@ -32,26 +29,12 @@ import {
   deleteCalendar,
   formatCalendarTableDate,
   listCalendars,
-  setCalendarPublicBooking,
 } from "@/features/calendars/api/calendars.api";
-import {
-  canUsePublicBooking,
-  copyBookingLink,
-  copyEmbedCode,
-  getCalendarPublicBookingLabel,
-  openBookingPage,
-} from "@/features/calendars/utils/calendar-booking-utils";
 
 function calendarStatusVariant(
   status: CalendarStatus,
 ): "default" | "secondary" {
   return status === "ACTIVE" ? "default" : "secondary";
-}
-
-function calendarPublicBookingVariant(
-  calendar: Calendar,
-): "default" | "secondary" {
-  return canUsePublicBooking(calendar) ? "default" : "secondary";
 }
 
 export function BusinessCalendarsSettings() {
@@ -70,36 +53,6 @@ export function BusinessCalendarsSettings() {
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.calendars.list({ page: 1, limit: 100 }),
     queryFn: () => listCalendars({ page: 1, limit: 100 }),
-  });
-
-  const togglePublicMutation = useMutation({
-    mutationFn: async ({
-      calendar,
-      enable,
-    }: {
-      calendar: Calendar;
-      enable: boolean;
-    }) => {
-      if (!enable) {
-        return setCalendarPublicBooking(calendar.id, false);
-      }
-      const slug = slugifyCalendarName(calendar.name);
-      return setCalendarPublicBooking(calendar.id, true, {
-        publicSlug: slug,
-        status: "ACTIVE",
-        widgetSettings: {
-          ...(calendar.widgetSettings as object),
-          bookingSlug: slug,
-        },
-      });
-    },
-    onSuccess: async (_, { enable }) => {
-      toast.success(
-        enable ? "Public booking enabled" : "Public booking disabled",
-      );
-      await queryClient.invalidateQueries({ queryKey: queryKeys.calendars.all() });
-    },
-    onError: (e: Error) => toast.error(e.message),
   });
 
   const deleteMutation = useMutation({
@@ -170,17 +123,6 @@ export function BusinessCalendarsSettings() {
         ),
       },
       {
-        id: "public",
-        header: "Public link",
-        sortable: true,
-        sortValue: (row) => getCalendarPublicBookingLabel(row),
-        cell: (row) => (
-          <Badge variant={calendarPublicBookingVariant(row)}>
-            {getCalendarPublicBookingLabel(row)}
-          </Badge>
-        ),
-      },
-      {
         id: "bookings",
         header: "Bookings",
         sortable: true,
@@ -220,29 +162,7 @@ export function BusinessCalendarsSettings() {
   );
 
   const buildRowActions = (row: Calendar) => {
-    const isPublic = canUsePublicBooking(row);
-    const readOnlyActions = isPublic
-      ? [
-          {
-            label: "Copy booking link",
-            onClick: () => void copyBookingLink(row),
-          },
-          {
-            label: "Open booking page",
-            onClick: () => openBookingPage(row),
-          },
-        ]
-      : [];
-
-    if (!canManage) {
-      if (readOnlyActions.length === 0) return null;
-      return (
-        <DataTableRowActions
-          menuLabel={`Actions for ${row.name}`}
-          actions={readOnlyActions}
-        />
-      );
-    }
+    if (!canManage) return null;
 
     return (
       <DataTableRowActions
@@ -257,23 +177,6 @@ export function BusinessCalendarsSettings() {
             label: "View details",
             onClick: () => setDetailsId(row.id),
           },
-          ...readOnlyActions,
-          {
-            label: "Copy embed code",
-            onClick: () => void copyEmbedCode(row),
-            disabled: !isPublic || !row.embedEnabled,
-          },
-          isPublic
-            ? {
-                label: "Disable public booking",
-                onClick: () =>
-                  togglePublicMutation.mutate({ calendar: row, enable: false }),
-              }
-            : {
-                label: "Enable public booking",
-                onClick: () =>
-                  togglePublicMutation.mutate({ calendar: row, enable: true }),
-              },
           {
             label: "Delete",
             onClick: () => setDeleteId(row.id),
@@ -285,36 +188,35 @@ export function BusinessCalendarsSettings() {
   };
 
   return (
-    <div className="space-y-[var(--page-stack-gap)]">
-      <PageHeader
-        description="Create calendars, set when you're available, and share a booking link with customers."
-        actions={
-          canManage ? (
-            <ActionButton onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" />
-              New calendar
-            </ActionButton>
-          ) : undefined
-        }
-      />
-
-      <DataTable
-        columns={columns}
-        data={data?.items ?? []}
-        getRowId={(row) => row.id}
-        isLoading={isLoading}
-        emptyTitle="No calendars yet"
-        emptyDescription="Create a calendar to set your availability and share a booking link with customers."
-        emptyAction={
-          canManage ? (
-            <ActionButton onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" />
-              New calendar
-            </ActionButton>
-          ) : undefined
-        }
-        rowActions={buildRowActions}
-      />
+    <>
+    <EntityListLayout
+      title="Calendars"
+      extraActions={
+        <Link
+          href="/business/settings/online-booking"
+          className={buttonVariants({ variant: "brand" })}
+        >
+          <ExternalLink className="mr-1.5 size-4" />
+          Online Booking
+        </Link>
+      }
+      addButtonLabel="New calendar"
+      onAdd={canManage ? () => setCreateOpen(true) : undefined}
+      columns={columns}
+      data={data?.items ?? []}
+      getRowId={(row) => row.id}
+      isLoading={isLoading}
+      emptyTitle="No calendars yet"
+      emptyDescription="Create a calendar for internal scheduling and integrations."
+      emptyAction={
+        canManage ? (
+          <ActionButton onClick={() => setCreateOpen(true)}>
+            New calendar
+          </ActionButton>
+        ) : undefined
+      }
+      rowActions={buildRowActions}
+    />
 
       <CalendarCreationFlow
         open={createOpen}
@@ -343,6 +245,6 @@ export function BusinessCalendarsSettings() {
         isPending={deleteMutation.isPending}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
       />
-    </div>
+    </>
   );
 }

@@ -55,7 +55,8 @@ export class ListSubscriptionPaymentsQueryDto extends CursorPaginationQueryDto {
   to?: string;
 
   @ApiPropertyOptional({
-    description: 'When false, includes voided records. Default excludes voided.',
+    description:
+      'When false, includes voided records. Default excludes voided.',
   })
   @IsOptional()
   includeVoided?: boolean;
@@ -183,7 +184,8 @@ export class BusinessSubscriptionPaymentDto {
 
   @ApiProperty({
     enum: SubscriptionPaymentStatus,
-    description: 'Status for this payment record only — not the subscription aggregate.',
+    description:
+      'Status for this payment record only — not the subscription aggregate.',
   })
   paymentStatus!: SubscriptionPaymentStatus;
 

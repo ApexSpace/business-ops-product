@@ -1,15 +1,89 @@
+/*
+ * Design-token ownership
+ * - This file + frontend/lib/theme/* = single source of truth for visual values
+ *   (color, radius, --control-height, typography).
+ * - frontend/lib/design/* = recipes and component contracts only
+ *   (Tailwind class compositions that reference these variables).
+ * - Features must not introduce new raw color / radius / height values.
+ *
+ * Ink roles (do not invent hex; do not retune --foreground to Figma #131927):
+ *   Body / default ink     → text-foreground
+ *   Heading / entity name  → text-violet-primary-dark or text-violet-primary-darker
+ *   Secondary / caption    → text-muted-foreground
+ *                            (drawers: text-[var(--drawer-text-secondary)])
+ *   Placeholder / tertiary → text-foreground-subtle /
+ *                            placeholder:text-foreground-subtle
+ */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "../lib/theme/codesol-default-theme.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
   --font-heading: var(--font-sans);
+
+  /* PandaCue Figma typography scale (Montserrat) */
+  --text-display-xl: 88px;
+  --text-display-xl--line-height: 1;
+  --text-display-xl--font-weight: 700;
+  --text-display-l: 68px;
+  --text-display-l--line-height: 1;
+  --text-display-l--font-weight: 700;
+  --text-display-m: 52px;
+  --text-display-m--line-height: 1;
+  --text-display-m--font-weight: 700;
+  --text-heading-1: 48px;
+  --text-heading-1--line-height: 58px;
+  --text-heading-1--font-weight: 700;
+  --text-heading-2: 40px;
+  --text-heading-2--line-height: 48px;
+  --text-heading-2--font-weight: 700;
+  --text-heading-3: 32px;
+  --text-heading-3--line-height: 38px;
+  --text-heading-3--font-weight: 700;
+  --text-heading-4: 28px;
+  --text-heading-4--line-height: 34px;
+  --text-heading-4--font-weight: 700;
+  --text-heading-5: 24px;
+  --text-heading-5--line-height: 28px;
+  --text-heading-5--font-weight: 700;
+  --text-subtitle: 20px;
+  --text-subtitle--line-height: normal;
+  --text-subtitle--font-weight: 500;
+  --text-lead: 22px;
+  --text-lead--line-height: normal;
+  --text-lead--font-weight: 400;
+  --text-body-large: 18px;
+  --text-body-large--line-height: normal;
+  --text-body-large--font-weight: 400;
+  --text-body: 16px;
+  --text-body--line-height: normal;
+  --text-body--font-weight: 400;
+  --text-body-small: 14px;
+  --text-body-small--line-height: normal;
+  --text-body-small--font-weight: 400;
+  --text-caption: 12px;
+  --text-caption--line-height: normal;
+  --text-caption--font-weight: 500;
+  --text-btn-giant: 18px;
+  --text-btn-giant--line-height: 24px;
+  --text-btn-giant--font-weight: 700;
+  --text-btn-large: 16px;
+  --text-btn-large--line-height: 20px;
+  --text-btn-large--font-weight: 700;
+  --text-btn-medium: 14px;
+  --text-btn-medium--line-height: 16px;
+  --text-btn-medium--font-weight: 700;
+  --text-btn-small: 12px;
+  --text-btn-small--line-height: 16px;
+  --text-btn-small--font-weight: 700;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -17,6 +91,7 @@
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-group-label: var(--sidebar-group-label);
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
@@ -28,12 +103,22 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-hover: var(--success-hover);
+  --color-success-active: var(--success-active);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-primary-text: var(--primary-text);
+  --color-primary-tint: var(--primary-tint);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-foreground-subtle: var(--foreground-subtle);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -49,138 +134,551 @@
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
-  --radius-sm: calc(var(--radius) * 0.75);
+  --color-table-row-hover: var(--table-row-hover);
+  --color-glass-panel: var(--glass-panel);
+  --color-glass-panel-strong: var(--glass-panel-strong);
+  --color-glass-panel-soft: var(--glass-panel-soft);
+  --color-glass-border: var(--glass-border);
+
+  /* Figma palettes -> Tailwind color utilities (e.g. bg-violet-primary-normal) */
+  --color-violet-primary-surface: var(--pc-violet-primary-surface);
+  --color-violet-primary-light: var(--pc-violet-primary-light);
+  --color-violet-primary-light-hover: var(--pc-violet-primary-light-hover);
+  --color-violet-primary-light-active: var(--pc-violet-primary-light-active);
+  --color-violet-primary-normal: var(--pc-violet-primary-normal);
+  --color-violet-primary-normal-hover: var(--pc-violet-primary-normal-hover);
+  --color-violet-primary-normal-active: var(--pc-violet-primary-normal-active);
+  --color-violet-primary-dark: var(--pc-violet-primary-dark);
+  --color-violet-primary-dark-hover: var(--pc-violet-primary-dark-hover);
+  --color-violet-primary-dark-active: var(--pc-violet-primary-dark-active);
+  --color-violet-primary-darker: var(--pc-violet-primary-darker);
+  --color-black-secondary-light: var(--pc-black-secondary-light);
+  --color-black-secondary-light-hover: var(--pc-black-secondary-light-hover);
+  --color-black-secondary-light-active: var(--pc-black-secondary-light-active);
+  --color-black-secondary-normal: var(--pc-black-secondary-normal);
+  --color-grey-tertiary-light: var(--pc-grey-tertiary-light);
+  --color-grey-tertiary-light-hover: var(--pc-grey-tertiary-light-hover);
+  --color-grey-tertiary-light-active: var(--pc-grey-tertiary-light-active);
+  --color-grey-tertiary-normal: var(--pc-grey-tertiary-normal);
+  --color-grey-tertiary-normal-hover: var(--pc-grey-tertiary-normal-hover);
+  --color-grey-tertiary-normal-active: var(--pc-grey-tertiary-normal-active);
+  --color-grey-tertiary-dark: var(--pc-grey-tertiary-dark);
+  --color-grey-tertiary-dark-hover: var(--pc-grey-tertiary-dark-hover);
+  --color-grey-tertiary-dark-active: var(--pc-grey-tertiary-dark-active);
+  --color-grey-tertiary-darker: var(--pc-grey-tertiary-darker);
+  --color-green-success-light: var(--pc-green-success-light);
+  --color-green-success-light-hover: var(--pc-green-success-light-hover);
+  --color-green-success-light-active: var(--pc-green-success-light-active);
+  --color-green-success-normal: var(--pc-green-success-normal);
+  --color-green-success-normal-hover: var(--pc-green-success-normal-hover);
+  --color-green-success-normal-active: var(--pc-green-success-normal-active);
+  --color-green-success-dark: var(--pc-green-success-dark);
+  --color-green-success-dark-hover: var(--pc-green-success-dark-hover);
+  --color-green-success-dark-active: var(--pc-green-success-dark-active);
+  --color-green-success-darker: var(--pc-green-success-darker);
+
+  --radius-xs: calc(var(--radius) * 0.5);
+  --radius-sm: calc(var(--radius) * 0.875);
   --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) * 1.25);
-  --radius-xl: calc(var(--radius) * 1.5);
-  --radius-2xl: calc(var(--radius) * 2);
+  --radius-lg: var(--radius-control);
+  --radius-xl: var(--radius-card);
+  --radius-2xl: calc(var(--radius-card) * 1.25);
+  --radius-control: var(--radius-control);
+  --radius-nav: var(--radius-nav);
   --shadow-elevation-xs: var(--shadow-xs-value);
   --shadow-elevation-sm: var(--shadow-sm-value);
   --shadow-elevation-md: var(--shadow-md-value);
   --shadow-elevation-lg: var(--shadow-lg-value);
+  --shadow-glass: var(--shadow-glass-value);
   --spacing-page-x: var(--page-padding-x);
   --spacing-page-y: var(--page-padding-y);
   --spacing-section: var(--section-gap);
   --spacing-stack: var(--stack-gap);
+
+  /* Drawer density — recipes use gap-drawer-* / py-drawer-* (see :root --drawer-*) */
+  --spacing-drawer-section: var(--drawer-section-gap);
+  --spacing-drawer-stack: var(--drawer-stack-gap);
+  --spacing-drawer-field: var(--drawer-field-gap);
+  --spacing-drawer-title: var(--drawer-header-gap);
+  --spacing-drawer-header-y: var(--drawer-header-padding-y);
+  --spacing-drawer-body-x: var(--drawer-body-padding-x);
+  --spacing-drawer-body-y: var(--drawer-body-padding-y);
+  --spacing-drawer-body-bottom: var(--drawer-body-padding-bottom);
+  --spacing-drawer-footer: var(--drawer-footer-gap);
+  --spacing-drawer-footer-y: var(--drawer-footer-padding-y);
+  --spacing-drawer-spine-x: var(--drawer-spine-padding-x);
+  --spacing-drawer-spine-y: var(--drawer-spine-padding-y);
 }
 
-/* ─── Light: premium grayscale + single cool accent ─── */
+/* --- Light: PandaCue semantic tokens (mapped from Figma palettes in codesol-default-theme.css)
+ * Ink: --foreground = body, --muted-foreground = secondary, --foreground-subtle = placeholder.
+ */
 :root {
-  --background: oklch(0.988 0.002 260);
-  --foreground: oklch(0.17 0.01 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.17 0.01 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.17 0.01 260);
-  --primary: var(--sidebar-primary);
-  --primary-foreground: var(--sidebar-primary-foreground);
-  --secondary: oklch(0.965 0.004 260);
-  --secondary-foreground: oklch(0.25 0.015 260);
-  --muted: oklch(0.965 0.004 260);
-  --muted-foreground: oklch(0.48 0.015 260);
-  --accent: oklch(0.955 0.008 260);
-  --accent-foreground: oklch(0.22 0.02 260);
-  --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.72 0.14 75);
-  --warning-foreground: oklch(0.28 0.06 75);
-  --success: oklch(0.55 0.14 155);
-  --success-foreground: oklch(0.99 0 0);
-  --info: oklch(0.55 0.12 250);
-  --info-foreground: oklch(0.99 0 0);
-  --border: oklch(0.91 0.006 260);
-  --input: oklch(0.91 0.006 260);
-  --ring: oklch(0.55 0.1 260);
-  --chart-1: oklch(0.55 0.1 260);
-  --chart-2: oklch(0.48 0.015 260);
-  --chart-3: oklch(0.38 0.012 260);
-  --chart-4: oklch(0.28 0.01 260);
-  --chart-5: oklch(0.2 0.01 260);
-  --surface-1: oklch(1 0 0);
-  --surface-2: oklch(0.99 0.002 260);
-  --surface-3: oklch(0.975 0.004 260);
-  --radius: 0.375rem;
-  --table-row-height: 2.375rem;
-  --table-row-height-compact: 2rem;
-  --control-height: 2.25rem;
-  /* Aligned with inputs/selects so toolbar filters and sm buttons match form controls */
-  --control-height-sm: var(--control-height);
+  --background: var(--cs-page);
+  --foreground: var(--cs-ink); /* body */
+  --foreground-subtle: var(--cs-ink-3); /* placeholder / tertiary */
+  --card: var(--cs-glass-surface-strong);
+  --card-foreground: var(--cs-ink);
+  --popover: var(--cs-glass-surface-strong);
+  --popover-foreground: var(--cs-ink);
+  --primary: var(--cs-blue);
+  --primary-foreground: #ffffff;
+  --primary-tint: var(--cs-blue-tint);
+  --primary-text: var(--cs-blue-text);
+  --primary-hover: var(--pc-violet-primary-normal-hover);
+  --primary-active: var(--pc-violet-primary-normal-active);
+  --secondary: color-mix(in srgb, var(--cs-glass-surface-soft) 85%, white);
+  --secondary-foreground: var(--cs-ink);
+  --muted: color-mix(in srgb, var(--cs-glass-surface-soft) 88%, white);
+  --muted-foreground: var(--cs-ink-2); /* secondary / caption */
+  --accent: var(--cs-blue-tint);
+  --accent-foreground: var(--cs-blue-text);
+  --destructive: var(--cs-red);
+  --destructive-foreground: #ffffff;
+  --destructive-subtle: var(--cs-red-tint);
+  --warning: var(--cs-amber);
+  --warning-foreground: var(--cs-amber);
+  --warning-subtle: var(--cs-amber-tint);
+  --success: var(--cs-green);
+  --success-foreground: var(--cs-green);
+  --success-subtle: var(--cs-green-tint);
+  --success-hover: var(--pc-green-success-normal-hover);
+  --success-active: var(--pc-green-success-normal-active);
+  --info: var(--cs-blue);
+  --info-foreground: var(--cs-blue-text);
+  --border: var(--cs-glass-border-strong);
+  --input: var(--cs-control-border);
+  --ring: var(--cs-blue);
+  --chart-1: var(--cs-blue);
+  --chart-2: var(--cs-ink-2);
+  --chart-3: var(--cs-ink-3);
+  --chart-4: var(--cs-navy-hover);
+  --chart-5: var(--cs-navy);
+  --surface-1: var(--cs-glass-surface-strong);
+  --surface-2: var(--cs-glass-surface);
+  --surface-3: color-mix(in srgb, var(--cs-blue) 12%, white);
+  --table-row-hover: color-mix(in srgb, var(--cs-blue) 5%, white);
+  --glass-panel: var(--cs-glass-surface);
+  --glass-panel-strong: var(--cs-glass-surface-strong);
+  --glass-panel-soft: var(--cs-glass-surface-soft);
+  --glass-border: var(--cs-glass-border);
+  --glass-border-strong: var(--cs-glass-border-strong);
+  --control-surface: var(--cs-control-surface);
+  --control-border: var(--cs-control-border);
+  --shell-sidebar-surface: var(--cs-shell-sidebar-surface);
+  --shell-topbar-surface: var(--cs-shell-topbar-surface);
+  --shell-navbar-surface: var(--cs-shell-navbar-surface);
+  --shell-navbar-foreground: var(--cs-shell-navbar-foreground);
+  --shell-navbar-height: var(--cs-shell-navbar-height);
+  --shell-navbar-tab-height: var(--cs-shell-navbar-tab-height);
+  --shell-navbar-tab-padding-y: var(--cs-shell-navbar-tab-padding-y);
+  --shell-navbar-tab-padding-x: var(--cs-shell-navbar-tab-padding-x);
+  --shell-navbar-tab-radius: var(--cs-shell-navbar-tab-radius);
+  --shell-navbar-tab-gap: var(--cs-shell-navbar-tab-gap);
+  --shell-navbar-tab-icon-size: var(--cs-shell-navbar-tab-icon-size);
+  --shell-navbar-tab-icon-gap: var(--cs-shell-navbar-tab-icon-gap);
+  --shell-navbar-tab-underline-width: var(--cs-shell-navbar-tab-underline-width);
+  --shell-navbar-tab-underline-height: var(--cs-shell-navbar-tab-underline-height);
+  --shell-navbar-action-gap: var(--cs-shell-navbar-action-gap);
+  --shell-navbar-action-size: var(--cs-shell-navbar-action-size);
+  --shell-navbar-action-hover: var(--cs-shell-navbar-action-hover);
+  --shell-navbar-user-padding-x: var(--cs-shell-navbar-user-padding-x);
+  --shell-navbar-user-padding-y: var(--cs-shell-navbar-user-padding-y);
+  --shell-navbar-user-gap: var(--cs-shell-navbar-user-gap);
+  --shell-navbar-user-radius: var(--cs-shell-navbar-user-radius);
+  --shell-navbar-menu-offset: var(--cs-shell-navbar-menu-offset);
+  /*
+   * Mobile purple top bar — hit-and-trial (list pages, calendar, drawer mobile-brand).
+   * Row height below the status bar; safe-area is added in MOBILE_TOP_BAR_CLASS.
+   */
+  --mobile-top-bar-height: var(--cs-mobile-top-bar-height);
+  /* Mobile purple header title — hit-and-trial (list pages, dashboard, calendar). */
+  --mobile-page-title-size: 17px;
+  --mobile-page-title-weight: 600;
+  --glass-blur: 18px;
+  --glass-blur-strong: 26px;
+  --radius: 0.5rem;
+  --radius-card: 12px;
+  --radius-control: 7px;
+  --radius-nav: 7px;
+  /* Figma radius/radius/xs — 4px when --radius is 8px */
+  --radius-xs: 0.25rem;
+  /* Figma spacing/spacing scale (4px base): /2=8, /3=12, /4=16, /5=20, /6=24 */
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  /*
+   * Settings form shell — hit-and-trial density (recipes in settings-form-tokens.ts).
+   *   --settings-content-padding-x  shell horizontal inset (~40px at lg via --spacing-page-x)
+   *   --settings-content-padding-y  shell vertical inset
+   *   --settings-form-section-gap   header ↔ fields, subsection stacks inside a form
+   */
+  --settings-content-padding-x: var(--spacing-page-x);
+  --settings-content-padding-y: 1.875rem;
+  --settings-form-section-gap: var(--spacing-6);
+  /*
+   * Automated Messages — hit-and-trial (recipes in automated-message-tokens.ts).
+   *   --automated-message-content-max-width  timing banner + section column (Figma ~540px)
+   *   --automated-message-card-max-width     message surface next to ⋮ (Figma ~449px)
+   */
+  --automated-message-content-max-width: 33.75rem;
+  --automated-message-card-max-width: 28rem;
+  /*
+   * Forms builder — hit-and-trial (recipes in forms-builder-tokens.ts).
+   * Screenshot: 680px cards, 57px header, ~360px settings, 24px insert control.
+   */
+  --forms-builder-canvas-max-width: 42.5rem;
+  --forms-builder-header-height: 3.5625rem;
+  --forms-builder-settings-width: 22.5rem;
+  --forms-builder-insert-size: 1.5rem;
+  /* Settings form violet subheading — hit-and-trial (`.settings-form-description`). */
+  --settings-form-description-size: 15px;
+  --settings-form-description-line-height: 20px;
+  --sidebar-width: 10.75rem;
+  --sheet-width: 400px;
+  /* Body row height — single list density (56px, still ≥44px for row hit targets) */
+  --table-row-height: 3.5rem;
+  --table-row-height-compact: var(--table-row-height);
+  --table-header-height: var(--table-row-height);
+  /*
+   * DataTable column density — hit-and-trial here; every list uses these.
+   *   --table-column-padding-x   cell left/right padding (was px-4 / 16px)
+   *   --table-column-min-width   data column width (browsers ignore min-width on <td>)
+   * Use a length with a unit: 0px hugs content; try 8rem / 10rem / 12rem for wider columns.
+   */
+  --table-column-padding-x: 14px;
+  /* 0px = hug content (columns left-aligned; spacer eats extra width). */
+  --table-column-min-width: 14rem;
+  /* Default ≥40px control; sm remains dense for compact chrome.
+   * Button size="default" (including variant="brand") reads these:
+   *   --control-height      → height / min-height
+   *   --control-padding-x   → horizontal padding
+   * Hit-and-trial density from this one place — do not override on pages.
+   * Brand label weight (New Checkout, New Contact, Save, …):
+   *   --button-brand-font-weight  500 medium / 600 semibold / 700 bold */
+  --control-height: 2.5rem;
+  --control-height-sm: 2rem;
+  /*
+   * Amount unit toggle ($ / %) — Figma settings Toggle 82×44.
+   *   --amount-unit-toggle-width / height / segment-width
+   */
+  --amount-unit-toggle-width: 5.125rem;
+  --amount-unit-toggle-height: 2.75rem;
+  --amount-unit-toggle-segment-width: 2.5625rem;
+  --control-padding-x: 0.625rem;
+  /*
+   * PhoneInput dial-code segment — hit-and-trial (components/forms/phone-input.tsx).
+   *   --phone-dial-code-width       fixed width for flag + dial code + chevron
+   *   --phone-dial-code-padding-x   horizontal inset inside the segment
+   */
+  --phone-dial-code-width: 4.25rem;
+  --phone-dial-code-padding-x: 0.375rem;
+  /*
+   * Settings / Reports workspace sidebar — Figma PandaCue settings nav density.
+   *   --workspace-nav-width              aside width (316px)
+   *   --workspace-nav-padding-x          search/add inset → content ~284px
+   *   --workspace-nav-padding-y          top inset (below shell edge)
+   *   --workspace-nav-search-gap         search → primary add / first group
+   *   --workspace-nav-item-height        nested text row height
+   *   --workspace-nav-person-item-height  avatar+name row (54px)
+   *   --workspace-nav-person-item-padding-y / -x  person row padding (10 / 30)
+   *   --workspace-nav-person-item-gap     avatar ↔ name (10px)
+   *   --workspace-nav-section-height     group header row height
+   *   --workspace-nav-item-gap           nested icon ↔ label gap
+   *   --workspace-nav-item-padding-x     nested row horizontal padding
+   *   --workspace-nav-icon-size            nested row icon box
+   *   --workspace-nav-scrollbar-size       scrollbar track width (sits in right padding gutter)
+   * Chevrons stay at --workspace-nav-padding-x from the aside edge; scrollbar is decoupled at the far right.
+   */
+  --workspace-nav-width: 19.75rem;
+  --workspace-nav-padding-x: 1rem;
+  --workspace-nav-padding-y: var(--spacing-4);
+  --workspace-nav-search-gap: var(--spacing-4);
+  --workspace-nav-item-height: 2.25rem;
+  --workspace-nav-person-item-height: 3.375rem;
+  --workspace-nav-person-item-padding-y: 0.625rem;
+  --workspace-nav-person-item-padding-x: 1.875rem;
+  --workspace-nav-person-item-gap: 0.625rem;
+  --workspace-nav-section-height: 2.75rem;
+  --workspace-nav-item-gap: var(--spacing-2);
+  --workspace-nav-item-padding-x: var(--spacing-2);
+  --workspace-nav-icon-size: 0.75rem;
+  --workspace-nav-scrollbar-size: 0.625rem;
+  /*
+   * Business hours day editor — hit-and-trial (business-hours-tokens.ts).
+   *   --business-hours-editor-accent-width   left violet accent bar
+   *   --business-hours-editor-panel-gap      stack gap inside the white card
+   *   --business-hours-shift-row-gap         delete ↔ time fields
+   *   --business-hours-time-input-height     Date/Time field height
+   *   --business-hours-delete-button-size    trash icon hit target
+   */
+  --business-hours-editor-accent-width: 3px;
+  --business-hours-editor-panel-gap: var(--spacing-4);
+  --business-hours-shift-row-gap: var(--spacing-3);
+  --business-hours-time-input-height: 2.6875rem;
+  --business-hours-delete-button-size: 2.25rem;
+  --button-brand-font-weight: 650;
+  /*
+   * Purple “+” square — hit-and-trial here.
+   *   --plus-button-size / --plus-button-icon-size → sidebar / dense (Add Service in nav)
+   *   --plus-button-size-page / --plus-button-icon-size-page → page/content CTAs
+   */
+  --plus-button-size: 1.05rem;
+  --plus-button-icon-size: 0.75rem; /* 12px — size-3 */
+  --plus-button-size-page: 1.25rem;
+  --plus-button-icon-size-page: 0.875rem; /* 14px */
+  /* Distance from the field edge (top / bottom / right). Default matches
+   * leftover vertical space so all three sides are equal. Hit-and-trial here. */
+  --plus-button-inset: calc(
+    (var(--control-height) - var(--plus-button-size)) / 2
+  );
+  /*
+   * Field trigger chevrons — smaller below md (768px).
+   *   --field-trigger-chevron-height / width → drawer stroke chevron
+   *   --field-trigger-chevron-nav-size       → filled chevron in Select / Combobox
+   */
+  --field-trigger-chevron-height: 0.75rem; /* 12px — size-3 */
+  --field-trigger-chevron-width: 0.4125rem; /* 7.13:12.97 aspect */
+  --field-trigger-chevron-nav-size: 0.375rem; /* 6px */
   --page-padding-x: 1rem;
-  --page-padding-y: 1.25rem;
+  --page-padding-y: 0.5rem;
+  --page-content-top-gap: 0.6rem;
+  /* EntityListLayout toolbar inset (left of Add, right of filter). Hit-and-trial here. */
+  --cs-list-toolbar-padding-x: 1rem;
   --section-gap: 1.5rem;
-  /** Vertical rhythm between page header, toolbar, and main content (between compact and spacious) */
   --page-stack-gap: 1rem;
   --stack-gap: 0.75rem;
-  --shadow-xs-value: 0 1px 2px oklch(0.15 0.02 260 / 4%);
-  --shadow-sm-value: 0 1px 3px oklch(0.15 0.02 260 / 6%),
-    0 1px 2px oklch(0.15 0.02 260 / 4%);
-  --shadow-md-value: 0 4px 6px -1px oklch(0.15 0.02 260 / 6%),
-    0 2px 4px -2px oklch(0.15 0.02 260 / 4%);
-  --shadow-lg-value: 0 10px 15px -3px oklch(0.15 0.02 260 / 8%),
-    0 4px 6px -4px oklch(0.15 0.02 260 / 4%);
-  --sidebar: oklch(0.982 0.003 260);
-  --sidebar-foreground: oklch(0.35 0.015 260);
-  --sidebar-primary: oklch(0.45 0.12 260);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.955 0.01 260);
-  --sidebar-accent-foreground: oklch(0.2 0.02 260);
-  --sidebar-border: oklch(0.92 0.006 260);
-  --sidebar-ring: oklch(0.55 0.1 260);
-}
 
-/* ─── Dark: elevated surfaces, stronger separation ─── */
-.dark {
-  --background: oklch(0.13 0.012 260);
-  --foreground: oklch(0.93 0.005 260);
-  --card: oklch(0.17 0.012 260);
-  --card-foreground: oklch(0.93 0.005 260);
-  --popover: oklch(0.18 0.012 260);
-  --popover-foreground: oklch(0.93 0.005 260);
-  --primary: var(--sidebar-primary);
-  --primary-foreground: var(--sidebar-primary-foreground);
-  --secondary: oklch(0.22 0.012 260);
-  --secondary-foreground: oklch(0.9 0.005 260);
-  --muted: oklch(0.22 0.012 260);
-  --muted-foreground: oklch(0.62 0.02 260);
-  --accent: oklch(0.24 0.015 260);
-  --accent-foreground: oklch(0.93 0.005 260);
-  --destructive: oklch(0.62 0.18 25);
-  --destructive-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.75 0.12 75);
-  --warning-foreground: oklch(0.2 0.04 75);
-  --success: oklch(0.62 0.14 155);
-  --success-foreground: oklch(0.15 0.02 155);
-  --info: oklch(0.62 0.1 250);
-  --info-foreground: oklch(0.15 0.02 250);
-  --border: oklch(1 0 0 / 11%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.58 0.1 260);
-  --chart-1: oklch(0.65 0.1 260);
-  --chart-2: oklch(0.55 0.02 260);
-  --chart-3: oklch(0.45 0.015 260);
-  --chart-4: oklch(0.35 0.012 260);
-  --chart-5: oklch(0.25 0.01 260);
-  --surface-1: oklch(0.17 0.012 260);
-  --surface-2: oklch(0.15 0.012 260);
-  --surface-3: oklch(0.13 0.012 260);
-  --shadow-xs-value: 0 1px 2px oklch(0 0 0 / 25%);
-  --shadow-sm-value: 0 1px 3px oklch(0 0 0 / 30%), 0 1px 2px oklch(0 0 0 / 20%);
-  --shadow-md-value: 0 4px 12px oklch(0 0 0 / 35%), 0 2px 4px oklch(0 0 0 / 20%);
-  --shadow-lg-value: 0 12px 24px oklch(0 0 0 / 40%), 0 4px 8px oklch(0 0 0 / 25%);
-  --sidebar: oklch(0.115 0.012 260);
-  --sidebar-foreground: oklch(0.68 0.02 260);
-  --sidebar-primary: oklch(0.62 0.12 260);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.2 0.015 260);
-  --sidebar-accent-foreground: oklch(0.93 0.005 260);
-  --sidebar-border: oklch(1 0 0 / 9%);
-  --sidebar-ring: oklch(0.58 0.1 260);
+  /*
+   * Drawer density — hit-and-trial these; every DrawerShell / FormSheet
+   * / shared drawer field recipe reads them via gap-drawer-* and py-drawer-*.
+   *
+   *   --drawer-section-gap        major blocks (Date, Client, Service, notes)
+   *   --drawer-stack-gap          field-to-field / form item stack
+   *   --drawer-field-gap          label → control
+   *   --drawer-header-padding-y   header bar vertical padding
+   *   --drawer-header-icon-size   close / edit / trash / more hover box
+   *   --drawer-header-gap         eyebrow → title
+   *   --drawer-body-padding-y     body top inset
+   *   --drawer-body-padding-bottom last form block → footer
+   *   --drawer-footer-padding-y   footer vertical padding (above / below CTA)
+   *   --drawer-footer-gap         footer stack (express row → primary button)
+   *   --drawer-express-row-height express / toggle row (was 48px)
+   *   --drawer-spine-width        purple purpose strip thickness
+   *   --drawer-spine-padding-x    strip left/right inset around the label
+   *   --drawer-spine-padding-y    strip top/bottom inset along the label
+   *   --contacts-drawer-profile-pane-width  Client Details left column (hit-and-trial)
+   *   --contacts-drawer-profile-inset       side margin — body + footer (hit-and-trial)
+   *   --contacts-drawer-profile-gap         section stack + field stack (hit-and-trial)
+   *   --contacts-drawer-profile-section-pad inner padding on section cards (hit-and-trial)
+   *   --contacts-drawer-tab-row-height     tab strip min-height (hit-and-trial)
+   *   --contacts-drawer-split-body-height  profile + records column height (hit-and-trial)
+   *   --drawer-width-split        total Client Details split drawer width (hit-and-trial)
+   */
+  --drawer-header-padding-y: 0.75rem; /* 12px; was pt-6/pb-4 (24/16) */
+  /* Hover hit-area for drawer header icons (X, edit, trash, ⋯). Hit-and-trial here. */
+  --drawer-header-icon-size: 1.6rem; /* 24px; was size-6 */
+  --drawer-header-gap: 0.25rem; /* 4px; was gap-2 (8) */
+  --drawer-body-padding-x: 1rem; /* 16px */
+  --drawer-body-padding-y: 0.75rem; /* 12px; was 16–26 */
+  --drawer-body-padding-bottom: 0.5rem; /* 8px; last field → footer (was body-y 12) */
+  --drawer-section-gap: 1rem; /* 16px; was gap-6 (24) */
+  --drawer-field-gap: 0.375rem; /* 6px; was gap-2 / 7px */
+  --drawer-stack-gap: 0.75rem; /* 12px; was space-y-4/5 (16–20) */
+  --drawer-footer-padding-y: 0.5rem; /* 8px; was 12 */
+  --drawer-footer-gap: 0.375rem; /* 6px; was 10 */
+  --drawer-express-row-height: 2rem; /* 32px; was 48 */
+  --drawer-spine-width: 1.375rem; /* 22px; was 30 */
+  --drawer-spine-padding-x: 0.125rem; /* 2px */
+  --drawer-spine-padding-y: 0.5rem; /* 8px */
+  --drawer-spine-font-size: 0.5625rem; /* 9px; was 10 */
+  --drawer-spine-tracking: 0.08em; /* was 0.14em */
+  /* Client Details left pane — hit-and-trial (edit form + view profile) */
+  --contacts-drawer-profile-pane-width: 340px;
+  --contacts-drawer-profile-inset: 0.8rem; /* 8px — horizontal margin (body + footer) */
+  --contacts-drawer-profile-gap: 0.5rem; /* 8px — between sections + between fields */
+  --contacts-drawer-profile-section-pad: 0.625rem; /* 10px — inside each section card */
+  --contacts-drawer-tab-row-height: 2.5rem; /* 40px — tab strip min-height (was min-h-14 / 56px) */
+  --contacts-drawer-split-body-height: 100%; /* profile + records columns stretch to drawer body */
+  /*
+   * Conversations inbox — hit-and-trial typography + composer chrome density.
+   *   --inbox-details-contact-name-weight   right-pane contact name (was bold / 700)
+   *   --inbox-details-empty-state-weight    empty copy e.g. "No upcoming appointment"
+   *   --inbox-composer-tab-padding-y        Reply / Note tab row vertical padding
+   *   --inbox-composer-tab-list-height      tab control height inside that row
+   *   --inbox-composer-field-row-height     To / Subject row min-height
+   *   --inbox-composer-field-row-padding-y  To / Subject row vertical padding
+   *   --inbox-composer-toolbar-padding-y    footer toolbar (icons + Send / Add Note)
+   *   --inbox-composer-field-label-size     To / Subject label (11px)
+   *   --inbox-composer-field-input-size     subject value + placeholder (match label)
+   *   --inbox-composer-field-input-height   subject control height
+   *   --inbox-composer-field-input-padding-x  subject placeholder/value left inset
+   *   --inbox-composer-footer-padding-bottom space under composer card
+   */
+  --inbox-details-contact-name-weight: 600;
+  --inbox-details-empty-state-weight: 500;
+  --inbox-composer-tab-padding-y: 0.375rem; /* 6px; was py-2 / 8px */
+  --inbox-composer-tab-list-height: 1.75rem; /* 28px; was h-8 / 32px */
+  --inbox-composer-field-row-height: 2rem; /* 40px; was min-h-11 / 44px */
+  --inbox-composer-field-row-padding-y: 0.25rem; /* 4px; was py-1.5 / 6px */
+  --inbox-composer-toolbar-padding-y: 0.375rem; /* 6px; was py-2 / 8px */
+  --inbox-composer-field-label-size: 0.6875rem; /* 11px — To / Subject row labels */
+  --inbox-composer-field-input-size: 0.6875rem; /* match label — subject placeholder + value */
+  --inbox-composer-field-input-height: 1.25rem; /* 20px — tighter than h-8 / 32px */
+  --inbox-composer-field-input-padding-x: 0.55rem; /* 4px — subject placeholder left inset */
+  --inbox-composer-footer-padding-bottom: 0.5rem; /* 8px; was pb-3 / 12px */
+  /*
+   * Drawer client actions — hit-and-trial (Add credit card matches phone/email).
+   *   --drawer-client-credit-card-weight
+   *   --drawer-client-credit-card-size
+   *   --drawer-client-credit-card-leading
+   */
+  --drawer-client-credit-card-weight: 500;
+  --drawer-client-credit-card-size: 13px;
+  --drawer-client-credit-card-leading: 16px;
+  --drawer-width-split: 1040px;
+  --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 4%);
+  --shadow-sm-value: 0 1px 3px rgb(0 0 0 / 6%),
+    0 1px 2px rgb(0 0 0 / 4%);
+  --shadow-md-value: 0 4px 6px -1px rgb(0 0 0 / 6%),
+    0 2px 4px -2px rgb(0 0 0 / 4%);
+  --shadow-lg-value: 0 10px 15px -3px rgb(0 0 0 / 8%),
+    0 4px 6px -4px rgb(0 0 0 / 4%);
+  --shadow-glass-value:
+    0 20px 40px -24px rgb(0 0 0 / 22%),
+    0 8px 24px -16px color-mix(in srgb, var(--pc-violet-primary-normal) 18%, transparent);
+  --sidebar: transparent;
+  --sidebar-foreground: var(--cs-ink-2);
+  --sidebar-group-label: var(--cs-ink-3);
+  --sidebar-primary: var(--cs-blue);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: transparent;
+  --sidebar-accent-foreground: var(--cs-ink-2);
+  --sidebar-border: transparent;
+  --sidebar-ring: var(--cs-blue);
 }
 
 @media (min-width: 768px) {
   :root {
+    --field-trigger-chevron-height: 12.97px;
+    --field-trigger-chevron-width: 7.13px;
+    --field-trigger-chevron-nav-size: 8px;
+  }
+}
+
+/* --- Dark: PandaCue violet / grey variants ??? */
+.dark {
+  --background: var(--cs-page);
+  --foreground: var(--cs-ink);
+  --foreground-subtle: var(--cs-ink-3);
+  --card: var(--cs-glass-surface-strong);
+  --card-foreground: var(--cs-ink);
+  --popover: var(--cs-glass-surface-strong);
+  --popover-foreground: var(--cs-ink);
+  --primary: var(--cs-blue);
+  --primary-foreground: #ffffff;
+  --primary-tint: var(--cs-blue-tint);
+  --primary-text: var(--cs-blue-text);
+  --primary-hover: var(--pc-violet-primary-normal-hover);
+  --primary-active: var(--pc-violet-primary-normal-active);
+  --secondary: color-mix(in srgb, var(--cs-glass-surface-soft) 88%, transparent);
+  --secondary-foreground: var(--cs-ink);
+  --muted: color-mix(in srgb, var(--cs-glass-surface-soft) 82%, transparent);
+  --muted-foreground: var(--cs-ink-2);
+  --accent: var(--cs-blue-tint);
+  --accent-foreground: var(--cs-blue-text);
+  --destructive: var(--cs-red);
+  --destructive-foreground: #ffffff;
+  --destructive-subtle: var(--cs-red-tint);
+  --warning: var(--cs-amber);
+  --warning-foreground: var(--cs-amber);
+  --warning-subtle: var(--cs-amber-tint);
+  --success: var(--cs-green);
+  --success-foreground: var(--cs-green);
+  --success-subtle: var(--cs-green-tint);
+  --success-hover: var(--pc-green-success-normal-hover);
+  --success-active: var(--pc-green-success-normal-active);
+  --info: var(--cs-blue);
+  --info-foreground: var(--cs-blue-text);
+  --border: var(--cs-glass-border-strong);
+  --input: var(--cs-control-border);
+  --ring: var(--cs-blue);
+  --chart-1: var(--cs-blue);
+  --chart-2: var(--cs-ink-2);
+  --chart-3: var(--cs-ink-3);
+  --chart-4: var(--cs-navy-hover);
+  --chart-5: var(--cs-navy);
+  --surface-1: var(--cs-glass-surface-strong);
+  --surface-2: var(--cs-glass-surface);
+  --surface-3: color-mix(in srgb, var(--cs-blue) 18%, transparent);
+  --table-row-hover: color-mix(in srgb, var(--cs-blue) 10%, transparent);
+  --glass-panel: var(--cs-glass-surface);
+  --glass-panel-strong: var(--cs-glass-surface-strong);
+  --glass-panel-soft: var(--cs-glass-surface-soft);
+  --glass-border: var(--cs-glass-border);
+  --glass-border-strong: var(--cs-glass-border-strong);
+  --control-surface: var(--cs-control-surface);
+  --control-border: var(--cs-control-border);
+  --shell-sidebar-surface: var(--cs-shell-sidebar-surface);
+  --shell-topbar-surface: var(--cs-shell-topbar-surface);
+  --shell-navbar-surface: var(--cs-shell-navbar-surface);
+  --shell-navbar-foreground: var(--cs-shell-navbar-foreground);
+  --shell-navbar-height: var(--cs-shell-navbar-height);
+  --shell-navbar-tab-height: var(--cs-shell-navbar-tab-height);
+  --shell-navbar-tab-padding-y: var(--cs-shell-navbar-tab-padding-y);
+  --shell-navbar-tab-padding-x: var(--cs-shell-navbar-tab-padding-x);
+  --shell-navbar-tab-radius: var(--cs-shell-navbar-tab-radius);
+  --shell-navbar-tab-gap: var(--cs-shell-navbar-tab-gap);
+  --shell-navbar-tab-icon-size: var(--cs-shell-navbar-tab-icon-size);
+  --shell-navbar-tab-icon-gap: var(--cs-shell-navbar-tab-icon-gap);
+  --shell-navbar-tab-underline-width: var(--cs-shell-navbar-tab-underline-width);
+  --shell-navbar-tab-underline-height: var(--cs-shell-navbar-tab-underline-height);
+  --shell-navbar-action-gap: var(--cs-shell-navbar-action-gap);
+  --shell-navbar-action-size: var(--cs-shell-navbar-action-size);
+  --shell-navbar-action-hover: var(--cs-shell-navbar-action-hover);
+  --shell-navbar-user-padding-x: var(--cs-shell-navbar-user-padding-x);
+  --shell-navbar-user-padding-y: var(--cs-shell-navbar-user-padding-y);
+  --shell-navbar-user-gap: var(--cs-shell-navbar-user-gap);
+  --shell-navbar-user-radius: var(--cs-shell-navbar-user-radius);
+  --shell-navbar-menu-offset: var(--cs-shell-navbar-menu-offset);
+  --mobile-top-bar-height: var(--cs-mobile-top-bar-height);
+  /* Mobile purple header title — hit-and-trial (list pages, dashboard, calendar). */
+  --mobile-page-title-size: 17px;
+  --mobile-page-title-weight: 600;
+  --glass-blur: 18px;
+  --glass-blur-strong: 24px;
+  --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 25%);
+  --shadow-sm-value: 0 1px 3px rgb(0 0 0 / 30%), 0 1px 2px rgb(0 0 0 / 20%);
+  --shadow-md-value: 0 4px 12px rgb(0 0 0 / 35%), 0 2px 4px rgb(0 0 0 / 20%);
+  --shadow-lg-value: 0 12px 24px rgb(0 0 0 / 40%), 0 4px 8px rgb(0 0 0 / 25%);
+  --shadow-glass-value:
+    0 24px 48px -28px rgb(0 0 0 / 55%),
+    0 10px 30px -18px color-mix(in srgb, var(--pc-violet-primary-normal) 26%, transparent);
+  --sidebar: var(--cs-navy);
+  --sidebar-foreground: var(--cs-sidebar-foreground);
+  --sidebar-group-label: var(--cs-sidebar-group-label);
+  --sidebar-primary: var(--cs-blue);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--cs-navy-2);
+  --sidebar-accent-foreground: var(--cs-sidebar-muted);
+  --sidebar-border: var(--cs-navy-hover);
+  --sidebar-ring: var(--cs-blue);
+}
+
+
+@media (min-width: 640px) {
+  :root {
     --page-padding-x: 1.5rem;
-    --page-padding-y: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    /* Align with shell navbar `lg:px-10`; keep vertical inset tight */
+    --page-padding-x: 2.5rem;
+    --page-padding-y: 0.5rem;
   }
 }
 
@@ -196,45 +694,339 @@
   }
 
   body {
-    @apply bg-background text-foreground text-sm leading-normal;
+    @apply font-sans bg-background text-foreground text-body-small;
+    letter-spacing: 0;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: var(--cs-page-gradient);
+    background-attachment: fixed;
   }
 
   h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-sans;
+    letter-spacing: 0;
+  }
+
+  button,
+  input,
+  select,
+  textarea,
+  optgroup {
+    font: inherit;
+  }
+
+  /*
+   * Actionable cursor — pointer on clickable controls (same as the drawer close icon).
+   * Nested :where() keeps specificity 0 so Tailwind cursor-grab / cursor-text still win
+   * (calendar event drag, true text fields). Searchable pickers (role=combobox) use pointer.
+   */
+  :where(
+    a[href],
+    button,
+    summary,
+    label,
+    select,
+    [role="button"],
+    [role="tab"],
+    [role="switch"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="option"],
+    [role="combobox"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="treeitem"],
+    [role="slider"],
+    [data-slot$="-trigger"]:not([data-slot="tooltip-trigger"]),
+    [data-slot="checkbox"],
+    [data-slot="switch"],
+    [data-slot="radio-group-item"],
+    [data-slot="select-item"],
+    [data-slot="dropdown-menu-item"],
+    [data-slot="dropdown-menu-checkbox-item"],
+    [data-slot="dropdown-menu-radio-item"],
+    [data-slot="combobox-item"],
+    [data-slot="sheet-close"],
+    [data-slot="dialog-close"],
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    input[type="checkbox"],
+    input[type="radio"],
+    input[type="file"],
+    input[type="color"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    input[type="month"],
+    input[type="week"],
+    input[type="range"]
+  ):where(:not(:disabled):not([aria-disabled="true"]):not([data-disabled])) {
+    cursor: pointer;
+  }
+
+  :where(::file-selector-button) {
+    cursor: pointer;
+  }
+
+  :where(
+    input:not([type]),
+    input[type="text"],
+    input[type="search"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="number"],
+    textarea
+  ):where(:not([role="combobox"])):where(:not(:disabled)) {
+    cursor: text;
+  }
+
+  :where(:disabled, [aria-disabled="true"], [data-disabled]) {
+    cursor: not-allowed;
+  }
+
+  /* Portaled UI (sheets, dialogs, selects, toasts, rich text) */
+  [data-sonner-toaster],
+  [data-slot="sheet-content"],
+  [data-slot="dialog-content"],
+  [data-slot="popover-content"],
+  [data-slot="select-content"],
+  [data-slot="dropdown-menu-content"],
+  .ProseMirror {
+    @apply font-sans;
+  }
+
+  /* Semantic type aliases. Color follows ink roles: body = foreground,
+   * caption = muted-foreground, placeholder/eyebrow = foreground-subtle,
+   * table header = heading-entity violet (not raw hex). */
+  h1,
   .text-page-title {
-    @apply text-xl font-semibold tracking-tight text-foreground sm:text-2xl;
+    @apply text-heading-5 text-foreground;
   }
 
   h2,
   .text-section-title {
-    @apply text-base font-semibold tracking-tight text-foreground;
+    @apply text-subtitle text-foreground;
   }
 
   h3,
   .text-subsection-title {
-    @apply text-sm font-semibold text-foreground;
+    @apply text-body-small font-medium text-foreground;
   }
 
   .text-body {
-    @apply text-sm leading-relaxed text-foreground;
+    @apply text-foreground;
   }
 
   .text-caption {
-    @apply text-xs leading-normal text-muted-foreground;
+    @apply text-muted-foreground;
   }
 
   .text-label {
-    @apply text-xs font-medium text-foreground;
+    @apply text-caption text-foreground;
+  }
+
+  .text-page-eyebrow {
+    @apply text-caption text-foreground-subtle;
+  }
+
+  .text-page-greeting {
+    @apply text-heading-5 text-foreground;
+  }
+
+  .text-metric-hero {
+    @apply text-heading-3 tabular-nums text-foreground;
+  }
+
+  .text-metric-kpi {
+    @apply text-body-large font-bold tabular-nums text-foreground;
+  }
+
+  .text-nav-group {
+    @apply text-caption uppercase tracking-wider text-sidebar-group-label;
+  }
+
+  .text-table-header {
+    @apply text-[14px] font-bold leading-none tracking-normal text-violet-primary-dark;
+  }
+
+  .text-table-cell {
+    @apply text-[14px] font-normal leading-[21px] text-[var(--drawer-text-body)];
+  }
+
+  .text-drawer-section {
+    @apply text-caption uppercase tracking-wide text-foreground-subtle;
   }
 }
 
 @layer utilities {
+  .app-shell-canvas {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .glass-panel {
+    border: 1px solid var(--glass-border);
+    background: var(--glass-panel);
+    box-shadow: var(--shadow-glass-value);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  .glass-panel-strong {
+    border: 1px solid var(--glass-border-strong);
+    background: var(--glass-panel-strong);
+    box-shadow: var(--shadow-glass-value);
+    backdrop-filter: blur(var(--glass-blur-strong));
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  }
+
+  .glass-panel-soft {
+    border: 1px solid var(--glass-border);
+    background: var(--glass-panel-soft);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  .glass-sidebar-surface {
+    background: var(--shell-sidebar-surface);
+    backdrop-filter: blur(var(--glass-blur-strong));
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  }
+
+  .glass-topbar-surface {
+    border: 1px solid var(--glass-border);
+    background: var(--shell-topbar-surface);
+    box-shadow: var(--shadow-glass-value);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  .shell-topbar-soft {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .dark .shell-topbar-soft {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* Figma Dashboard Navbar — solid brand fill + light foreground */
+  .shell-navbar-surface {
+    background: var(--shell-navbar-surface);
+    color: var(--shell-navbar-foreground);
+  }
+
+  .glass-control {
+    border-color: var(--control-border);
+    background: var(--control-surface);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  /**
+   * Settings workspace forms — overrides .glass-control fill/border on fields and
+   * action buttons. Applied via .settings-form-surface on the shared settings shell.
+   */
+  .settings-form-surface .settings-form-description {
+    font-size: var(--settings-form-description-size);
+    line-height: var(--settings-form-description-line-height);
+    font-weight: 400;
+    color: var(--pc-violet-primary-dark);
+  }
+
+  .settings-form-surface
+    .glass-control:is(
+      [data-slot="input"],
+      [data-slot="select-trigger"],
+      [data-slot="textarea"],
+      [data-slot="combobox-trigger"]
+    ) {
+    border-color: var(--control-border);
+    background: #ffffff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  button.settings-form-discard-button.glass-control {
+    border: 1px solid var(--pc-violet-primary-normal);
+    background: #ffffff;
+    color: var(--pc-violet-primary-normal);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  button.settings-form-discard-button.glass-control:hover:not(:disabled) {
+    border-color: var(--pc-violet-primary-normal);
+    background: var(--pc-violet-primary-surface);
+    color: var(--pc-violet-primary-normal);
+  }
+
+  button.settings-form-discard-button.glass-control:disabled {
+    border-color: var(--pc-violet-primary-normal);
+    background: #ffffff;
+    color: var(--pc-violet-primary-normal);
+    opacity: 0.55;
+  }
+
+  .glass-hover {
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      box-shadow 150ms ease,
+      color 150ms ease,
+      transform 150ms ease;
+  }
+
   .surface-elevated {
-    @apply bg-card shadow-elevation-xs ring-1 ring-border/80;
+    @apply rounded-xl;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-panel);
+    box-shadow: var(--shadow-glass-value);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
   }
 
   .focus-ring {
-    @apply outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40;
+    @apply outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-primary-tint;
+  }
+
+  .tabular-nums {
+    font-feature-settings: "tnum" 1;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--muted-foreground) 28%, transparent)
+      transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--muted-foreground) 28%, transparent);
+    border-radius: 9999px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--muted-foreground) 42%, transparent);
   }
 }
 
@@ -250,3 +1042,13 @@
 .navigation-loading-bar {
   animation: navigation-loading-slide 1s ease-in-out infinite;
 }
+
+/* Brand CTA labels — New Checkout, drawer footer primaries, sidebar
+ * “New appointment” (buttonVariants on a Link, not <Button>).
+ * Unlayered so this wins over leftover `.font-medium` utilities.
+ * Hit-and-trial: `--button-brand-font-weight` in :root (500 / 600 / 700). */
+.btn-brand,
+[data-slot="button"][data-variant="brand"] {
+  font-weight: var(--button-brand-font-weight);
+}
+

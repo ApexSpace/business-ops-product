@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConversationChannel, MessageStatus } from '@prisma/client';
 import { RedisPubSubService } from '@app/core/realtime/redis-pub-sub.service';
+import { ConversationMessageResponseDto } from '../dto/conversation-response.dto';
 
 export const CONVERSATION_REALTIME_EVENTS = {
   messageReceived: 'conversation.message.received',
   messageUpdated: 'conversation.message.updated',
+  messageDeleted: 'conversation.message.deleted',
   conversationUpdated: 'conversation.updated',
 } as const;
 
@@ -14,6 +16,8 @@ export interface ConversationRealtimePayload {
   status?: MessageStatus | string;
   channel?: ConversationChannel | string;
   id?: string;
+  errorMessage?: string | null;
+  message?: ConversationMessageResponseDto;
 }
 
 @Injectable()
@@ -44,6 +48,17 @@ export class ConversationRealtimeService {
     );
   }
 
+  async publishMessageDeleted(
+    businessId: string,
+    payload: ConversationRealtimePayload,
+  ): Promise<void> {
+    await this.publish(
+      businessId,
+      CONVERSATION_REALTIME_EVENTS.messageDeleted,
+      payload,
+    );
+  }
+
   async publishConversationUpdated(
     businessId: string,
     payload: ConversationRealtimePayload,
@@ -68,7 +83,9 @@ export class ConversationRealtimeService {
       await this.pubSub.publish(businessId, event, payload);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.warn(`Failed to publish ${event} for ${businessId}: ${message}`);
+      this.logger.warn(
+        `Failed to publish ${event} for ${businessId}: ${message}`,
+      );
     }
   }
 }

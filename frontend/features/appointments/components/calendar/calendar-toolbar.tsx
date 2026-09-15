@@ -1,14 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { CalendarDatePicker } from "@/features/appointments/components/calendar/calendar-date-picker";
 import { CalendarViewSwitcher } from "@/features/appointments/components/calendar/calendar-view-switcher";
-import { ActionButton } from "@/components/ui/action-button";
-import { Button } from "@/components/ui/button";
+import { CalendarFiltersPopover } from "@/features/appointments/components/calendar/calendar-filters-popover";
+import {
+  StaffSelector,
+  type StaffMemberOption,
+} from "@/features/appointments/components/calendar/staff-selector";
+import {
+  CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS,
+  CALENDAR_TOOLBAR_NAV_BUTTON_CLASS,
+  CALENDAR_TOOLBAR_NAV_GROUP_CLASS,
+  CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS,
+} from "@/features/appointments/components/calendar/calendar-toolbar-tokens";
 import type { CalendarViewMode } from "@/features/calendars/utils/calendar-dates";
+import type { WeekStartsOn } from "@/features/calendar-display-settings/api/calendar-display-settings.api";
 import { formatDateRangeLabelInTimezone } from "@/features/calendars/utils/timezone";
-import { CONTROL_HEIGHT_CLASS } from "@/lib/ui/control-styles";
+import { Button } from "@/components/ui/button";
+import { NavArrowIcon } from "@/components/ui/nav-arrow-icon";
 import { cn } from "@/lib/utils";
 
 interface CalendarToolbarProps {
@@ -20,12 +30,18 @@ interface CalendarToolbarProps {
   onToday: () => void;
   onNext: () => void;
   onDateSelect: (dateKey: string) => void;
-  onNewAppointment: () => void;
-  filters?: React.ReactNode;
+  onJumpWeeks?: (weeks: number) => void;
+  weekJumpOptions?: number[];
+  staffMembers: StaffMemberOption[];
+  selectedStaffId?: string;
+  onSelectedStaffIdChange?: (userId: string) => void;
+  showStaffSelector?: boolean;
+  statusFilter: string;
+  onStatusFilterChange: (value: string) => void;
+  weekStartsOn?: WeekStartsOn;
   className?: string;
 }
 
-/** View used for date-range label and prev/next (list uses week). */
 function navigationView(view: CalendarViewMode): "day" | "week" | "month" {
   if (view === "day") return "day";
   if (view === "month") return "month";
@@ -41,8 +57,15 @@ export function CalendarToolbar({
   onToday,
   onNext,
   onDateSelect,
-  onNewAppointment,
-  filters,
+  onJumpWeeks,
+  weekJumpOptions,
+  staffMembers,
+  selectedStaffId,
+  onSelectedStaffIdChange,
+  showStaffSelector: showStaffSelectorProp,
+  statusFilter,
+  onStatusFilterChange,
+  weekStartsOn = "SUNDAY",
   className,
 }: CalendarToolbarProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -51,42 +74,53 @@ export function CalendarToolbar({
     anchorDateKey,
     navView,
     timezone,
+    weekStartsOn,
   );
+  // Figma: staff picker only in Week (Day shows every staff as columns)
+  const showStaffSelector =
+    showStaffSelectorProp !== false &&
+    view === "week" &&
+    staffMembers.length > 0;
 
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto pb-0.5",
+        "flex w-full min-w-0 flex-wrap items-center justify-between gap-3 sm:gap-4",
         className,
       )}
     >
-      <Button
-        type="button"
-        variant="outline"
-        className={cn(CONTROL_HEIGHT_CLASS, "shrink-0 px-3")}
-        onClick={onToday}
-      >
-        Today
-      </Button>
-
-      <div
-        className="inline-flex shrink-0 items-stretch overflow-hidden rounded-md border border-border bg-background"
-        role="group"
-        aria-label="Navigate calendar dates"
-      >
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-            className={cn(
-              CONTROL_HEIGHT_CLASS,
-              "w-[var(--control-height)] shrink-0 rounded-none border-0 px-0 shadow-none hover:bg-muted/80",
-            )}
-            onClick={onPrevious}
-          aria-label="Previous"
+      {/* Prev / Today / Next — shared --control-height, then date frame */}
+      <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-[25px]">
+        <div
+          className={CALENDAR_TOOLBAR_NAV_GROUP_CLASS}
+          role="group"
+          aria-label="Navigate calendar dates"
         >
-          <ChevronLeft className="size-4" />
-        </Button>
+          <button
+            type="button"
+            className={CALENDAR_TOOLBAR_NAV_BUTTON_CLASS}
+            onClick={onPrevious}
+            aria-label="Previous"
+          >
+            <NavArrowIcon direction="left" size="lg" />
+          </button>
+          <Button
+            type="button"
+            variant="brand"
+            className={CALENDAR_TOOLBAR_TODAY_BUTTON_CLASS}
+            onClick={onToday}
+          >
+            Today
+          </Button>
+          <button
+            type="button"
+            className={CALENDAR_TOOLBAR_NAV_BUTTON_CLASS}
+            onClick={onNext}
+            aria-label="Next"
+          >
+            <NavArrowIcon direction="right" size="lg" />
+          </button>
+        </div>
 
         <CalendarDatePicker
           open={pickerOpen}
@@ -96,57 +130,49 @@ export function CalendarToolbar({
           view={view}
           onSelectDate={onDateSelect}
           onToday={onToday}
+          onJumpWeeks={onJumpWeeks}
+          weekJumpOptions={weekJumpOptions}
+          weekStartsOn={weekStartsOn}
           trigger={
             <button
               type="button"
               className={cn(
-                "flex min-w-[9.5rem] max-w-[14rem] cursor-pointer items-center justify-center gap-1 border-x border-border px-2 py-1.5 text-sm font-medium transition-colors",
-                "hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                "sm:min-w-[11rem] sm:max-w-[18rem]",
+                CALENDAR_TOOLBAR_DATE_TRIGGER_CLASS,
+                "max-w-[min(100%,280px)] sm:max-w-none",
               )}
               aria-label={`${rangeLabel}. Open date picker`}
               aria-expanded={pickerOpen}
             >
-              <span className="truncate">{rangeLabel}</span>
-              <ChevronDown
-                className={cn(
-                  "size-3.5 shrink-0 text-muted-foreground transition-transform",
-                  pickerOpen && "rotate-180",
-                )}
-                aria-hidden
+              <span className="min-w-0 truncate leading-5">
+                {rangeLabel}
+              </span>
+              <NavArrowIcon
+                direction={pickerOpen ? "up" : "down"}
+                size="sm"
+                className="shrink-0 text-violet-primary-normal"
               />
             </button>
           }
         />
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-            className={cn(
-              CONTROL_HEIGHT_CLASS,
-              "w-[var(--control-height)] shrink-0 rounded-none border-0 px-0 shadow-none hover:bg-muted/80",
-            )}
-            onClick={onNext}
-          aria-label="Next"
-        >
-          <ChevronRight className="size-4" />
-        </Button>
       </div>
 
-      {filters ? (
-        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
-          {filters}
-        </div>
-      ) : null}
+      {/* Figma right cluster — staff (week only) + filter + Day/Week · gap 21px */}
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-3 sm:gap-[21px]">
+        {showStaffSelector ? (
+          <StaffSelector
+            mode="single"
+            members={staffMembers}
+            selectedStaffId={selectedStaffId}
+            onSelectedStaffIdChange={onSelectedStaffIdChange}
+          />
+        ) : null}
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+        <CalendarFiltersPopover
+          statusFilter={statusFilter}
+          onStatusFilterChange={onStatusFilterChange}
+        />
+
         <CalendarViewSwitcher value={view} onChange={onViewChange} />
-        <ActionButton className="shrink-0" onClick={onNewAppointment}>
-          <Plus className="size-4" />
-          <span className="hidden sm:inline">Create appointment</span>
-          <span className="sm:hidden">Create</span>
-        </ActionButton>
       </div>
     </div>
   );

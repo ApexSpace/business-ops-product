@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,7 +62,6 @@ export function CalendarsBuilder() {
         </div>
         {canManage ? (
           <Button type="button" size="sm" onClick={addCalendar}>
-            <Plus className="mr-2 size-4" />
             Add calendar
           </Button>
         ) : null}

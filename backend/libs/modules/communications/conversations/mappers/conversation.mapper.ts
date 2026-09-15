@@ -31,7 +31,23 @@ export function toConversationContactSummary(
     id: contact.id,
     label: contactLabel(contact),
     avatarUrl: contact.avatarUrl,
+    isBlocked: Boolean(contact.blockedAt),
   };
+}
+
+function readChatbotBotPaused(metadata: unknown): boolean {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return false;
+  }
+  return (metadata as Record<string, unknown>).chatbotBotPaused === true;
+}
+
+function readActivityType(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return null;
+  }
+  const value = (metadata as Record<string, unknown>).activityType;
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 export function toConversationResponse(
@@ -55,6 +71,10 @@ export function toConversationResponse(
     unreadCount: row.unreadCount,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    chatbotBotPaused:
+      row.channel === 'WEBCHAT'
+        ? readChatbotBotPaused(row.metadata)
+        : undefined,
     contact: row.contact ? toConversationContactSummary(row.contact) : null,
     assignedTo: row.assignedTo
       ? {
@@ -85,5 +105,6 @@ export function toConversationMessageResponse(
     sentAt: row.sentAt,
     receivedAt: row.receivedAt,
     createdAt: row.createdAt,
+    activityType: readActivityType(row.metadata),
   };
 }
