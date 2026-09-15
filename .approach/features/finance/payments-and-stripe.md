@@ -64,6 +64,7 @@ Collect and manage business payments (transactions, refunds, collect flows), con
 - Never put live secret keys in Cloud Agent secrets casually; prefer test mode.
 - Distinguish **platform SaaS billing** Stripe vs **connected account** Stripe for tenants.
 - Dual test/live mode utilities under stripe mode helpers — follow existing `stripe-mode.util` patterns.
+- Env: live keys on `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY`; test on `STRIPE_SECRET_KEY_TEST` / `STRIPE_PUBLISHABLE_KEY_TEST`. Never duplicate the same key name.
 - Webhooks must stay idempotent.
 
 ---

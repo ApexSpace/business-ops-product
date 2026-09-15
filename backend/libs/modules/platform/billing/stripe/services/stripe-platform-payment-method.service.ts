@@ -86,7 +86,7 @@ export class StripePlatformPaymentMethodService {
 
     return {
       clientSecret: setupIntent.client_secret,
-      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY?.trim() || null,
+      publishableKey: this.stripeApi.getPublishableKeyForMode('live'),
     };
   }
 
