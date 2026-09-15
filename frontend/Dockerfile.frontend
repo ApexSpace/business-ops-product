@@ -1,13 +1,7 @@
-### Frontend image — COPY paths assume the Docker context is the monorepo root.
-###
-### Dokploy (this is the file the production frontend app should use):
-###   GitHub Build Path: leave empty
-###   Docker File: Dockerfile.frontend
-###   Docker Context Path: .     (dot = repo root; do not leave blank if Build Path is "frontend")
-###   Docker Build Stage: runtime
-###
-### If GitHub Build Path is set to "frontend", Dokploy looks for frontend/Dockerfile.frontend
-### instead of this file. Use that copy, and still set Docker Context Path to "."
+### Duplicate of repo-root Dockerfile.frontend.
+### Dokploy joins GitHub "Build Path" + "Docker File". If Build Path is "frontend"
+### and Docker File is "Dockerfile.frontend", it loads THIS file.
+### Docker Context Path must still be "." (monorepo root) so COPY frontend/... works.
 FROM node:22.13-bookworm-slim AS build
 WORKDIR /app
 
@@ -22,7 +16,6 @@ COPY packages/api-contract ./packages/api-contract
 WORKDIR /app/frontend
 RUN npm run build
 
-### Runtime stage (Next.js standalone)
 FROM node:22.13-bookworm-slim AS runtime
 WORKDIR /app
 

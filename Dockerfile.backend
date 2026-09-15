@@ -1,6 +1,15 @@
-### Backend image when the Docker context is the backend/ folder.
-### Dokploy: GitHub Build Path = backend, Docker File = Dockerfile, Context Path empty.
-### Prefer repo-root Dockerfile.backend if the build context is the monorepo root.
+### Backend image — COPY paths assume the Docker context is the monorepo root.
+###
+### Dokploy:
+###   GitHub Build Path: leave empty
+###   Docker File: Dockerfile.backend
+###   Docker Context Path: .
+###   Docker Build Stage: runtime
+###
+### Alternative (uses backend/Dockerfile as-is):
+###   GitHub Build Path: backend
+###   Docker File: Dockerfile
+###   Docker Context Path: (empty — defaults to the backend/ folder)
 FROM node:22.12-bookworm-slim AS build
 
 WORKDIR /app
@@ -9,18 +18,17 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-COPY package.json package-lock.json ./
-COPY prisma ./prisma
+COPY backend/package.json backend/package-lock.json ./
+COPY backend/prisma ./prisma
 RUN npm ci
 
-COPY . .
+COPY backend/ .
 RUN npm run build:all
 RUN npm run db:generate
 
 RUN npm prune --omit=dev \
   && npm install prisma@7.8.0 --no-save --omit=dev
 
-### Runtime stage
 FROM node:22.12-bookworm-slim AS runtime
 
 WORKDIR /app
@@ -38,8 +46,8 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
-COPY scripts/docker-entrypoint.sh /entrypoint.sh
-COPY scripts/docker-seed.mjs /app/scripts/docker-seed.mjs
+COPY backend/scripts/docker-entrypoint.sh /entrypoint.sh
+COPY backend/scripts/docker-seed.mjs /app/scripts/docker-seed.mjs
 
 RUN chmod +x /entrypoint.sh
 
