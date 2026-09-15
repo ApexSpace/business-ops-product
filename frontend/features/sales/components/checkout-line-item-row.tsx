@@ -113,7 +113,7 @@ export function CheckoutLineItemRow({
               </div>
             ) : null}
             {!expanded && !staffLabel && showStaff ? (
-              <p className="mt-1 truncate text-[12px] font-medium leading-[15px] text-[#8A8A8A]">
+              <p className="mt-1 truncate text-[12px] font-medium leading-[15px] text-[var(--drawer-text-secondary)]">
                 sold by no staff
               </p>
             ) : null}

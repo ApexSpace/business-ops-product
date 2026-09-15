@@ -70,7 +70,7 @@ export const SALES_DRAWER_LINE_CARD_HEADER_TOGGLE_CLASS =
 
 /** Chevron slot in line card header — 24px hit area aligned to title. */
 export const SALES_DRAWER_LINE_CARD_CHEVRON_CLASS =
-  "inline-flex size-6 shrink-0 items-center justify-center text-[#8A8A8A]";
+  "inline-flex size-6 shrink-0 items-center justify-center text-[var(--drawer-text-secondary)]";
 
 /** Expanded line card body — white detail section under lavender header. */
 export const SALES_DRAWER_LINE_CARD_EXPANDED_BODY_CLASS =

@@ -4,6 +4,8 @@ import { BusinessMemberRole } from '@prisma/client';
 import { CurrentUser } from '@app/common/decorators/current-user.decorator';
 import type { RequestUser } from '@app/common/decorators/current-user.decorator';
 import { BusinessRoles } from '@app/common/decorators/business-roles.decorator';
+import { RequireModule } from '@app/common/decorators/require-module.decorator';
+import { BusinessCapabilityGuard } from '@app/common/guards/business-capability.guard';
 import { BusinessRolesGuard } from '@app/common/guards/business-roles.guard';
 import { UpdateCheckoutAdvancedSettingsDto } from '../dto/checkout-advanced-settings.dto';
 import { CheckoutAdvancedSettingsService } from '../services/checkout-advanced-settings.service';
@@ -22,7 +24,8 @@ const WRITE_ROLES = [
 @ApiTags('checkout-advanced-settings')
 @ApiBearerAuth()
 @Controller('checkout-advanced-settings')
-@UseGuards(BusinessRolesGuard)
+@UseGuards(BusinessRolesGuard, BusinessCapabilityGuard)
+@RequireModule('sales')
 export class CheckoutAdvancedSettingsController {
   constructor(
     private readonly checkoutAdvancedSettingsService: CheckoutAdvancedSettingsService,

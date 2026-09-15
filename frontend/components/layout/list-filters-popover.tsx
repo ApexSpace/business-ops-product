@@ -57,8 +57,8 @@ export function ListFiltersPopover({
                 key={opt.value}
                 type="button"
                 className={cn(
-                  "rounded-md px-2 py-1.5 text-left text-sm text-[#4A4A4A] hover:bg-muted",
-                  active && "bg-muted font-semibold text-[#5F2CB2]",
+                  "rounded-md px-2 py-1.5 text-left text-sm text-[var(--drawer-text-body)] hover:bg-muted",
+                  active && "bg-muted font-semibold text-violet-primary-dark",
                 )}
                 onClick={() => onValueChange(opt.value)}
               >

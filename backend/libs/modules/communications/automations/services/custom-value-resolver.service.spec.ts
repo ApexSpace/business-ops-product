@@ -1,3 +1,4 @@
+import { CUSTOM_VALUE_REGISTRY } from '../registries/custom-value.registry';
 import { CustomValueResolverService } from './custom-value-resolver.service';
 
 describe('CustomValueResolverService', () => {
@@ -57,5 +58,30 @@ describe('CustomValueResolverService', () => {
       'contact.full_name': 'Jane Doe',
       'business.name': 'Sunrise MedSpa',
     });
+  });
+
+  it('does not resolve waived public estimate URLs (C-P0-01)', async () => {
+    const definition = CUSTOM_VALUE_REGISTRY.find(
+      (entry) => entry.key === 'estimate.public_url',
+    );
+    expect(definition?.implementationStatus).toBe('stub');
+
+    prisma.estimate.findFirst.mockResolvedValue({
+      estimateNumber: 'EST-1001',
+      totalAmount: 250,
+      status: 'SENT',
+      expiryDate: new Date('2026-07-01'),
+    });
+
+    const result = await service.resolve(
+      {
+        businessId: '11111111-1111-4111-8111-111111111111',
+        estimateId: '33333333-3333-4333-8333-333333333333',
+      },
+      ['estimate.public_url', 'estimate.number'],
+    );
+
+    expect(result['estimate.public_url']).toBeUndefined();
+    expect(result['estimate.number']).toBe('EST-1001');
   });
 });

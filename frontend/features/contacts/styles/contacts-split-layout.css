@@ -151,7 +151,7 @@
   border-bottom: 2px solid transparent;
   background: transparent;
   padding: 0 0 10px;
-  color: #6b6b6b;
+  color: var(--muted-foreground);
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -163,8 +163,8 @@
 }
 
 .contacts-d2-tab.active {
-  border-color: var(--cs-brand);
-  color: var(--cs-brand);
+  border-color: var(--pc-violet-primary-normal);
+  color: var(--pc-violet-primary-normal);
   font-weight: 600;
 }
 

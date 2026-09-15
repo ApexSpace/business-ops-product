@@ -34,7 +34,7 @@ export function TaskQueueCard({
             <div key={item.id} className="flex items-center gap-2.5 py-0.5">
               <span className={`size-2 shrink-0 rounded-full ${bulletClassName}`} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12px] text-[#12172b] dark:text-foreground">
+                <p className="truncate text-[12px] text-foreground">
                   {assignedLabel(item)
                     ? `${assignedLabel(item)} — ${item.title}`
                     : item.title}

@@ -124,7 +124,7 @@ export function GiftCardSaleDialog({
             </Label>
             <div className="relative">
               {!autoGenerate ? (
-                <ScanLine className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
+                <ScanLine className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--drawer-text-secondary)]" />
               ) : null}
               <Input
                 id="gift-card-number"
@@ -138,7 +138,7 @@ export function GiftCardSaleDialog({
                 readOnly={autoGenerate}
               />
             </div>
-            <p className="text-[12px] font-medium text-[#8A8A8A]">
+            <p className="text-[12px] font-medium text-[var(--drawer-text-secondary)]">
               {autoGenerate ? "Auto-generated number" : "Or scan barcode"}
             </p>
           </div>
@@ -177,7 +177,7 @@ export function GiftCardSaleDialog({
               onCheckedChange={(checked) => setSendDigital(checked === true)}
               className="size-5 rounded-[4px] border-violet-primary-normal data-[checked]:border-violet-primary-normal data-[checked]:bg-violet-primary-normal"
             />
-            <span className="text-[13px] font-medium leading-snug text-[#524346]">
+            <span className="text-[13px] font-medium leading-snug text-[var(--drawer-text-label)]">
               Email this gift card to the owner after checkout
             </span>
           </label>

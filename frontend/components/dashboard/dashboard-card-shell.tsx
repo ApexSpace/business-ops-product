@@ -41,7 +41,7 @@ export function DashboardCardShell({
     >
       <CardHeader className="border-b border-border/60 pb-3">
         <div>
-          <CardTitle className="text-[10.5px] font-semibold tracking-[0.08em] text-[#98a1b5] uppercase">
+          <CardTitle className="text-[10.5px] font-semibold tracking-[0.08em] text-foreground-subtle uppercase">
             {title}
           </CardTitle>
           {description ? (

@@ -111,7 +111,7 @@ export function ConversationDetailsSidebar({
               <CreditCard
                 className={cn(
                   DRAWER_CLIENT_CONTACT_ICON_CLASS,
-                  "text-[var(--drawer-text-secondary)]",
+                  "text-destructive",
                 )}
                 aria-hidden
               />

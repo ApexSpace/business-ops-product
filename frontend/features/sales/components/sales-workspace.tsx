@@ -774,7 +774,7 @@ export function SalesWorkspace() {
                 </DrawerPrimaryButton>
                 <button
                   type="button"
-                  className="w-full py-1 text-center text-[14px] font-medium text-[#8A8A8A] hover:text-violet-primary-darker hover:underline"
+                  className="w-full py-1 text-center text-[14px] font-medium text-[var(--drawer-text-secondary)] hover:text-violet-primary-darker hover:underline"
                   onClick={() => {
                     setCheckoutStep("items");
                     setPaymentAction(null);
@@ -1377,7 +1377,7 @@ function SaleDetail({
         {(sale.appliedOffers ?? []).map((offer) => (
           <div
             key={offer.offerId}
-            className="flex items-center justify-between gap-4 text-emerald-700"
+            className="flex items-center justify-between gap-4 text-success"
           >
             <span className="flex min-w-0 items-center gap-2">
               <span className="truncate">Offer: {offer.offerName}</span>
@@ -1401,7 +1401,7 @@ function SaleDetail({
         ))}
         {parseFloat(sale.discountAmount) > 0 &&
         !(sale.appliedOffers?.length) ? (
-          <div className="flex justify-between gap-4 text-emerald-700">
+          <div className="flex justify-between gap-4 text-success">
             <span>Discount</span>
             <span className="tabular-nums">
               -{formatMoney(parseFloat(sale.discountAmount))}

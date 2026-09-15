@@ -72,7 +72,7 @@ export function SaleClosePanel({
   if (balanceDue <= 0) {
     return (
       <div className="space-y-4">
-        <p className="text-[13px] font-medium leading-relaxed text-[#8A8A8A]">
+        <p className="text-[13px] font-medium leading-relaxed text-[var(--drawer-text-secondary)]">
           Nothing to collect. Complete the sale to finalize membership
           redemptions and inventory updates.
         </p>

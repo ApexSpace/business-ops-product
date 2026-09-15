@@ -124,7 +124,7 @@ export function SaleEditDrawerContent({
           items={
             <div className="flex w-full min-w-0 flex-col gap-3">
               {sale.items.length === 0 ? (
-                <p className="rounded-[10px] border border-dashed border-[#E8E4DC] bg-violet-primary-surface/40 px-4 py-6 text-center text-[13px] font-medium text-[#8A8A8A]">
+                <p className="rounded-[10px] border border-dashed border-[#E8E4DC] bg-violet-primary-surface/40 px-4 py-6 text-center text-[13px] font-medium text-[var(--drawer-text-secondary)]">
                   No line items yet. Add a service or product below.
                 </p>
               ) : (
@@ -140,7 +140,7 @@ export function SaleEditDrawerContent({
                   )}
                 >
                   <div className="flex items-start gap-2.5">
-                    <span className="mt-1 inline-flex size-5 shrink-0 items-center justify-center text-[#8A8A8A]">
+                    <span className="mt-1 inline-flex size-5 shrink-0 items-center justify-center text-[var(--drawer-text-secondary)]">
                       <DrawerChevronIcon
                         direction={isEditing ? "down" : "right"}
                       />
@@ -156,7 +156,7 @@ export function SaleEditDrawerContent({
                         {item.title}
                       </p>
                       {!isEditing ? (
-                        <p className="mt-1 text-[12px] font-medium text-[#8A8A8A]">
+                        <p className="mt-1 text-[12px] font-medium text-[var(--drawer-text-secondary)]">
                           {item.lineType.replaceAll("_", " ").toLowerCase()}
                           {item.staff ? ` · ${item.staff.label}` : ""}
                           {` · qty ${item.quantity}`}
@@ -302,7 +302,7 @@ export function SaleEditDrawerContent({
           {(sale.appliedOffers ?? []).map((offer) => (
             <div
               key={offer.offerId}
-              className="flex items-center justify-between gap-3 text-[13px] font-medium text-emerald-700"
+              className="flex items-center justify-between gap-3 text-[13px] font-medium text-success"
             >
               <span className="flex min-w-0 items-center gap-2">
                 <span className="truncate">Offer: {offer.offerName}</span>
@@ -322,7 +322,7 @@ export function SaleEditDrawerContent({
           ))}
           {parseFloat(sale.discountAmount) > 0 &&
           !(sale.appliedOffers?.length) ? (
-            <div className="flex justify-between gap-3 text-[13px] font-medium text-emerald-700">
+            <div className="flex justify-between gap-3 text-[13px] font-medium text-success">
               <span>Discount</span>
               <span className="tabular-nums">
                 -{formatMoney(parseFloat(sale.discountAmount))}

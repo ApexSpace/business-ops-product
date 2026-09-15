@@ -7,6 +7,9 @@
  * Tailwind class compositions reference CSS variables (--drawer-*, --pc-violet-*).
  * Not a second brand-token system.
  *
+ * Ink: titles = violet-primary-normal; entity names = violet-primary-darker;
+ * field labels = --drawer-text-secondary; body = --drawer-text-body.
+ *
  * Density hit-and-trial (edit in frontend/app/globals.css :root):
  *   --drawer-section-gap        → gap-drawer-section     (major sections)
  *   --drawer-stack-gap          → gap-drawer-stack       (field-to-field)
@@ -130,9 +133,9 @@ export const DRAWER_SHELL_FOOTER_CLASS =
 export const DRAWER_FIELD_CONTROL_CLASS =
   "h-[var(--control-height)] min-h-[var(--control-height)] data-[size=default]:h-[var(--control-height)] data-[size=sm]:h-[var(--control-height)] rounded-[10px] border-[1.5px] text-[13.5px] shadow-none focus-visible:border-ring focus-visible:ring-[4px] focus-visible:ring-ring/15";
 
-/** Label recipe for FormSheet drawers (distinct from Figma DRAWER_FIELD_LABEL_CLASS). */
+/** Label recipe for FormSheet drawers — same secondary ink as DRAWER_FIELD_LABEL_CLASS. */
 export const DRAWER_FIELD_LABEL_SHELL_CLASS =
-  "flex items-center gap-1 text-[12.5px] font-semibold text-muted-foreground";
+  "flex items-center gap-1 text-[12.5px] font-semibold text-[var(--drawer-text-secondary)]";
 
 export const DRAWER_FORM_FIELD_CLASS = "flex flex-col gap-drawer-field";
 
@@ -427,10 +430,10 @@ export const DRAWER_CLIENT_CONTACT_ROW_CLASS =
 
 /**
  * Add credit card — matches phone/email row density (`DRAWER_CLIENT_CONTACT_ROW_CLASS`).
- * Hit-and-trial: `--drawer-client-credit-card-*` in globals.css.
+ * Figma Inbox-reply: danger red. Hit-and-trial size/weight: `--drawer-client-credit-card-*`.
  */
 export const DRAWER_CLIENT_CREDIT_CARD_CLASS =
-  "inline-flex min-w-0 cursor-pointer items-center gap-2 text-[length:var(--drawer-client-credit-card-size)] leading-[var(--drawer-client-credit-card-leading)] text-[var(--drawer-text-primary)] [font-weight:var(--drawer-client-credit-card-weight)] hover:underline";
+  "inline-flex min-w-0 cursor-pointer items-center gap-2 text-[length:var(--drawer-client-credit-card-size)] leading-[var(--drawer-client-credit-card-leading)] text-destructive [font-weight:var(--drawer-client-credit-card-weight)] hover:underline";
 
 export const DRAWER_CLIENT_CONTACT_ICON_CLASS =
   "size-4 shrink-0 stroke-[1.75] text-[var(--drawer-action-ink)]";

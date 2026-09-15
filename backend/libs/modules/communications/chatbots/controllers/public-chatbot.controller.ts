@@ -5,6 +5,7 @@ import {
   Headers,
   Ip,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -57,59 +58,74 @@ export class PublicChatbotController {
     );
   }
 
-  @Get('sessions/:sessionId')
+  @Get(':publicKey/sessions/:sessionId')
   @Public()
   @Throttle({ default: { limit: 120, ttl: 60000 } })
-  getSession(@Param('sessionId') sessionId: string) {
-    return this.publicSessionService.getSession(sessionId);
+  getSession(
+    @Param('publicKey') publicKey: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+  ) {
+    return this.publicSessionService.getSession(publicKey, sessionId);
   }
 
-  @Post('sessions/:sessionId/messages')
+  @Post(':publicKey/sessions/:sessionId/messages')
   @Public()
   @Throttle({ default: { limit: 60, ttl: 60000 } })
   sendMessage(
-    @Param('sessionId') sessionId: string,
+    @Param('publicKey') publicKey: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
     @Body() dto: SendChatbotMessageDto,
   ) {
-    return this.publicSessionService.sendMessage(sessionId, dto);
+    return this.publicSessionService.sendMessage(publicKey, sessionId, dto);
   }
 
-  @Get('sessions/:sessionId/messages')
+  @Get(':publicKey/sessions/:sessionId/messages')
   @Public()
   @Throttle({ default: { limit: 120, ttl: 60000 } })
   listMessages(
-    @Param('sessionId') sessionId: string,
+    @Param('publicKey') publicKey: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
     @Query('since') since?: string,
   ) {
-    return this.publicSessionService.listMessages(sessionId, since);
+    return this.publicSessionService.listMessages(publicKey, sessionId, since);
   }
 
-  @Post('sessions/:sessionId/end')
+  @Post(':publicKey/sessions/:sessionId/end')
   @Public()
   @Throttle({ default: { limit: 30, ttl: 60000 } })
-  endSession(@Param('sessionId') sessionId: string) {
-    return this.publicSessionService.endSession(sessionId);
+  endSession(
+    @Param('publicKey') publicKey: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+  ) {
+    return this.publicSessionService.endSession(publicKey, sessionId);
   }
 
-  @Patch('sessions/:sessionId/profile')
+  @Patch(':publicKey/sessions/:sessionId/profile')
   @Public()
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   updateSessionProfile(
-    @Param('sessionId') sessionId: string,
+    @Param('publicKey') publicKey: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
     @Body() dto: UpdateChatbotSessionProfileDto,
   ) {
-    return this.publicSessionService.updateSessionProfile(sessionId, dto);
+    return this.publicSessionService.updateSessionProfile(
+      publicKey,
+      sessionId,
+      dto,
+    );
   }
 
-  @Post('sessions/:sessionId/claim')
+  @Post(':publicKey/sessions/:sessionId/claim')
   @Public()
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   claimSession(
-    @Param('sessionId') sessionId: string,
+    @Param('publicKey') publicKey: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
     @Body() dto: ClaimChatbotSessionDto,
     @Headers('authorization') authorization?: string,
   ) {
     return this.publicSessionService.claimSession(
+      publicKey,
       sessionId,
       dto,
       bearerToken(authorization),

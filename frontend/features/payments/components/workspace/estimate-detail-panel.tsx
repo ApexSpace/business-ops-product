@@ -10,6 +10,7 @@ import {
   formatEstimateStatus,
 } from "@/features/estimates/schemas/estimate-profile";
 import type { Estimate } from "@/features/estimates/types";
+import { PUBLIC_ESTIMATE_STAFF_NOTICE } from "@/features/estimates/public-estimate-launch";
 import { FinancialDocumentLines } from "@/features/payments/components/workspace/financial-document-lines";
 import { getEstimateQuoteName } from "@/features/payments/utils/financial-table-display";
 
@@ -20,6 +21,9 @@ interface EstimateDetailPanelProps {
 export function EstimateDetailPanel({ estimate }: EstimateDetailPanelProps) {
   return (
     <div className="space-y-6">
+      <p className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+        {PUBLIC_ESTIMATE_STAFF_NOTICE}
+      </p>
       <EntityDetailFieldGrid>
         <EntityDetailField label="Quote name">
           {getEstimateQuoteName(estimate)}

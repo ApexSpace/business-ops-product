@@ -29,7 +29,8 @@ There is **no** separate `finance/sales` Nest module — sales UI uses checkout 
 ## 3. Public vs authenticated APIs
 
 - Authenticated CRUD for invoices/estimates/checkouts.
-- Public token-based invoice/estimate views and payment entry points.
+- Public token-based **invoice** views and payment entry points.
+- **C-P0-01 waived for launch:** public `estimate/[token]` is an unavailable state. There is no public estimate API. Do not send clients public estimate links.
 
 ---
 
