@@ -9,17 +9,20 @@ import {
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ActionButton } from "@/components/ui/action-button";
 import { DrawerAddAction } from "@/components/drawer/drawer-add-action";
 import { DrawerItemAddLayout } from "@/components/drawer/drawer-item-add-layout";
 import { DrawerCheckboxRow } from "@/components/drawer/drawer-checkbox-row";
 import { DrawerFormFieldGroup } from "@/components/drawer/drawer-form-field-group";
 import { DrawerFormFields } from "@/components/drawer/drawer-form-fields";
-import { Textarea } from "@/components/ui/textarea";
 import { ContactPicker } from "@/features/contacts/components/contact-picker";
 import type { Contact } from "@/features/contacts/types";
 import { updateAppointment } from "@/features/appointments/api/appointments.api";
 import { AppointmentDateTimeFields } from "@/features/appointments/components/drawer/appointment-datetime-fields";
+import { AppointmentDrawerNotesField } from "@/features/appointments/components/drawer/appointment-drawer-notes-field";
+import {
+  canCollapseAppointmentFormNotes,
+  isAppointmentFormNotesVisible,
+} from "@/features/appointments/components/drawer/appointment-drawer-notes.util";
 import { AppointmentClientCard } from "@/features/appointments/components/drawer/appointment-client-card";
 import { AppointmentBookingDetails } from "@/features/appointments/components/drawer/appointment-booking-details";
 import {
@@ -48,8 +51,6 @@ import { queryKeys } from "@/lib/query/keys";
 import type { Service } from "@/lib/types/api";
 import { APPOINTMENT_DRAWER_FIELD_CLASS } from "@/features/appointments/styles/appointment-drawer-tokens";
 import { cn } from "@/lib/utils";
-
-const NOTES_MAX_LENGTH = 400;
 
 function memberLabel(member: {
   user: {
@@ -169,7 +170,6 @@ export const AppointmentUpdateForm = forwardRef<
   const [notes, setNotes] = useState(appointment.notes ?? "");
   const [sendConfirmation, setSendConfirmation] = useState(true);
   const [notesOpen, setNotesOpen] = useState(false);
-  const [draftNotes, setDraftNotes] = useState("");
   const [servicePickerOpen, setServicePickerOpen] = useState(false);
 
   useEffect(() => {
@@ -193,7 +193,6 @@ export const AppointmentUpdateForm = forwardRef<
     setNotes(appointment.notes ?? "");
     setSendConfirmation(true);
     setNotesOpen(false);
-    setDraftNotes("");
   }, [appointment, timezone, defaultAssignedToId]);
 
   const mutation = useMutation({
@@ -286,6 +285,16 @@ export const AppointmentUpdateForm = forwardRef<
       : null;
 
   const hasFilledServices = services.length > 0;
+  const notesVisible = isAppointmentFormNotesVisible(notesOpen, notes);
+
+  const openNotesField = () => {
+    setNotesOpen(true);
+  };
+
+  const collapseEmptyNotes = () => {
+    if (!canCollapseAppointmentFormNotes(notes)) return;
+    setNotesOpen(false);
+  };
 
   const handleContactSelect = (contact: Contact) => {
     setContactLabel(contact.label);
@@ -312,22 +321,6 @@ export const AppointmentUpdateForm = forwardRef<
         startMinutes: nextStartMinutes,
       }),
     ]);
-  };
-
-  const openNotesEditor = () => {
-    setDraftNotes(notes);
-    setNotesOpen(true);
-  };
-
-  const confirmNotes = () => {
-    setNotes(draftNotes.trim());
-    setNotesOpen(false);
-    setDraftNotes("");
-  };
-
-  const cancelNotes = () => {
-    setNotesOpen(false);
-    setDraftNotes("");
   };
 
   return (
@@ -409,73 +402,30 @@ export const AppointmentUpdateForm = forwardRef<
 
       <DrawerItemAddLayout
         items={
-          !notesOpen && notes.trim() ? (
-            <Textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Add a description to the client"
-              rows={3}
-              maxLength={NOTES_MAX_LENGTH}
-              className={cn(
-                APPOINTMENT_DRAWER_FIELD_CLASS,
-                "min-h-[88px] resize-none py-3",
-              )}
-            />
-          ) : null
+          <AppointmentDrawerNotesField
+            value={notes}
+            onChange={setNotes}
+            expanded={notesOpen}
+            onCollapseEmpty={collapseEmptyNotes}
+          />
         }
         editor={
-          <>
-            {servicePickerOpen && hasFilledServices ? (
-              <AppointmentServiceCombobox
-                excludedIds={services.map((line) => line.serviceId)}
-                onAdd={(service) => {
-                  handleAddService(service);
-                  setServicePickerOpen(false);
-                }}
-                currencyCode={currencyCode}
-                placeholder="Search services…"
-                triggerClassName={cn(
-                  APPOINTMENT_DRAWER_FIELD_CLASS,
-                  "font-normal",
-                )}
-                defaultOpen
-              />
-            ) : null}
-            {notesOpen ? (
-            <div className="flex flex-col gap-2">
-              <Textarea
-                value={draftNotes}
-                onChange={(event) => setDraftNotes(event.target.value)}
-                placeholder="Add a description to the client"
-                rows={3}
-                maxLength={NOTES_MAX_LENGTH}
-                className={cn(
-                  APPOINTMENT_DRAWER_FIELD_CLASS,
-                  "min-h-[88px] resize-none py-3",
-                )}
-              />
-              <div className="flex items-center justify-end gap-2">
-                <ActionButton
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-9 min-w-[72px] px-4"
-                  onClick={cancelNotes}
-                >
-                  Cancel
-                </ActionButton>
-                <ActionButton
-                  type="button"
-                  size="sm"
-                  className="h-9 min-w-[72px] border-0 bg-violet-primary-normal px-4 text-white hover:bg-violet-primary-normal-hover"
-                  onClick={confirmNotes}
-                >
-                  Add
-                </ActionButton>
-              </div>
-            </div>
-            ) : null}
-          </>
+          servicePickerOpen && hasFilledServices ? (
+            <AppointmentServiceCombobox
+              excludedIds={services.map((line) => line.serviceId)}
+              onAdd={(service) => {
+                handleAddService(service);
+                setServicePickerOpen(false);
+              }}
+              currencyCode={currencyCode}
+              placeholder="Search services…"
+              triggerClassName={cn(
+                APPOINTMENT_DRAWER_FIELD_CLASS,
+                "font-normal",
+              )}
+              defaultOpen
+            />
+          ) : null
         }
         actions={
           hasFilledServices ? (
@@ -488,12 +438,12 @@ export const AppointmentUpdateForm = forwardRef<
                 onAdd={handleAddService}
                 trigger={<DrawerAddAction label="Add Service" />}
               />
-              {!notesOpen ? (
-                <DrawerAddAction label="Add Note" onClick={openNotesEditor} />
+              {!notesVisible ? (
+                <DrawerAddAction label="Add Note" onClick={openNotesField} />
               ) : null}
             </div>
-          ) : !notesOpen ? (
-            <DrawerAddAction label="Add Note" onClick={openNotesEditor} />
+          ) : !notesVisible ? (
+            <DrawerAddAction label="Add Note" onClick={openNotesField} />
           ) : null
         }
       />
