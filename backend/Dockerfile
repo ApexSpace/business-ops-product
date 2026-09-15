@@ -1,6 +1,4 @@
-### Backend image when the Docker context is the backend/ folder.
-### Dokploy: GitHub Build Path = backend, Docker File = Dockerfile, Context Path empty.
-### Prefer repo-root Dockerfile.backend if the build context is the monorepo root.
+### Build stage
 FROM node:22.12-bookworm-slim AS build
 
 WORKDIR /app

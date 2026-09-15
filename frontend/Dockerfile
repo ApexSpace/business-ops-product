@@ -1,5 +1,6 @@
-### Same image as repo-root Dockerfile.frontend. COPY paths need context = monorepo root.
-### Dokploy: Docker File = Dockerfile (if Build Path is frontend) and Docker Context Path = .
+### Prefer repo-root Dockerfile.frontend in Dokploy to avoid path doubling.
+### Kept in sync for local builds from the frontend folder (not used by Dokploy).
+### Dokploy: Docker File = Dockerfile.frontend , Context = . (empty)
 FROM node:22.13-bookworm-slim AS build
 WORKDIR /app
 
